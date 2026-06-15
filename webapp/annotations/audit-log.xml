@@ -1,0 +1,15 @@
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:Reference Uri="/sap/opu/odata4/sap/zsb_tbl_config/srvd/sap/zsd_tbl_config/0001/$metadata">
+    <edmx:Include Namespace="com.sap.gateway.srvd.zsd_tbl_config.v0001" Alias="SAP"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
+  </edmx:Reference>
+
+  <edmx:DataServices>
+    <!--
+      Future target: SAP.AuditLogType.
+      Add this file to manifest.json only when it contains real annotations.
+    -->
+  </edmx:DataServices>
+</edmx:Edmx>

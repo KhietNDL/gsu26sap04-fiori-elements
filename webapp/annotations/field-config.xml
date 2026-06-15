@@ -1,0 +1,110 @@
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:Reference Uri="/sap/opu/odata4/sap/zsb_tbl_config/srvd/sap/zsd_tbl_config/0001/$metadata">
+    <edmx:Include Namespace="com.sap.gateway.srvd.zsd_tbl_config.v0001" Alias="SAP"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
+  </edmx:Reference>
+
+  <edmx:DataServices>
+    <Annotations Target="SAP.FieldConfigType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.HeaderInfo">
+        <Record Type="UI.HeaderInfoType">
+          <PropertyValue Property="TypeName" String="Field Configuration"/>
+          <PropertyValue Property="TypeNamePlural" String="Field Configurations"/>
+          <PropertyValue Property="Title">
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="FieldName"/>
+            </Record>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
+      <Annotation Term="UI.LineItem">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="DisplayOrder"/>
+            <PropertyValue Property="Label" String="Display Order"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="FieldName"/>
+            <PropertyValue Property="Label" String="Field Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="LabelText"/>
+            <PropertyValue Property="Label" String="Label Text"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="IsKeyField"/>
+            <PropertyValue Property="Label" String="Key Field"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="MandatoryFlag"/>
+            <PropertyValue Property="Label" String="Mandatory"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ReadonlyFlag"/>
+            <PropertyValue Property="Label" String="Read Only"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Facets">
+        <Collection>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="FieldGeneralData"/>
+            <PropertyValue Property="Label" String="Field Details"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Identification">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="FieldName"/>
+            <PropertyValue Property="Label" String="Field Name"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="FieldType"/>
+            <PropertyValue Property="Label" String="Field Type"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="LabelText"/>
+            <PropertyValue Property="Label" String="Label Text"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="DisplayOrder"/>
+            <PropertyValue Property="Label" String="Display Order"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="IsKeyField"/>
+            <PropertyValue Property="Label" String="Key Field"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="MandatoryFlag"/>
+            <PropertyValue Property="Label" String="Mandatory"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ReadonlyFlag"/>
+            <PropertyValue Property="Label" String="Read Only"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="HiddenFlag"/>
+            <PropertyValue Property="Label" String="Hidden"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="DomainName"/>
+            <PropertyValue Property="Label" String="Domain Name"/>
+          </Record>
+        </Collection>
+      </Annotation>
+    </Annotations>
+  </edmx:DataServices>
+</edmx:Edmx>

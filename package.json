@@ -1,0 +1,20 @@
+{
+  "name": "ztbl-config-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SAP Fiori Elements - Table & Field Configuration Management",
+  "scripts": {
+    "start": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
+    "start:flp": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
+    "start:local": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
+    "build": "ui5 build preload --clean-dest --config ui5.yaml --dest dist",
+    "deploy": "fiori deploy --config ui5-deploy.yaml --yes",
+    "build:deploy": "npm run build && npm run deploy"
+  },
+  "devDependencies": {
+    "@sap-ux/ui5-middleware-fe-mockserver": "^2.4.13",
+    "@sap/ux-specification": "latest",
+    "@sap/ux-ui5-tooling": "latest",
+    "@ui5/cli": "latest"
+  }
+}

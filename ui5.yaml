@@ -1,0 +1,39 @@
+specVersion: '3.1'
+metadata:
+  name: ztbl-config-ui
+  allowSapInternal: true
+type: application
+framework:
+  name: SAPUI5
+  version: '1.108.33'
+  libraries:
+    - name: sap.m
+    - name: sap.ui.core
+    - name: sap.fe.templates
+    - name: sap.ushell
+    - name: themelib_sap_horizon
+server:
+  customMiddleware:
+    - name: fiori-tools-proxy
+      afterMiddleware: compression
+      configuration:
+        ignoreCertErrors: true
+        backend:
+          - path: /sap
+            url: https://s40lp1.ucc.cit.tum.de
+            client: '324'
+    - name: fiori-tools-appreload
+      afterMiddleware: compression
+      configuration:
+        port: 35729
+        path: webapp
+        delay: 300
+    - name: fiori-tools-preview
+      afterMiddleware: fiori-tools-appreload
+      configuration:
+        flp:
+          path: /test/flpSandbox.html
+          intent:
+            object: ZTableConfig
+            action: manage
+          theme: sap_horizon
