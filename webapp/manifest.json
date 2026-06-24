@@ -17,7 +17,9 @@
           "localUri": "localService/metadata.xml",
           "annotations": [
             "tableConfigAnnotation",
-            "fieldConfigAnnotation"
+            "fieldConfigAnnotation",
+            "approvalRequestAnnotation",
+            "auditLogAnnotation"
           ]
         }
       },
@@ -34,6 +36,20 @@
         "settings": {
           "localUri": "annotations/field-config.xml"
         }
+      },
+      "approvalRequestAnnotation": {
+        "type": "ODataAnnotation",
+        "uri": "annotations/approval-request.xml",
+        "settings": {
+          "localUri": "annotations/approval-request.xml"
+        }
+      },
+      "auditLogAnnotation": {
+        "type": "ODataAnnotation",
+        "uri": "annotations/audit-log.xml",
+        "settings": {
+          "localUri": "annotations/audit-log.xml"
+        }
       }
     },
     "crossNavigation": {
@@ -43,6 +59,26 @@
           "action": "manage",
           "title": "{{flpTitle}}",
           "subtitle": "{{flpSubtitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        },
+        "ZApprovalRequest-manage": {
+          "semanticObject": "ZApprovalRequest",
+          "action": "manage",
+          "title": "{{approvalInboxFlpTitle}}",
+          "subtitle": "{{approvalInboxFlpSubtitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        },
+        "ZAuditLog-display": {
+          "semanticObject": "ZAuditLog",
+          "action": "display",
+          "title": "{{auditLogFlpTitle}}",
+          "subtitle": "{{auditLogFlpSubtitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"
@@ -61,7 +97,7 @@
   "sap.ui5": {
     "flexEnabled": true,
     "dependencies": {
-      "minUI5Version": "1.108.33",
+      "minUI5Version": "1.108.24",
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
@@ -98,6 +134,26 @@
           "pattern": "TableConfig({key}):?query:",
           "name": "TableConfigObjectPage",
           "target": "TableConfigObjectPage"
+        },
+        {
+          "pattern": "ApprovalRequest:?query:",
+          "name": "ApprovalRequestList",
+          "target": "ApprovalRequestList"
+        },
+        {
+          "pattern": "ApprovalRequest({key}):?query:",
+          "name": "ApprovalRequestObjectPage",
+          "target": "ApprovalRequestObjectPage"
+        },
+        {
+          "pattern": "AuditLog:?query:",
+          "name": "AuditLogList",
+          "target": "AuditLogList"
+        },
+        {
+          "pattern": "AuditLog({key}):?query:",
+          "name": "AuditLogObjectPage",
+          "target": "AuditLogObjectPage"
         }
       ],
       "targets": {
@@ -133,6 +189,80 @@
                   "sections": {}
                 }
               }
+            }
+          }
+        },
+        "ApprovalRequestList": {
+          "type": "Component",
+          "id": "ApprovalRequestList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/ApprovalRequest",
+              "variantManagement": "Page",
+              "initialLoad": "Enabled",
+              "navigation": {
+                "ApprovalRequest": {
+                  "detail": {
+                    "route": "ApprovalRequestObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ApprovalRequestObjectPage": {
+          "type": "Component",
+          "id": "ApprovalRequestObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/ApprovalRequest",
+              "editableHeaderContent": false
+            }
+          }
+        },
+        "AuditLogList": {
+          "type": "Component",
+          "id": "AuditLogList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/AuditLog",
+              "variantManagement": "Page",
+              "initialLoad": "Enabled",
+              "navigation": {
+                "AuditLog": {
+                  "detail": {
+                    "route": "AuditLogObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "AuditLogObjectPage": {
+          "type": "Component",
+          "id": "AuditLogObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/AuditLog",
+              "editableHeaderContent": false
             }
           }
         }

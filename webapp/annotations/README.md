@@ -4,8 +4,8 @@ This app keeps one Fiori Elements application and separates UI annotations by bu
 
 - `table-config.xml`: List Report and Object Page annotations for `SAP.TableConfigType`.
 - `field-config.xml`: Child table/detail annotations for `SAP.FieldConfigType`.
-- `approval-request.xml`: Placeholder for the future Approval Request tile/page. Target `SAP.ApprovalRequestType`.
-- `audit-log.xml`: Placeholder for the future Audit Log tile/page. Target `SAP.AuditLogType`.
+- `approval-request.xml`: Approval Inbox List Report/Object Page annotations. Target `SAP.ApprovalRequestType`.
+- `audit-log.xml`: Audit Log Viewer List Report/Object Page annotations. Target `SAP.AuditLogType`.
 
 When adding a new page, update both:
 

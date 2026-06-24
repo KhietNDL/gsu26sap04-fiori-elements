@@ -7,9 +7,185 @@
   </edmx:Reference>
 
   <edmx:DataServices>
-    <!--
-      Future target: SAP.ApprovalRequestType.
-      Add this file to manifest.json only when it contains real annotations.
-    -->
+    <Annotations Target="SAP.ApprovalRequestType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.HeaderInfo">
+        <Record Type="UI.HeaderInfoType">
+          <PropertyValue Property="TypeName" String="Approval Request"/>
+          <PropertyValue Property="TypeNamePlural" String="Approval Requests"/>
+          <PropertyValue Property="Title">
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="AprvlId"/>
+            </Record>
+          </PropertyValue>
+          <PropertyValue Property="Description">
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="TableName"/>
+            </Record>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
+      <Annotation Term="UI.SelectionFields">
+        <Collection>
+          <PropertyPath>Status</PropertyPath>
+          <PropertyPath>TableName</PropertyPath>
+          <PropertyPath>SubmittedBy</PropertyPath>
+          <PropertyPath>SubmittedAt</PropertyPath>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.LineItem">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="AprvlId"/>
+            <PropertyValue Property="Label" String="Request ID"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="Status"/>
+            <PropertyValue Property="Label" String="Status"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="TableName"/>
+            <PropertyValue Property="Label" String="Table Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ActionType"/>
+            <PropertyValue Property="Label" String="Operation"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="RecordKey"/>
+            <PropertyValue Property="Label" String="Record Key"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="SubmittedBy"/>
+            <PropertyValue Property="Label" String="Submitted By"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="SubmittedAt"/>
+            <PropertyValue Property="Label" String="Submitted At"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataFieldForAction">
+            <PropertyValue Property="Label" String="Approve"/>
+            <PropertyValue Property="Action" String="SAP.approve"/>
+            <PropertyValue Property="InvocationGrouping" EnumMember="UI.OperationGroupingType/Isolated"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataFieldForAction">
+            <PropertyValue Property="Label" String="Reject"/>
+            <PropertyValue Property="Action" String="SAP.reject"/>
+            <PropertyValue Property="InvocationGrouping" EnumMember="UI.OperationGroupingType/Isolated"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Facets">
+        <Collection>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="RequestOverview"/>
+            <PropertyValue Property="Label" String="Request Overview"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
+          </Record>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="DiffView"/>
+            <PropertyValue Property="Label" String="Before / After Data"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#DiffView"/>
+          </Record>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="ApprovalResult"/>
+            <PropertyValue Property="Label" String="Approval Result"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#ApprovalResult"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Identification">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="AprvlId"/>
+            <PropertyValue Property="Label" String="Request ID"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="Status"/>
+            <PropertyValue Property="Label" String="Status"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="TableName"/>
+            <PropertyValue Property="Label" String="Table Name"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ActionType"/>
+            <PropertyValue Property="Label" String="Operation"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="RecordKey"/>
+            <PropertyValue Property="Label" String="Record Key"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="SubmittedBy"/>
+            <PropertyValue Property="Label" String="Submitted By"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="SubmittedAt"/>
+            <PropertyValue Property="Label" String="Submitted At"/>
+          </Record>
+          <Record Type="UI.DataFieldForAction">
+            <PropertyValue Property="Label" String="Approve"/>
+            <PropertyValue Property="Action" String="SAP.approve"/>
+            <PropertyValue Property="InvocationGrouping" EnumMember="UI.OperationGroupingType/Isolated"/>
+          </Record>
+          <Record Type="UI.DataFieldForAction">
+            <PropertyValue Property="Label" String="Reject"/>
+            <PropertyValue Property="Action" String="SAP.reject"/>
+            <PropertyValue Property="InvocationGrouping" EnumMember="UI.OperationGroupingType/Isolated"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.FieldGroup" Qualifier="DiffView">
+        <Record Type="UI.FieldGroupType">
+          <PropertyValue Property="Data">
+            <Collection>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="OldData"/>
+                <PropertyValue Property="Label" String="Before"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="NewData"/>
+                <PropertyValue Property="Label" String="After"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
+      <Annotation Term="UI.FieldGroup" Qualifier="ApprovalResult">
+        <Record Type="UI.FieldGroupType">
+          <PropertyValue Property="Data">
+            <Collection>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="ApprovedBy"/>
+                <PropertyValue Property="Label" String="Approved By"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="ApprovedAt"/>
+                <PropertyValue Property="Label" String="Approved At"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="AprvlComment"/>
+                <PropertyValue Property="Label" String="Approval Comment"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+    </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>

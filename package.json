@@ -7,6 +7,8 @@
     "start": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
     "start:flp": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
     "start:local": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage\"",
+    "start:approval": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage&/ApprovalRequest\"",
+    "start:audit": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324#ZTableConfig-manage&/AuditLog\"",
     "build": "ui5 build preload --clean-dest --config ui5.yaml --dest dist",
     "deploy": "fiori deploy --config ui5-deploy.yaml --yes",
     "build:deploy": "npm run build && npm run deploy"

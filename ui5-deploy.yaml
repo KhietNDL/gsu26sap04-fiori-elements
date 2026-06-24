@@ -28,6 +28,4 @@ builder:
         exclude:
           - /test/
           - /localService/
-          - /annotations/approval-request.xml
-          - /annotations/audit-log.xml
           - /annotations/README.md
