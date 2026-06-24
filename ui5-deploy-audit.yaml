@@ -5,7 +5,7 @@ type: application
 resources:
   configuration:
     paths:
-      webapp: dist/audit-log
+      webapp: dist
 builder:
   customTasks:
     - name: deploy-to-abap
