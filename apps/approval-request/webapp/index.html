@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Inbox</title>
+    <script id="sap-ui-bootstrap"
+        src="resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-resourceroots='{ "ztbl.approval.ui": "./" }'
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-frameOptions="trusted">
+    </script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ui.require(["sap/ui/core/ComponentSupport"]);
+        });
+    </script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content">
+    <div data-sap-ui-component
+         data-name="ztbl.approval.ui"
+         data-id="container"
+         data-settings='{ "id": "ztbl.approval.ui" }'
+         style="height: 100%;">
+    </div>
+</body>
+</html>

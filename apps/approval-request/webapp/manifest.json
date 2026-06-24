@@ -1,0 +1,145 @@
+{
+  "_version": "1.59.0",
+  "sap.app": {
+    "id": "ztbl.approval.ui",
+    "type": "application",
+    "title": "{{approvalAppTitle}}",
+    "description": "{{approvalAppDescription}}",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/sap/opu/odata4/sap/zsb_tbl_config/srvd/sap/zsd_tbl_config/0001/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0",
+          "localUri": "localService/metadata.xml",
+          "annotations": [
+            "approvalRequestAnnotation"
+          ]
+        }
+      },
+      "approvalRequestAnnotation": {
+        "type": "ODataAnnotation",
+        "uri": "annotations/approval-request.xml",
+        "settings": {
+          "localUri": "annotations/approval-request.xml"
+        }
+      }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "ZApprovalRequest-manage": {
+          "semanticObject": "ZApprovalRequest",
+          "action": "manage",
+          "title": "{{approvalInboxFlpTitle}}",
+          "subtitle": "{{approvalInboxFlpSubtitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "fullWidth": true,
+    "icons": {
+      "icon": "sap-icon://workflow-tasks"
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.108.33",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.codeeditor": {},
+        "sap.fe.templates": {}
+      }
+    },
+    "models": {
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "ztbl.approval.ui.i18n.i18n"
+        }
+      }
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "ApprovalRequestList",
+          "target": "ApprovalRequestList"
+        },
+        {
+          "pattern": "ApprovalRequest({key}):?query:",
+          "name": "ApprovalRequestObjectPage",
+          "target": "ApprovalRequestObjectPage"
+        }
+      ],
+      "targets": {
+        "ApprovalRequestList": {
+          "type": "Component",
+          "id": "ApprovalRequestList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/ApprovalRequest",
+              "variantManagement": "Page",
+              "initialLoad": "Enabled",
+              "navigation": {
+                "ApprovalRequest": {
+                  "detail": {
+                    "route": "ApprovalRequestObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ApprovalRequestObjectPage": {
+          "type": "Component",
+          "id": "ApprovalRequestObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/ApprovalRequest",
+              "editableHeaderContent": false
+            }
+          }
+        }
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "ztbl.approval.ui"
+  }
+}

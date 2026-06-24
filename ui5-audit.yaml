@@ -1,12 +1,12 @@
 specVersion: '3.1'
 metadata:
-  name: ztbl-config-ui
+  name: ztbl-audit-ui
   allowSapInternal: true
 type: application
 resources:
   configuration:
     paths:
-      webapp: apps/table-config/webapp
+      webapp: apps/audit-log/webapp
 framework:
   name: SAPUI5
   version: '1.108.33'
@@ -31,7 +31,7 @@ server:
       afterMiddleware: compression
       configuration:
         port: 35729
-        path: apps/table-config/webapp
+        path: apps/audit-log/webapp
         delay: 300
     - name: fiori-tools-preview
       afterMiddleware: fiori-tools-appreload
@@ -39,6 +39,6 @@ server:
         flp:
           path: /test/flpSandbox.html
           intent:
-            object: ZTableConfig
-            action: manage
+            object: ZAuditLog
+            action: display
           theme: sap_horizon

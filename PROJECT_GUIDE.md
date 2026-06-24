@@ -1,179 +1,233 @@
 # Z-MAINT Fiori Elements Project Guide
 
-## 1. Project này là gì?
+## 1. Project nay la gi?
 
-Đây là một SAP Fiori Elements UI5 application dùng cho phần quản trị của hệ thống Z-MAINT.
+Repo nay la monorepo cho nhieu SAP Fiori Elements UI5 app cua phan quan tri Z-MAINT.
 
-App này không tự tạo dữ liệu. App đọc dữ liệu và metadata từ SAP RAP OData V4 service:
+Tat ca app FE dung chung SAP RAP OData V4 service:
 
 ```text
 /sap/opu/odata4/sap/zsb_tbl_config/srvd/sap/zsd_tbl_config/0001/
 ```
 
-Backend RAP/CDS là nơi định nghĩa "thân cây":
+Backend RAP/CDS la source of truth cho entity, field, action, behavior, validation va authorization.
+Frontend Fiori Elements chi khai bao app, route, tile intent va UI annotation de render List Report/Object Page.
 
-- Entity: `TableConfig`, `FieldConfig`, `ApprovalRequest`, `AuditLog`
-- Field: `TableName`, `Description`, `ActiveFlag`, ...
-- Navigation: `_FieldConfig`
-- Actions: `approve`, `reject`, ...
-- Behavior, authorization, validation, draft
-
-Fiori Elements app này là lớp frontend hiển thị:
-
-- `manifest.json` khai báo app, service, tile/intent, route, page template
-- `webapp/annotations/*.xml` khai báo UI layout cho từng entity/page
-- Fiori Elements tự sinh List Report/Object Page và tự bind data dựa trên metadata + annotation
-
-## 2. Luồng hoạt động
-
-Luồng tổng quát:
+## 2. Cau truc source code
 
 ```text
-SAP RAP/CDS
-  -> OData V4 metadata + data
-  -> manifest.json trỏ tới service
-  -> annotations XML mô tả UI
-  -> sap.fe.templates render List Report/Object Page
-  -> FLP tile mở app bằng intent
-```
+apps/
+  table-config/
+    webapp/
+      manifest.json
+      Component.js
+      annotations/
+        table-config.xml
+        field-config.xml
 
-Ví dụ màn Table Config:
+  approval-request/
+    webapp/
+      manifest.json
+      Component.js
+      annotations/
+        approval-request.xml
 
-```text
-manifest.json:
-  contextPath = /TableConfig
-
-table-config.xml:
-  Target = SAP.TableConfigType
-  Path = TableName, Description, ApprovalRequired, ActiveFlag
-
-Fiori Elements:
-  tạo table columns
-  gọi backend /TableConfig
-  bind data vào table
-```
-
-`Path="TableName"` trong annotation không chứa data. Nó chỉ nói với Fiori Elements rằng cell/field này lấy dữ liệu từ property `TableName` trong JSON backend trả về.
-
-## 3. Cấu trúc source code chính
-
-```text
-webapp/
-  manifest.json
-  Component.js
-  index.html
-  i18n/
-    i18n.properties
-    i18n_en.properties
-  annotations/
-    table-config.xml
-    field-config.xml
-    approval-request.xml
-    audit-log.xml
-    README.md
+  audit-log/
+    webapp/
+      manifest.json
+      Component.js
+      annotations/
+        audit-log.xml
 
 ui5.yaml
+ui5-approval.yaml
+ui5-audit.yaml
+
 ui5-deploy.yaml
+ui5-deploy-approval.yaml
+ui5-deploy-audit.yaml
+
 package.json
 ```
 
-### `webapp/manifest.json`
+Quy tac chinh:
 
-File trung tâm của Fiori Elements app.
+- `apps/table-config` la app rieng cho Table Config va Field Config.
+- `apps/approval-request` la app rieng cho Approval Inbox.
+- `apps/audit-log` la app rieng cho Audit Log.
+- Moi app co `manifest.json` rieng, component id rieng, deploy BSP rieng va FLP tile rieng.
 
-Nhiệm vụ:
+## 3. Vi sao tach app?
 
-- Khai báo OData service `mainService`
-- Khai báo annotation files được load
-- Khai báo FLP inbound/tile intent
-- Khai báo routes và targets
-- Chọn template `sap.fe.templates.ListReport` hoặc `sap.fe.templates.ObjectPage`
+Voi Fiori Elements, cach sach nhat cho case nay la:
 
-Hiện tại app có intent:
+```text
+1 FLP tile = 1 FE app/component = 1 root business flow
+```
+
+Table Config va Field Config nen o chung mot app vi `FieldConfig` la child/composition cua `TableConfig`.
+
+Approval Request khong phai child cua Table Config. No la nghiep vu rieng: approver xem request va approve/reject. Vi vay Approval nen la mot app rieng de tranh route/context bi lech khi Fiori Elements tao Object Page.
+
+Audit Log cung la nghiep vu doc/read-only rieng, nen tach app rieng.
+
+## 4. App hien tai
+
+### Table & Field Configuration
+
+Path:
+
+```text
+apps/table-config/webapp
+```
+
+Component id:
+
+```text
+ztbl.config.ui
+```
+
+Entity chinh:
+
+```text
+/TableConfig
+```
+
+Annotation:
+
+```text
+apps/table-config/webapp/annotations/table-config.xml
+apps/table-config/webapp/annotations/field-config.xml
+```
+
+FLP intent:
 
 ```text
 #ZTableConfig-manage
 ```
 
-### `webapp/annotations/table-config.xml`
-
-UI annotation cho:
+ABAP BSP app:
 
 ```text
-SAP.TableConfigType
+ZZTBL_CONFIG_UI
 ```
 
-Đang quản lý:
+### Approval Inbox
 
-- List Report columns
-- Filter fields
-- Object Page header
-- Object Page facets
-- General Information section
-- Field Configuration child section
-
-### `webapp/annotations/field-config.xml`
-
-UI annotation cho:
+Path:
 
 ```text
-SAP.FieldConfigType
+apps/approval-request/webapp
 ```
 
-Đang quản lý child table/detail của Field Configuration.
-
-### `webapp/annotations/approval-request.xml`
-
-Placeholder cho màn Approval Inbox.
-
-Target backend tương ứng:
+Component id:
 
 ```text
-SAP.ApprovalRequestType
+ztbl.approval.ui
 ```
 
-Hiện file này chưa được load trong `manifest.json`.
-
-### `webapp/annotations/audit-log.xml`
-
-Placeholder cho màn Audit Log Viewer.
-
-Target backend tương ứng:
+Entity chinh:
 
 ```text
-SAP.AuditLogType
+/ApprovalRequest
 ```
 
-Hiện file này chưa được load trong `manifest.json`.
+Annotation:
 
-## 4. Cách chạy local
+```text
+apps/approval-request/webapp/annotations/approval-request.xml
+```
 
-Fiori Elements cần FLP shell/navigation service. Vì vậy không mở trực tiếp `index.html`.
+FLP intent:
 
-Chạy bằng FLP sandbox:
+```text
+#ZApprovalRequest-manage
+```
+
+ABAP BSP app:
+
+```text
+ZZTBL_APRVL_UI
+```
+
+### Audit Log
+
+Path:
+
+```text
+apps/audit-log/webapp
+```
+
+Component id:
+
+```text
+ztbl.audit.ui
+```
+
+Entity chinh:
+
+```text
+/AuditLog
+```
+
+Annotation:
+
+```text
+apps/audit-log/webapp/annotations/audit-log.xml
+```
+
+FLP intent:
+
+```text
+#ZAuditLog-display
+```
+
+ABAP BSP app:
+
+```text
+ZZTBL_AUDIT_UI
+```
+
+## 5. Cach chay local
+
+Table Config:
 
 ```powershell
-$env:FIORI_TOOLS_USER="your_sap_user"
-$env:FIORI_TOOLS_PASSWORD="your_sap_password"
-npm run start:flp
+npm run start:table
 ```
 
-URL local đúng:
+Approval Inbox:
+
+```powershell
+npm run start:approval
+```
+
+Audit Log:
+
+```powershell
+npm run start:audit
+```
+
+Neu can login backend local, dang nhap bang SAP user/password khi browser hoi.
+
+## 6. Cach build
+
+```powershell
+npm run build:table
+npm run build:approval
+npm run build:audit
+npm run build:all
+```
+
+Build output:
 
 ```text
-http://localhost:8080/test/flpSandbox.html?sap-client=324#ZTableConfig-manage
+dist/table-config
+dist/approval-request
+dist/audit-log
 ```
 
-`ui5.yaml` có proxy để forward request local `/sap/...` tới backend:
-
-```yaml
-backend:
-  - path: /sap
-    url: https://s40lp1.ucc.cit.tum.de
-    client: '324'
-```
-
-## 5. Cách deploy
+## 7. Cach deploy
 
 Set credential:
 
@@ -182,178 +236,87 @@ $env:SAP_USER="your_sap_user"
 $env:SAP_PASSWORD="your_sap_password"
 ```
 
-Build và deploy:
+Deploy Table Config:
 
 ```powershell
 npm run build:deploy
 ```
 
-App deploy lên ABAP repository với tên:
+Deploy Approval:
 
-```text
-ZZTBL_CONFIG_UI
+```powershell
+npm run build:deploy:approval
 ```
 
-FLP target mapping:
+Deploy Audit:
+
+```powershell
+npm run build:deploy:audit
+```
+
+## 8. FLP target mapping
+
+Table Config:
 
 ```text
 Semantic Object: ZTableConfig
 Action: manage
 Application Type: SAPUI5 Fiori App
-Title: Table Config
 URL: /sap/bc/ui5_ui5/sap/zztbl_config_ui
 ID / Component ID: ztbl.config.ui
 ```
 
-Intent:
+Approval:
 
 ```text
-#ZTableConfig-manage
+Semantic Object: ZApprovalRequest
+Action: manage
+Application Type: SAPUI5 Fiori App
+URL: /sap/bc/ui5_ui5/sap/zztbl_aprvl_ui
+ID / Component ID: ztbl.approval.ui
 ```
 
-Lưu ý: link BSP deploy trực tiếp như `/sap/bc/ui5_ui5/sap/zztbl_config_ui/index.html` không phải cách chạy chuẩn. App cần chạy qua FLP tile/intent.
-
-## 6. Lưu ý về deploy placeholder files
-
-Trong `ui5-deploy.yaml`, các file placeholder chưa dùng đang bị exclude:
-
-```yaml
-- /annotations/approval-request.xml
-- /annotations/audit-log.xml
-- /annotations/README.md
-```
-
-Lý do: ABAP app index có thể fail nếu upload annotation XML placeholder chưa có annotation thật.
-
-Khi `approval-request.xml` hoặc `audit-log.xml` đã có annotation thật và được khai báo trong `manifest.json`, hãy bỏ file đó khỏi danh sách exclude.
-
-## 7. Nhiệm vụ thành viên 2
-
-Thành viên 2 phụ trách 2 màn:
+Audit:
 
 ```text
-Approval Inbox
-Audit Log Viewer
+Semantic Object: ZAuditLog
+Action: display
+Application Type: SAPUI5 Fiori App
+URL: /sap/bc/ui5_ui5/sap/zztbl_audit_ui
+ID / Component ID: ztbl.audit.ui
 ```
 
-### 7.1. Màn Approval Inbox
+## 9. Nhiem vu thanh vien 2
 
-File chính:
+Thanh vien 2 lam tiep trong:
 
 ```text
-webapp/annotations/approval-request.xml
+apps/approval-request/webapp/annotations/approval-request.xml
+apps/audit-log/webapp/annotations/audit-log.xml
 ```
 
-Backend target:
+Approval can tap trung:
 
-```text
-SAP.ApprovalRequestType
-```
+- List Report danh sach request cho duyet.
+- Filter theo status, table name, submitted by, submitted at.
+- Object Page xem chi tiet request.
+- FieldGroup hien thi old/new JSON.
+- Action approve/reject lay tu RAP action backend.
 
-Mục tiêu UI:
+Audit can tap trung:
 
-- List Report danh sách phiếu chờ duyệt
-- Filter theo status, table name, submitted by, submitted date
-- Object Page hiển thị chi tiết request
-- Hiển thị dữ liệu cũ/mới ở mức tĩnh
-- Có action `Approve`
-- Có action `Reject`, nếu backend yêu cầu thì reject cần remarks/comment
+- List Report read-only.
+- Filter theo table name, user, thoi gian, action type.
+- Table hien thi old value, new value, field name, record key, changed by, changed at.
+- Object Page detail neu can xem day du noi dung.
 
-Việc cần làm:
+## 10. Luu y quan trong
 
-1. Viết annotation thật trong `approval-request.xml`:
-   - `UI.HeaderInfo`
-   - `UI.SelectionFields`
-   - `UI.LineItem`
-   - `UI.Facets`
-   - `UI.Identification`
-2. Cập nhật `manifest.json`:
-   - Add annotation data source `approvalRequestAnnotation`
-   - Add vào `mainService.settings.annotations`
-   - Add inbound tile intent, ví dụ `ZApprovalRequest-manage`
-   - Add List Report target cho `/ApprovalRequest`
-   - Add Object Page target nếu cần detail
-3. Cập nhật `i18n.properties` và `i18n_en.properties` cho title/subtitle/labels nếu dùng text bundle.
-4. Bỏ `/annotations/approval-request.xml` khỏi exclude trong `ui5-deploy.yaml`.
-5. Test local bằng FLP sandbox.
-6. Deploy và tạo FLP tile/target mapping.
-
-Gợi ý intent:
-
-```text
-#ZApprovalRequest-manage
-```
-
-### 7.2. Màn Audit Log Viewer
-
-File chính:
-
-```text
-webapp/annotations/audit-log.xml
-```
-
-Backend target:
-
-```text
-SAP.AuditLogType
-```
-
-Mục tiêu UI:
-
-- List Report read-only
-- Filter theo table name, changed by, changed at, action type
-- Table hiển thị old value, new value, field name, record key, changed by, changed at
-- Có Object Page detail nếu cần xem đầy đủ old/new value
-
-Việc cần làm:
-
-1. Viết annotation thật trong `audit-log.xml`:
-   - `UI.HeaderInfo`
-   - `UI.SelectionFields`
-   - `UI.LineItem`
-   - `UI.Identification`
-   - `UI.Facets` nếu có Object Page
-2. Cập nhật `manifest.json`:
-   - Add annotation data source `auditLogAnnotation`
-   - Add vào `mainService.settings.annotations`
-   - Add inbound tile intent, ví dụ `ZAuditLog-display`
-   - Add List Report target cho `/AuditLog`
-   - Add Object Page target nếu cần detail
-3. Cập nhật `i18n.properties` và `i18n_en.properties`.
-4. Bỏ `/annotations/audit-log.xml` khỏi exclude trong `ui5-deploy.yaml`.
-5. Test local bằng FLP sandbox.
-6. Deploy và tạo FLP tile/target mapping.
-
-Gợi ý intent:
-
-```text
-#ZAuditLog-display
-```
-
-## 8. Quy tắc làm việc
-
-- Backend RAP/CDS là source of truth cho entity, field, action, behavior.
-- Frontend annotation chỉ được dùng để mô tả cách hiển thị UI.
-- Không viết `Path` tới field không tồn tại trong OData metadata.
-- Không add placeholder annotation vào `manifest.json`.
-- Mỗi màn/entity nên có annotation file riêng.
-- Mỗi khi thêm màn mới phải kiểm tra cả:
-  - annotation XML
-  - `manifest.json`
-  - `i18n`
-  - `ui5-deploy.yaml`
-  - FLP tile/target mapping
-
-## 9. Commands thường dùng
-
-```powershell
-npm run start:flp
-npm run build
-npm run deploy
-npm run build:deploy
-```
-
-Sau deploy hoặc chỉnh FLP, nếu tile chưa hiện:
+- Khong tao root page moi trong cung mot FE component neu no la nghiep vu/tile doc lap.
+- Chi giu chung entity trong mot app khi no la child/navigation cua flow do.
+- `Path="TableName"` trong annotation chi la binding path, data that van den tu OData service.
+- Link BSP truc tiep khong phai cach test chuan. Test/deploy nen di qua FLP tile/intent.
+- Sau khi tao/chinh tile, neu tile chua hien thi, chay cache invalidation:
 
 ```text
 /UI2/INVALIDATE_GLOBAL_CACHES

@@ -1,11 +1,11 @@
 specVersion: '3.1'
 metadata:
-  name: ztbl-config-ui
+  name: ztbl-audit-ui
 type: application
 resources:
   configuration:
     paths:
-      webapp: dist/table-config
+      webapp: dist/audit-log
 builder:
   customTasks:
     - name: deploy-to-abap
@@ -21,8 +21,8 @@ builder:
             username: env:SAP_USER
             password: env:SAP_PASSWORD
         app:
-          name: ZZTBL_CONFIG_UI
-          description: Table & Field Configuration Management
+          name: ZZTBL_AUDIT_UI
+          description: Audit Log Viewer
           package: $tmp
           transport: ''
         exclude:
