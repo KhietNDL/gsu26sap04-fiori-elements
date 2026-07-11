@@ -1,0 +1,40 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <VBox width="100%" class="sapUiSmallMarginTop approvalTechnicalDetails">
+    <Panel
+      expandable="true"
+      expanded="false"
+      headerText="Raw JSON"
+      class="approvalTechnicalPanel">
+      <VBox width="100%">
+        <Label text="RecordKey JSON"/>
+        <TextArea
+          width="100%"
+          rows="5"
+          editable="false"
+          growing="true"
+          growingMaxLines="12"
+          value="{approvalDetail>/technicalRecordKey}"/>
+
+        <Label text="OldData JSON" class="sapUiSmallMarginTop"/>
+        <TextArea
+          width="100%"
+          rows="8"
+          editable="false"
+          growing="true"
+          growingMaxLines="18"
+          value="{approvalDetail>/technicalOldData}"/>
+
+        <Label text="NewData JSON" class="sapUiSmallMarginTop"/>
+        <TextArea
+          width="100%"
+          rows="8"
+          editable="false"
+          growing="true"
+          growingMaxLines="18"
+          value="{approvalDetail>/technicalNewData}"/>
+      </VBox>
+    </Panel>
+  </VBox>
+</core:FragmentDefinition>

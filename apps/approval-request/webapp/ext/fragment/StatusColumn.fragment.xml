@@ -1,0 +1,9 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/approval/ui/ext/formatter/ApprovalFormatter'}">
+  <ObjectStatus
+    class="approvalListCellText"
+    text="{path: 'Status', formatter: 'formatter.formatStatusText'}"
+    state="{path: 'Status', formatter: 'formatter.formatStatusState'}"/>
+</core:FragmentDefinition>

@@ -14,12 +14,12 @@
           <PropertyValue Property="TypeNamePlural" String="Approval Requests"/>
           <PropertyValue Property="Title">
             <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="AprvlId"/>
+              <PropertyValue Property="Value" Path="TableName"/>
             </Record>
           </PropertyValue>
           <PropertyValue Property="Description">
             <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="TableName"/>
+              <PropertyValue Property="Value" Path="Status"/>
             </Record>
           </PropertyValue>
         </Record>
@@ -52,16 +52,6 @@
             <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActionType"/>
-            <PropertyValue Property="Label" String="Operation"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="RecordKey"/>
-            <PropertyValue Property="Label" String="Record Key"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="SubmittedBy"/>
             <PropertyValue Property="Label" String="Submitted By"/>
             <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
@@ -78,12 +68,12 @@
         <Collection>
           <Record Type="UI.ReferenceFacet">
             <PropertyValue Property="ID" String="RequestOverview"/>
-            <PropertyValue Property="Label" String="Request Overview"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
+            <PropertyValue Property="Label" String="Request Metadata"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#RequestMetadata"/>
           </Record>
           <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="DiffView"/>
-            <PropertyValue Property="Label" String="Before / After Data"/>
+            <PropertyValue Property="ID" String="ChangeDetails"/>
+            <PropertyValue Property="Label" String="Change Details"/>
             <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#DiffView"/>
           </Record>
           <Record Type="UI.ReferenceFacet">
@@ -109,14 +99,6 @@
             <PropertyValue Property="Label" String="Table Name"/>
           </Record>
           <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActionType"/>
-            <PropertyValue Property="Label" String="Operation"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="RecordKey"/>
-            <PropertyValue Property="Label" String="Record Key"/>
-          </Record>
-          <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="SubmittedBy"/>
             <PropertyValue Property="Label" String="Submitted By"/>
           </Record>
@@ -125,6 +107,31 @@
             <PropertyValue Property="Label" String="Submitted At"/>
           </Record>
         </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.FieldGroup" Qualifier="RequestMetadata">
+        <Record Type="UI.FieldGroupType">
+          <PropertyValue Property="Data">
+            <Collection>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="AprvlId"/>
+                <PropertyValue Property="Label" String="Request ID"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="Status"/>
+                <PropertyValue Property="Label" String="Status"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="ActionType"/>
+                <PropertyValue Property="Label" String="Operation"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="SubmittedAt"/>
+                <PropertyValue Property="Label" String="Submitted At"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
       </Annotation>
 
       <Annotation Term="UI.FieldGroup" Qualifier="DiffView">

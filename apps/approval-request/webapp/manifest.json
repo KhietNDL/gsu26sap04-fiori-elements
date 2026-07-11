@@ -57,8 +57,28 @@
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
+        "sap.ui.layout": {},
         "sap.ui.codeeditor": {},
         "sap.fe.templates": {}
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/approval.css"
+        }
+      ]
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "ztbl.approval.ui.ext.controller.ApprovalListReport"
+          },
+          "sap.fe.templates.ObjectPage.ObjectPageController": {
+            "controllerName": "ztbl.approval.ui.ext.controller.ApprovalListReport"
+          }
+        }
       }
     },
     "models": {
@@ -112,6 +132,62 @@
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "columns": {
+                    "DataField::AprvlId": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::ActionType": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::Status": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::RecordKey": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::OldData": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::NewData": {
+                      "availability": "Hidden"
+                    },
+                    "ApprovalIdColumn": {
+                      "header": "Approval ID",
+                      "template": "ztbl.approval.ui.ext.fragment.ApprovalIdColumn",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataField::TableName"
+                      },
+                      "width": "24rem",
+                      "properties": [
+                        "AprvlId"
+                      ]
+                    },
+                    "OperationColumn": {
+                      "header": "Operation",
+                      "template": "ztbl.approval.ui.ext.fragment.OperationColumn",
+                      "width": "7rem",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "DataField::TableName"
+                      },
+                      "properties": [
+                        "ActionType"
+                      ]
+                    },
+                    "StatusColumn": {
+                      "header": "Status",
+                      "template": "ztbl.approval.ui.ext.fragment.StatusColumn",
+                      "width": "8rem",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "OperationColumn"
+                      },
+                      "properties": [
+                        "Status"
+                      ]
+                    }
+                  },
                   "tableSettings": {
                     "type": "ResponsiveTable"
                   }

@@ -1,0 +1,9 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <Text
+    wrapping="false"
+    class="approvalListCellText--id"
+    text="{AprvlId}"
+    tooltip="{AprvlId}"/>
+</core:FragmentDefinition>
