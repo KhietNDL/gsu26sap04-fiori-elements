@@ -207,28 +207,12 @@
               "content": {
                 "body": {
                   "sections": {
-                    "RequestOverviewCustomSection": {
-                      "title": "Request Detail",
-                      "template": "ztbl.approval.ui.ext.fragment.RequestOverview",
+                    "DiffViewCustomSection": {
+                      "title": "Before / After Data",
+                      "template": "ztbl.approval.ui.ext.fragment.DiffViewSection",
                       "position": {
                         "placement": "Before",
-                        "anchor": "RequestOverview"
-                      }
-                    },
-                    "ChangeDetailsCustomSection": {
-                      "title": "Before / After Data",
-                      "template": "ztbl.approval.ui.ext.fragment.FormattedRequestDetail",
-                      "position": {
-                        "placement": "After",
-                        "anchor": "RequestOverviewCustomSection"
-                      }
-                    },
-                    "TechnicalDetailsCustomSection": {
-                      "title": "Technical Details",
-                      "template": "ztbl.approval.ui.ext.fragment.TechnicalDetails",
-                      "position": {
-                        "placement": "After",
-                        "anchor": "ChangeDetailsCustomSection"
+                        "anchor": "General"
                       }
                     }
                   }

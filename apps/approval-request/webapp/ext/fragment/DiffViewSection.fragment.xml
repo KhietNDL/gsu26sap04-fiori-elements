@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<core:FragmentDefinition
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    core:require="{
+        ZTblFormatter: 'ztbl/approval/ui/model/formatter'
+    }"
+>
+    <VBox width="100%" class="sapUiSmallMarginTop">
+        <layout:Grid
+            defaultSpan="XL4 L4 M6 S12"
+            hSpacing="2"
+            vSpacing="1"
+            width="100%"
+        >
+            <VBox class="sapUiSmallMarginBottom">
+                <Label text="Record Key" />
+                <Text
+                    text="{path: 'RecordKey', formatter: 'ZTblFormatter.formatJson'}"
+                    renderWhitespace="true"
+                    wrapping="true"
+                    width="100%"
+                />
+            </VBox>
+
+            <VBox class="sapUiSmallMarginBottom">
+                <Label text="Before (Old Data)" />
+                <Text
+                    text="{path: 'OldData', formatter: 'ZTblFormatter.formatJson'}"
+                    renderWhitespace="true"
+                    wrapping="true"
+                    width="100%"
+                />
+            </VBox>
+
+            <VBox class="sapUiSmallMarginBottom">
+                <Label text="After (New Data)" />
+                <Text
+                    text="{path: 'NewData', formatter: 'ZTblFormatter.formatJson'}"
+                    renderWhitespace="true"
+                    wrapping="true"
+                    width="100%"
+                />
+            </VBox>
+        </layout:Grid>
+    </VBox>
+</core:FragmentDefinition>
