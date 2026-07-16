@@ -425,6 +425,13 @@ sap.ui.define([
   }
 
   function hideLegacyObjectPageSections(view) {
+    var legacySectionTitles = {
+      "Request Detail": true,
+      "Request Metadata": true,
+      "Change Details": true,
+      "Approval Items": true
+    };
+
     if (!view || !view.findAggregatedObjects) {
       return;
     }
@@ -434,7 +441,7 @@ sap.ui.define([
       var headerText = control.getHeaderText && control.getHeaderText();
       var text = String(title || headerText || "").trim();
 
-      if (text === "Request Metadata" && control.setVisible) {
+      if (legacySectionTitles[text] && control.setVisible && !String(control.getId && control.getId()).includes("CustomSection")) {
         control.setVisible(false);
       }
 
@@ -487,11 +494,17 @@ sap.ui.define([
     var columns = table.getColumns ? table.getColumns() : [];
     var items = table.getItems ? table.getItems() : [];
     var indexes = {};
+    var rawJsonColumnHeaders = {
+      "Action": true,
+      "Record Key": true,
+      "Old Data (JSON)": true,
+      "New Data (JSON)": true
+    };
 
     columns.forEach(function (column, index) {
       var headerText = getColumnHeaderText(column).trim();
 
-      if (headerText === "Summary" || headerText === "Changed Fields" || headerText === "Object") {
+      if (headerText === "Summary" || headerText === "Changed Fields" || headerText === "Object" || rawJsonColumnHeaders[headerText]) {
         column.setVisible(false);
         return;
       }
