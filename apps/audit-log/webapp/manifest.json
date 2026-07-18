@@ -61,6 +61,25 @@
         "sap.fe.templates": {}
       }
     },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/audit.css"
+        }
+      ]
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController": {
+            "controllerName": "ztbl.audit.ui.ext.controller.AuditLog"
+          },
+          "sap.fe.templates.ObjectPage.ObjectPageController": {
+            "controllerName": "ztbl.audit.ui.ext.controller.AuditLog"
+          }
+        }
+      }
+    },
     "models": {
       "": {
         "dataSource": "mainService",
@@ -112,6 +131,62 @@
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "columns": {
+                    "DataField::RecordKey": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::ActionType": {
+                      "availability": "Hidden"
+                    },
+                    "RecordKeyColumn": {
+                      "header": "Record Key",
+                      "template": "ztbl.audit.ui.ext.fragment.RecordKeyColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "DataField::TableName"
+                      },
+                      "width": "20rem",
+                      "properties": [
+                        "RecordKey"
+                      ]
+                    },
+                    "ActionColumn": {
+                      "header": "Action",
+                      "template": "ztbl.audit.ui.ext.fragment.ActionColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "DataField::FieldName"
+                      },
+                      "width": "8rem",
+                      "properties": [
+                        "ActionType"
+                      ]
+                    },
+                    "OldValueColumn": {
+                      "header": "Old Value",
+                      "template": "ztbl.audit.ui.ext.fragment.OldValueColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "ActionColumn"
+                      },
+                      "width": "14rem",
+                      "properties": [
+                        "OldValue"
+                      ]
+                    },
+                    "NewValueColumn": {
+                      "header": "New Value",
+                      "template": "ztbl.audit.ui.ext.fragment.NewValueColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "OldValueColumn"
+                      },
+                      "width": "14rem",
+                      "properties": [
+                        "NewValue"
+                      ]
+                    }
+                  },
                   "tableSettings": {
                     "type": "ResponsiveTable"
                   }
@@ -127,7 +202,17 @@
           "options": {
             "settings": {
               "contextPath": "/AuditLog",
-              "editableHeaderContent": false
+              "editableHeaderContent": false,
+              "content": {
+                "body": {
+                  "sections": {
+                    "AuditReadableSection": {
+                      "title": "Audit Details",
+                      "template": "ztbl.audit.ui.ext.fragment.AuditReadableSection"
+                    }
+                  }
+                }
+              }
             }
           }
         }

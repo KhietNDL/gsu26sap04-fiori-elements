@@ -1,60 +1,36 @@
 <core:FragmentDefinition
   xmlns="sap.m"
-  xmlns:core="sap.ui.core"
-  xmlns:form="sap.ui.layout.form">
+  xmlns:core="sap.ui.core">
   <VBox width="100%" class="sapUiSmallMarginTop approvalOverview">
-    <form:SimpleForm
+    <Toolbar design="Transparent">
+      <Title text="Request Information" level="H3"/>
+      <ToolbarSpacer/>
+    </Toolbar>
+
+    <List
       width="100%"
-      editable="false"
-      layout="ColumnLayout"
-      columnsM="2"
-      columnsL="3"
-      columnsXL="3"
-      labelSpanM="4"
-      labelSpanL="4"
-      labelSpanXL="4"
-      class="approvalOverviewForm">
-      <Label text="Operation"/>
-      <ObjectStatus
-        text="{approvalDetail>/operationText}"
-        state="{approvalDetail>/operationState}"/>
-
-      <Label text="Status"/>
-      <ObjectStatus
-        text="{approvalDetail>/statusText}"
-        state="{approvalDetail>/statusState}"/>
-
-      <Label text="Table Name"/>
-      <Text text="{approvalDetail>/tableName}" wrapping="true"/>
-
-      <Label text="Record Key"/>
-      <VBox items="{approvalDetail>/recordKeyRows}">
-        <items>
-          <HBox
-            width="100%"
-            renderType="Bare"
-            class="approvalRecordKeyLine">
-            <Label
-              width="9rem"
-              text="{approvalDetail>field}"/>
-            <Text
-              text="{approvalDetail>value}"
-              wrapping="true"/>
-          </HBox>
-        </items>
-      </VBox>
-
-      <Label text="Submitted By"/>
-      <Text text="{approvalDetail>/submittedBy}" wrapping="true"/>
-
-      <Label text="Submitted At"/>
-      <Text text="{approvalDetail>/submittedAt}" wrapping="true"/>
-
-      <Label text="Approved At"/>
-      <Text text="{approvalDetail>/approvedAt}" wrapping="true"/>
-
-      <Label text="Comment"/>
-      <Text text="{approvalDetail>/comment}" wrapping="true"/>
-    </form:SimpleForm>
+      showSeparators="Inner"
+      items="{approvalDetail>/requestInfoRows}"
+      class="approvalInfoList">
+      <CustomListItem>
+        <HBox
+          width="100%"
+          renderType="Bare"
+          class="approvalInfoRow">
+          <Label
+            width="10rem"
+            text="{approvalDetail>label}"
+            class="approvalInfoLabel"/>
+          <ObjectStatus
+            visible="{approvalDetail>isStatus}"
+            text="{approvalDetail>value}"
+            state="{approvalDetail>state}"/>
+          <Text
+            visible="{= !${approvalDetail>isStatus} }"
+            text="{approvalDetail>value}"
+            wrapping="true"/>
+        </HBox>
+      </CustomListItem>
+    </List>
   </VBox>
 </core:FragmentDefinition>

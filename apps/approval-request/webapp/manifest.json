@@ -208,7 +208,7 @@
                 "body": {
                   "sections": {
                     "DiffViewCustomSection": {
-                      "title": "Before / After Data",
+                      "title": "Approval Details",
                       "template": "ztbl.approval.ui.ext.fragment.DiffViewSection",
                       "position": {
                         "placement": "Before",

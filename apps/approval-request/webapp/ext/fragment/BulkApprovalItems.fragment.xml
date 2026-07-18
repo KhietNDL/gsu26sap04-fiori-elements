@@ -1,0 +1,104 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/approval/ui/ext/formatter/ApprovalFormatter'}">
+  <VBox
+    width="100%"
+    class="sapUiSmallMarginTop approvalBulkItems approvalBusinessChange"
+    visible="{approvalDetail>/bulkVisible}">
+    <Title
+      text="Approval Items"
+      level="H3"
+      class="sapUiTinyMarginBottom"/>
+
+    <MessageStrip
+      type="Information"
+      showIcon="true"
+      text="Approve and Reject remain request-level decisions. Review each item before processing the bulk request."
+      class="sapUiSmallMarginBottom"/>
+
+    <Text
+      text="Loading approval items..."
+      visible="{approvalDetail>/itemsLoading}"
+      class="approvalBulkSummary sapUiTinyMarginBottom"/>
+
+    <MessageStrip
+      type="Error"
+      showIcon="true"
+      text="{approvalDetail>/itemsErrorText}"
+      visible="{approvalDetail>/itemsErrorVisible}"
+      class="sapUiSmallMarginBottom"/>
+
+    <Text
+      text="{approvalDetail>/bulkSummaryText}"
+      visible="{approvalDetail>/bulkSummaryVisible}"
+      class="approvalBulkSummary sapUiTinyMarginBottom"/>
+
+    <Text
+      text="No approval items found."
+      visible="{approvalDetail>/itemsEmptyVisible}"
+      class="approvalBulkSummary sapUiTinyMarginBottom"/>
+
+    <Table
+      id="approvalBulkItemsTable"
+      width="100%"
+      class="approvalBulkItemsTable"
+      fixedLayout="false"
+      growing="true"
+      growingScrollToLoad="true"
+      busy="{approvalDetail>/itemsLoading}"
+      busyIndicatorDelay="0"
+      noDataText="No approval items found."
+      updateStarted=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateStarted"
+      updateFinished=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateFinished"
+      items="{path: '_Items', events: {dataRequested: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataRequested', dataReceived: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataReceived'}, parameters: {$select: 'AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,Message,OldData,NewData'}}">
+      <columns>
+        <Column width="6rem">
+          <Text text="ItemNo"/>
+        </Column>
+        <Column width="8rem">
+          <Text text="ActionType"/>
+        </Column>
+        <Column minScreenWidth="Tablet" demandPopin="true">
+          <Text text="RecordKey"/>
+        </Column>
+        <Column width="8rem">
+          <Text text="Status"/>
+        </Column>
+        <Column minScreenWidth="Tablet" demandPopin="true">
+          <Text text="Message"/>
+        </Column>
+        <Column width="9rem" hAlign="End">
+          <Text text="View Changes"/>
+        </Column>
+      </columns>
+      <items>
+        <ColumnListItem>
+          <cells>
+            <Text
+              text="{ItemNo}"
+              wrapping="true"/>
+            <ObjectStatus
+              text="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
+              state="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"/>
+            <Text
+              text="{path: 'RecordKey', formatter: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.formatBulkRecordKeyText'}"
+              wrapping="true"/>
+            <ObjectStatus
+              text="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Approved' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Pending' : ${Status} === 'R' || ${Status} === 'REJECTED' ? 'Rejected' : ${Status} }"
+              state="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Success' : ${Status} === 'R' || ${Status} === 'REJECTED' || ${Status} === 'E' || ${Status} === 'ERROR' ? 'Error' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Warning' : 'Information' }"/>
+            <Text
+              text="{Message}"
+              wrapping="true"/>
+            <Button
+              text="View Changes"
+              icon="sap-icon://display"
+              type="Transparent"
+              tooltip="View parsed item changes"
+              press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemPress"/>
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

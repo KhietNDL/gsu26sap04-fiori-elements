@@ -1,0 +1,9 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
+  <Text
+    text="{path: 'OldValue', formatter: 'formatter.formatAuditValue'}"
+    wrapping="true"
+    class="auditLongText"/>
+</core:FragmentDefinition>

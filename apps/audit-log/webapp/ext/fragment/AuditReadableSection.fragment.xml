@@ -1,0 +1,169 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <VBox
+    width="100%"
+    class="auditReadableSection">
+    <VBox class="auditHeaderBlock sapUiSmallMarginBottom">
+      <Title
+        text="{auditDetail>/title}"
+        level="H2"
+        class="sapUiTinyMarginBottom"/>
+      <Text
+        text="{auditDetail>/subtitle}"
+        class="auditMutedText"/>
+      <ObjectStatus
+        text="{auditDetail>/actionText}"
+        state="{auditDetail>/actionState}"
+        class="sapUiSmallMarginTop"/>
+    </VBox>
+
+    <Panel
+      headerText="General Information"
+      class="auditPanel sapUiSmallMarginBottom">
+      <Table
+        width="100%"
+        fixedLayout="true"
+        showNoData="false"
+        items="{auditDetail>/infoRows}">
+        <columns>
+          <Column width="13rem">
+            <Text text="Field"/>
+          </Column>
+          <Column>
+            <Text text="Value"/>
+          </Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text
+                text="{auditDetail>label}"
+                class="auditInfoLabel"/>
+              <ObjectStatus
+                text="{auditDetail>value}"
+                state="{auditDetail>state}"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </Panel>
+
+    <Panel
+      headerText="Record Key"
+      class="auditPanel sapUiSmallMarginBottom"
+      visible="{auditDetail>/recordKeyVisible}">
+      <Table
+        width="100%"
+        fixedLayout="true"
+        showNoData="true"
+        noDataText="No record key available"
+        items="{auditDetail>/recordKeyRows}">
+        <columns>
+          <Column width="13rem">
+            <Text text="Field"/>
+          </Column>
+          <Column>
+            <Text text="Value"/>
+          </Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <ObjectIdentifier
+                title="{auditDetail>field}"
+                class="auditFieldName"/>
+              <Text
+                text="{auditDetail>value}"
+                wrapping="true"
+                class="auditLongText"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </Panel>
+
+    <Panel
+      headerText="{auditDetail>/changeTitle}"
+      class="auditPanel sapUiSmallMarginBottom">
+      <Table
+        width="100%"
+        fixedLayout="true"
+        showNoData="true"
+        noDataText="No changed value available"
+        items="{auditDetail>/changeRows}">
+        <columns>
+          <Column width="13rem">
+            <Text text="Field"/>
+          </Column>
+          <Column visible="{auditDetail>/showOldColumn}">
+            <Text text="{auditDetail>/oldColumnHeader}"/>
+          </Column>
+          <Column visible="{auditDetail>/showNewColumn}">
+            <Text text="{auditDetail>/newColumnHeader}"/>
+          </Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <ObjectIdentifier
+                title="{auditDetail>field}"
+                class="auditFieldName"/>
+              <Text
+                text="{auditDetail>oldValue}"
+                wrapping="true"
+                visible="{auditDetail>/showOldColumn}"
+                class="auditLongText"/>
+              <Text
+                text="{auditDetail>newValue}"
+                wrapping="true"
+                visible="{auditDetail>/showNewColumn}"
+                class="auditLongText"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </Panel>
+
+    <Panel
+      headerText="Rollback Eligibility"
+      class="auditPanel sapUiSmallMarginBottom">
+      <ObjectStatus
+        text="{auditDetail>/rollbackText}"
+        state="{auditDetail>/rollbackState}"/>
+    </Panel>
+
+    <Panel
+      expandable="true"
+      expanded="false"
+      headerText="Technical Data"
+      class="auditPanel auditTechnicalPanel">
+      <VBox width="100%">
+        <Label text="Raw RecordKey"/>
+        <TextArea
+          width="100%"
+          rows="3"
+          editable="false"
+          growing="true"
+          growingMaxLines="8"
+          value="{auditDetail>/rawRecordKey}"/>
+        <Label text="Raw OldValue" class="sapUiSmallMarginTop"/>
+        <TextArea
+          width="100%"
+          rows="3"
+          editable="false"
+          growing="true"
+          growingMaxLines="8"
+          value="{auditDetail>/rawOldValue}"/>
+        <Label text="Raw NewValue" class="sapUiSmallMarginTop"/>
+        <TextArea
+          width="100%"
+          rows="3"
+          editable="false"
+          growing="true"
+          growingMaxLines="8"
+          value="{auditDetail>/rawNewValue}"/>
+      </VBox>
+    </Panel>
+  </VBox>
+</core:FragmentDefinition>

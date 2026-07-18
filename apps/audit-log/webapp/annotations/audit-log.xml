@@ -14,12 +14,12 @@
           <PropertyValue Property="TypeNamePlural" String="Audit Logs"/>
           <PropertyValue Property="Title">
             <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="AuditId"/>
+              <PropertyValue Property="Value" Path="TableName"/>
             </Record>
           </PropertyValue>
           <PropertyValue Property="Description">
             <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="TableName"/>
+              <PropertyValue Property="Value" Path="AuditId"/>
             </Record>
           </PropertyValue>
         </Record>
@@ -27,9 +27,10 @@
 
       <Annotation Term="UI.SelectionFields">
         <Collection>
+          <PropertyPath>AuditId</PropertyPath>
           <PropertyPath>TableName</PropertyPath>
+          <PropertyPath>FieldName</PropertyPath>
           <PropertyPath>ChangedBy</PropertyPath>
-          <PropertyPath>ChangedAt</PropertyPath>
           <PropertyPath>ActionType</PropertyPath>
         </Collection>
       </Annotation>
@@ -37,111 +38,41 @@
       <Annotation Term="UI.LineItem">
         <Collection>
           <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="TableName"/>
-            <PropertyValue Property="Label" String="Table Name"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActionType"/>
-            <PropertyValue Property="Label" String="Action Type"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="RecordKey"/>
-            <PropertyValue Property="Label" String="Record Key"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="FieldName"/>
-            <PropertyValue Property="Label" String="Field Name"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="OldValue"/>
-            <PropertyValue Property="Label" String="Old Value"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="NewValue"/>
-            <PropertyValue Property="Label" String="New Value"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ChangedBy"/>
-            <PropertyValue Property="Label" String="Changed By"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ChangedAt"/>
-            <PropertyValue Property="Label" String="Changed At"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-        </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.Facets">
-        <Collection>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="AuditOverview"/>
-            <PropertyValue Property="Label" String="Audit Overview"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
-          </Record>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="AuditValues"/>
-            <PropertyValue Property="Label" String="Changed Values"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#ChangedValues"/>
-          </Record>
-        </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.Identification">
-        <Collection>
-          <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="AuditId"/>
-            <PropertyValue Property="Label" String="Audit Log ID"/>
+            <PropertyValue Property="Label" String="Audit ID"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="TableName"/>
             <PropertyValue Property="Label" String="Table Name"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActionType"/>
-            <PropertyValue Property="Label" String="Action Type"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="RecordKey"/>
             <PropertyValue Property="Label" String="Record Key"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="FieldName"/>
             <PropertyValue Property="Label" String="Field Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ActionType"/>
+            <PropertyValue Property="Label" String="Action"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="ChangedBy"/>
             <PropertyValue Property="Label" String="Changed By"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="ChangedAt"/>
             <PropertyValue Property="Label" String="Changed At"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
         </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.FieldGroup" Qualifier="ChangedValues">
-        <Record Type="UI.FieldGroupType">
-          <PropertyValue Property="Data">
-            <Collection>
-              <Record Type="UI.DataField">
-                <PropertyValue Property="Value" Path="OldValue"/>
-                <PropertyValue Property="Label" String="Old Value"/>
-              </Record>
-              <Record Type="UI.DataField">
-                <PropertyValue Property="Value" Path="NewValue"/>
-                <PropertyValue Property="Label" String="New Value"/>
-              </Record>
-            </Collection>
-          </PropertyValue>
-        </Record>
       </Annotation>
     </Annotations>
   </edmx:DataServices>

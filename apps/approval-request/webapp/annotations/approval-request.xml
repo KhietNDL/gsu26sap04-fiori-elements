@@ -64,26 +64,6 @@
         </Collection>
       </Annotation>
 
-      <Annotation Term="UI.Facets">
-        <Collection>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="RequestOverview"/>
-            <PropertyValue Property="Label" String="Request Metadata"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#RequestMetadata"/>
-          </Record>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="ChangeDetails"/>
-            <PropertyValue Property="Label" String="Change Details"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#DiffView"/>
-          </Record>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="ApprovalResult"/>
-            <PropertyValue Property="Label" String="Approval Result"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#ApprovalResult"/>
-          </Record>
-        </Collection>
-      </Annotation>
-
       <Annotation Term="UI.Identification">
         <Collection>
           <Record Type="UI.DataField">

@@ -43,6 +43,42 @@
   line-height: 1.25rem;
 }
 
+.sapMListTblCell .approvalActionText--create,
+.sapMListTblCell .approvalActionText--create .sapMText,
+.sapMListTblCell .approvalActionText--create .sapMObjStatusText {
+  color: #107e3e;
+}
+
+.sapMListTblCell .approvalActionText--update,
+.sapMListTblCell .approvalActionText--update .sapMText,
+.sapMListTblCell .approvalActionText--update .sapMObjStatusText {
+  color: #0a6ed1;
+}
+
+.sapMListTblCell .approvalActionText--delete,
+.sapMListTblCell .approvalActionText--delete .sapMText,
+.sapMListTblCell .approvalActionText--delete .sapMObjStatusText {
+  color: #bb0000;
+}
+
+.sapMListTblCell .approvalStatusText--approved,
+.sapMListTblCell .approvalStatusText--approved .sapMText,
+.sapMListTblCell .approvalStatusText--approved .sapMObjStatusText {
+  color: #107e3e;
+}
+
+.sapMListTblCell .approvalStatusText--pending,
+.sapMListTblCell .approvalStatusText--pending .sapMText,
+.sapMListTblCell .approvalStatusText--pending .sapMObjStatusText {
+  color: #e9730c;
+}
+
+.sapMListTblCell .approvalStatusText--rejected,
+.sapMListTblCell .approvalStatusText--rejected .sapMText,
+.sapMListTblCell .approvalStatusText--rejected .sapMObjStatusText {
+  color: #bb0000;
+}
+
 .approvalJsonRow {
   display: grid;
   grid-template-columns: minmax(8rem, 40%) minmax(0, 1fr);
@@ -93,6 +129,23 @@
   padding: 0.25rem 0;
 }
 
+.approvalInfoList {
+  border: 1px solid #d9e2ec;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.approvalInfoRow {
+  gap: 1rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+}
+
+.approvalInfoLabel {
+  color: #5b738b;
+  font-weight: 600;
+}
+
 .approvalRecordKeyLine {
   gap: 0.75rem;
   padding-bottom: 0.25rem;
@@ -127,6 +180,92 @@
 .approvalChangeSapTable .sapMText {
   color: #0a263f;
   overflow-wrap: anywhere;
+}
+
+.approvalBulkItems .sapMText,
+.approvalBulkItems .sapMObjStatusText {
+  overflow-wrap: anywhere;
+}
+
+.approvalBulkItemsTable .sapMListTblCell,
+.approvalBulkItemDetail .sapMListTblCell {
+  vertical-align: top;
+}
+
+.approvalBulkSummary {
+  display: block;
+  color: #354a5f;
+}
+
+.approvalBulkItemDialog .sapMDialogScrollCont {
+  overflow-x: hidden !important;
+}
+
+.approvalBulkItemDialogContent {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1rem;
+  overflow-x: hidden;
+}
+
+.approvalBulkItemDialog .sapMListTbl {
+  table-layout: fixed;
+}
+
+.approvalBulkItemDialog .sapMListTblCell,
+.approvalBulkItemDialog .sapMListTblHeaderCell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.approvalBulkItemDialog .sapMText,
+.approvalBulkItemDialog .sapMObjStatusText,
+.approvalBulkItemDialog .sapMObjectIdentifierTitle {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.approvalItemDialogHeader {
+  box-sizing: border-box;
+  padding: 0.875rem 1rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 0.375rem;
+  background: #f7f9fb;
+}
+
+.approvalItemHeaderGrid {
+  gap: 0.75rem;
+}
+
+.approvalItemHeaderCell {
+  box-sizing: border-box;
+  min-width: 9rem;
+  flex: 1 1 10rem;
+}
+
+.approvalItemDialogHeader .sapMLabel {
+  margin-bottom: 0.25rem;
+  color: #5b738b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.approvalItemRecordKeySummary {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #d9e2ec;
+}
+
+.approvalItemRecordKeyText {
+  color: #0a263f;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.approvalBulkItemDialogToolbar {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .approvalObjectKeyPanel .sapMPanelContent {

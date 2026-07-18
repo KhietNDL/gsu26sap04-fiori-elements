@@ -36,6 +36,24 @@ sap.ui.define([], function () {
     return value ? titleCase(value) : "-";
   }
 
+  function normalizeStatus(value) {
+    var status = String(value || "").trim().toUpperCase();
+
+    if (status === "P" || status === "PENDING") {
+      return "Pending";
+    }
+
+    if (status === "A" || status === "APPROVED") {
+      return "Approved";
+    }
+
+    if (status === "R" || status === "REJECTED") {
+      return "Rejected";
+    }
+
+    return value ? titleCase(value) : "-";
+  }
+
   var FIELD_LABELS = {
     ENTITY_ID: "Entity ID",
     ITEM_ID: "Item ID",
@@ -521,7 +539,7 @@ sap.ui.define([], function () {
     },
 
     formatStatusText: function (value) {
-      return titleCase(value || "-");
+      return normalizeStatus(value);
     },
 
     formatStatusState: function (value) {
