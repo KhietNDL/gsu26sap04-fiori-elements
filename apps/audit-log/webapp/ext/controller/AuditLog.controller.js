@@ -1,8 +1,9 @@
 sap.ui.define([
   "sap/ui/core/mvc/ControllerExtension",
   "sap/ui/model/json/JSONModel",
-  "ztbl/audit/ui/ext/formatter/AuditFormatter"
-], function (ControllerExtension, JSONModel, AuditFormatter) {
+  "ztbl/audit/ui/ext/formatter/AuditFormatter",
+  "ztbl/audit/ui/ext/util/ODataErrorHandler"
+], function (ControllerExtension, JSONModel, AuditFormatter, ODataErrorHandler) {
   "use strict";
 
   var AUDIT_PROPERTIES = [
@@ -159,6 +160,7 @@ sap.ui.define([
 
         if (view) {
           ensureAuditModel(view);
+          ODataErrorHandler.attachGlobalHandlers("audit");
 
           if (view.attachModelContextChange && !this._auditContextHandlerAttached) {
             this._auditContextHandlerAttached = true;

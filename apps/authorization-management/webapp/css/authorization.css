@@ -1,0 +1,50 @@
+.authorizationShellHeader {
+  gap: 0.25rem;
+}
+
+.authorizationShellDescription {
+  color: var(--sapContent_LabelColor);
+}
+
+.authorizationModuleNav {
+  padding: 0.5rem 1rem 0.75rem;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.authorizationModuleNav .sapMSegBBtn {
+  min-width: 10.5rem;
+}
+
+.authorizationEmbeddedContent {
+  min-height: 0;
+}
+
+.authorizationStandaloneShell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.authorizationStandaloneHeader {
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem 0.5rem;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--sapList_BorderColor);
+  background: var(--sapPageHeader_Background);
+}
+
+.authorizationStandaloneTitle {
+  margin-bottom: 0.25rem;
+}
+
+.authorizationStandaloneContent {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 48rem) {
+  .authorizationModuleNav .sapMSegBBtn {
+    min-width: 8.75rem;
+  }
+}

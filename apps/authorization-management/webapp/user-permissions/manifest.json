@@ -1,0 +1,131 @@
+{
+  "_version": "1.59.0",
+  "sap.app": {
+    "id": "ztbl.authorization.userpermissions.ui",
+    "type": "application",
+    "title": "User Permissions",
+    "description": "Manage user permissions by table.",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/sap/opu/odata/sap/ZSB_AUTH_ADMIN_V2/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "2.0",
+          "annotations": [
+            "authorizationAnnotation"
+          ]
+        }
+      },
+      "authorizationAnnotation": {
+        "type": "ODataAnnotation",
+        "uri": "annotations/user-permissions.xml",
+        "settings": {
+          "localUri": "annotations/user-permissions.xml"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "fullWidth": true,
+    "icons": {
+      "icon": "sap-icon://permission"
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.108.33",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.ui.comp": {},
+        "sap.ui.generic.app": {},
+        "sap.suite.ui.generic.template": {}
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.viewExtensions": {
+          "sap.suite.ui.generic.template.ListReport.view.ListReport": {
+            "ResponsiveTableColumnsExtension|UserPermissions": {
+              "className": "sap.ui.core.Fragment",
+              "fragmentName": "ztbl.authorization.ui.ext.fragment.UserPermissionStatusColumns",
+              "type": "XML"
+            },
+            "ResponsiveTableCellsExtension|UserPermissions": {
+              "className": "sap.ui.core.Fragment",
+              "fragmentName": "ztbl.authorization.ui.ext.fragment.UserPermissionStatusCells",
+              "type": "XML"
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "../css/authorization.css"
+        }
+      ]
+    },
+    "models": {
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "type": "sap.ui.model.odata.v2.ODataModel",
+        "settings": {
+          "useBatch": true,
+          "defaultBindingMode": "TwoWay",
+          "defaultCountMode": "Inline",
+          "refreshAfterChange": true
+        }
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    }
+  },
+  "sap.ui.generic.app": {
+    "_version": "1.3.0",
+    "settings": {
+      "forceGlobalRefresh": false,
+      "objectPageHeaderType": "Dynamic",
+      "showDraftToggle": false
+    },
+    "pages": {
+      "ListReport|UserPermissions": {
+        "entitySet": "UserPermissions",
+        "component": {
+          "name": "sap.suite.ui.generic.template.ListReport",
+          "list": true,
+          "settings": {
+            "smartVariantManagement": true,
+            "condensedTableLayout": true,
+            "enableTableFilterInPageVariant": true,
+            "dataLoadSettings": {
+              "loadDataOnAppLaunch": "always"
+            },
+            "tableType": "ResponsiveTable"
+          }
+        },
+        "pages": {
+          "ObjectPage|UserPermissions": {
+            "entitySet": "UserPermissions",
+            "component": {
+              "name": "sap.suite.ui.generic.template.ObjectPage",
+              "settings": {
+                "editableHeaderContent": false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

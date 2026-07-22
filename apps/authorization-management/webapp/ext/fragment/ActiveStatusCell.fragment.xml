@@ -1,0 +1,9 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  core:require="{formatter: 'ztbl/authorization/ui/ext/formatter/AuthorizationFormatter'}">
+  <ObjectStatus
+    text="{path: 'ActiveFlag', formatter: 'formatter.activeText'}"
+    state="{path: 'ActiveFlag', formatter: 'formatter.activeState'}"
+    tooltip="{path: 'ActiveFlag', formatter: 'formatter.activeTooltip'}"/>
+</core:FragmentDefinition>

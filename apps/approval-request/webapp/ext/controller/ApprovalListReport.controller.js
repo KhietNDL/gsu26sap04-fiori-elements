@@ -2,8 +2,9 @@ sap.ui.define([
   "sap/ui/core/mvc/ControllerExtension",
   "sap/ui/core/Fragment",
   "sap/ui/model/json/JSONModel",
-  "ztbl/approval/ui/ext/formatter/ApprovalFormatter"
-], function (ControllerExtension, Fragment, JSONModel, ApprovalFormatter) {
+  "ztbl/approval/ui/ext/formatter/ApprovalFormatter",
+  "ztbl/approval/ui/ext/util/ODataErrorHandler"
+], function (ControllerExtension, Fragment, JSONModel, ApprovalFormatter, ODataErrorHandler) {
   "use strict";
 
   var DETAIL_PROPERTIES = [
@@ -450,6 +451,63 @@ sap.ui.define([
     return value === null || value === undefined || value === "" ? "—" : String(value);
   }
 
+  function isEmptyValue(value) {
+    return value === null || value === undefined || String(value).trim() === "";
+  }
+
+  function parseApprovalTimestamp(value) {
+    var text;
+    var match;
+    var normalized;
+    var date;
+
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : value;
+    }
+
+    text = String(value).trim();
+
+    if (!text) {
+      return null;
+    }
+
+    match = /^\/Date\((-?\d+)(?:[+-]\d+)?\)\/$/.exec(text);
+    if (match) {
+      date = new Date(Number(match[1]));
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    normalized = text.replace(/(\.\d{3})\d+(?=(Z|[+-]\d{2}:?\d{2})?$)/, "$1");
+    date = new Date(normalized);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatVietnamTimestamp(value) {
+    var date = parseApprovalTimestamp(value);
+    var formatted;
+
+    if (!date) {
+      return valueOrDash(value);
+    }
+
+    formatted = new Intl.DateTimeFormat("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }).format(date);
+
+    return formatted.replace(",", "") + " (GMT+7)";
+  }
+
   function buildRequestInfoRows(values) {
     var rows = [
       { label: "Approval ID", value: values.AprvlId },
@@ -457,15 +515,15 @@ sap.ui.define([
       { label: "Operation", value: ApprovalFormatter.formatActionText(values.ActionType), state: ApprovalFormatter.formatActionState(values.ActionType) },
       { label: "Status", value: ApprovalFormatter.formatStatusText(values.Status), state: ApprovalFormatter.formatStatusState(values.Status) },
       { label: "Submitted By", value: values.SubmittedBy },
-      { label: "Submitted At", value: values.SubmittedAt }
+      { label: "Submitted At", value: formatVietnamTimestamp(values.SubmittedAt) }
     ];
 
     [
       { label: "Reviewed By", value: values.ApprovedBy },
-      { label: "Reviewed At", value: values.ApprovedAt },
+      { label: "Reviewed At", value: formatVietnamTimestamp(values.ApprovedAt), rawValue: values.ApprovedAt },
       { label: "Remarks", value: values.AprvlComment }
     ].forEach(function (row) {
-      if (row.value !== null && row.value !== undefined && row.value !== "") {
+      if (!isEmptyValue(row.rawValue !== undefined ? row.rawValue : row.value)) {
         rows.push(row);
       }
     });
@@ -550,9 +608,9 @@ sap.ui.define([
         recordKeyRows: recordKeyRows.length ? recordKeyRows : [],
         recordKeyVisible: recordKeyRows.length > 0,
         submittedBy: values.SubmittedBy || "-",
-        submittedAt: values.SubmittedAt || "-",
+        submittedAt: formatVietnamTimestamp(values.SubmittedAt),
         approvedBy: values.ApprovedBy || "-",
-        approvedAt: values.ApprovedAt || "-",
+        approvedAt: formatVietnamTimestamp(values.ApprovedAt),
         comment: comment,
         changeRows: changeRows,
         changeTitle: getChangeTitle(actionText),
@@ -742,7 +800,8 @@ sap.ui.define([
   function getEventErrorText(event) {
     var parameters = event && event.getParameters && event.getParameters();
     var error = parameters && (parameters.error || parameters.reason);
-    var message = error && (error.message || error.statusText || error.responseText);
+    var message = ODataErrorHandler.extractBackendMessage(error) ||
+      error && (error.message || error.statusText || error.responseText);
 
     return message ? String(message) : "Approval items could not be loaded.";
   }
@@ -1157,6 +1216,7 @@ sap.ui.define([
 
         if (view) {
           ensureDetailModel(view);
+          ODataErrorHandler.attachGlobalHandlers("approval");
 
           if (view.attachModelContextChange && !this._approvalContextHandlerAttached) {
             this._approvalContextHandlerAttached = true;
@@ -1382,6 +1442,7 @@ sap.ui.define([
     clearItemsLoadingForSingle: clearItemsLoadingForSingle,
     handleApprovalContextChanged: handleApprovalContextChanged,
     formatRawJson: formatRawJson,
+    formatVietnamTimestamp: formatVietnamTimestamp,
     buildRequestInfoRows: buildRequestInfoRows
   };
 

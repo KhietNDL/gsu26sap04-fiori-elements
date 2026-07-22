@@ -67,7 +67,9 @@ function loadAuditController(formatter) {
             return this.data[name.replace(/^\//, "")];
           };
 
-          moduleResult = factory(ControllerExtension, JSONModel, formatter);
+          moduleResult = factory(ControllerExtension, JSONModel, formatter, {
+            attachGlobalHandlers: function () {}
+          });
         }
       }
     },

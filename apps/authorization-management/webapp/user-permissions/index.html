@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Permissions</title>
+    <style>
+        html,
+        body,
+        #content {
+            height: 100%;
+            margin: 0;
+        }
+        #container {
+            height: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="../css/authorization.css">
+    <script id="sap-ui-bootstrap"
+        src="/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-resourceroots='{ "ztbl.authorization.userpermissions.ui": "./", "ztbl.authorization.ui": "../" }'
+        data-sap-ui-libs="sap.m"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-frameOptions="trusted">
+    </script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ui.require([
+                "sap/ui/core/ComponentContainer",
+                "sap/m/VBox",
+                "sap/m/Title",
+                "sap/m/SegmentedButton",
+                "sap/m/SegmentedButtonItem",
+                "sap/m/Text"
+            ], function (ComponentContainer, VBox, Title, SegmentedButton, SegmentedButtonItem, Text) {
+                function withQuery(path) {
+                    return path + (window.location.search || "");
+                }
+                var description = new Text({
+                    text: "Manage users, assignments, and table-level permissions."
+                });
+                description.addStyleClass("authorizationShellDescription");
+
+                var title = new Title({
+                    text: "Authorization Management",
+                    level: "H3"
+                });
+                title.addStyleClass("authorizationStandaloneTitle");
+
+                var moduleNav = new SegmentedButton({
+                    width: "100%",
+                    selectedKey: "user-permissions",
+                    selectionChange: function (event) {
+                        var key = event.getParameter("item").getKey();
+
+                        if (key === "users") {
+                            window.location.href = withQuery("../users/index.html");
+                        }
+                        if (key === "table-permissions") {
+                            window.location.href = withQuery("../table-permissions/index.html");
+                        }
+                    },
+                    items: [
+                        new SegmentedButtonItem({
+                            key: "users",
+                            text: "Users",
+                            icon: "sap-icon://employee"
+                        }),
+                        new SegmentedButtonItem({
+                            key: "user-permissions",
+                            text: "User Permissions",
+                            icon: "sap-icon://key-user-settings"
+                        }),
+                        new SegmentedButtonItem({
+                            key: "table-permissions",
+                            text: "Table Permissions",
+                            icon: "sap-icon://table-view"
+                        })
+                    ]
+                });
+                moduleNav.addStyleClass("authorizationModuleNav");
+
+                var header = new VBox({
+                    renderType: "Bare",
+                    items: [
+                        title,
+                        description,
+                        moduleNav
+                    ]
+                });
+                header.addStyleClass("authorizationStandaloneHeader");
+                header.placeAt("authorizationNav");
+
+                new ComponentContainer({
+                    name: "ztbl.authorization.userpermissions.ui",
+                    manifest: true,
+                    async: true,
+                    height: "100%"
+                }).placeAt("container");
+            });
+        });
+    </script>
+</head>
+<body class="sapUiBody sapUiSizeCompact authorizationStandaloneShell" id="content">
+    <div id="authorizationNav"></div>
+    <div id="container" class="authorizationStandaloneContent"></div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  xmlns:layout="sap.ui.layout.form"
+  core:require="{formatter: 'ztbl/authorization/ui/ext/formatter/AuthorizationFormatter'}">
+  <VBox class="sapUiSmallMarginTop sapUiSmallMarginBottom">
+    <layout:SimpleForm
+      editable="true"
+      layout="ResponsiveGridLayout"
+      labelSpanXL="3"
+      labelSpanL="3"
+      labelSpanM="3"
+      labelSpanS="12"
+      adjustLabelSpan="false">
+      <Label text="View"/>
+      <CheckBox
+        text="{path: 'CanView', formatter: 'formatter.flagText'}"
+        selected="{path: 'CanView', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
+        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+      <Label text="Create"/>
+      <CheckBox
+        text="{path: 'CanCreate', formatter: 'formatter.flagText'}"
+        selected="{path: 'CanCreate', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
+        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+      <Label text="Update"/>
+      <CheckBox
+        text="{path: 'CanUpdate', formatter: 'formatter.flagText'}"
+        selected="{path: 'CanUpdate', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
+        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+      <Label text="Delete"/>
+      <CheckBox
+        text="{path: 'CanDelete', formatter: 'formatter.flagText'}"
+        selected="{path: 'CanDelete', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
+        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+      <Label text="Upload"/>
+      <CheckBox
+        text="{path: 'CanUpload', formatter: 'formatter.flagText'}"
+        selected="{path: 'CanUpload', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
+        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+    </layout:SimpleForm>
+  </VBox>
+</core:FragmentDefinition>

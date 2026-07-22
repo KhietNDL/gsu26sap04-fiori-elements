@@ -1,0 +1,8 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Column width="9rem" importance="High">
+    <Text text="Status"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"ActiveStatus","leadingProperty":"ActiveFlag","sortProperty":"ActiveFlag","filterProperty":"ActiveFlag","columnIndex":"3"}'/>
+    </customData>
+  </Column>
+</core:FragmentDefinition>

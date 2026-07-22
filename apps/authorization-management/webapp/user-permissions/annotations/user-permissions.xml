@@ -1,0 +1,173 @@
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:Reference Uri="/sap/opu/odata/sap/ZSB_AUTH_ADMIN_V2/$metadata">
+    <edmx:Include Namespace="cds_zsd_auth_admin" Alias="AUTH"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="Common"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Capabilities.xml">
+    <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="Capabilities"/>
+  </edmx:Reference>
+
+  <edmx:DataServices>
+    <Annotations Target="AUTH.cds_zsd_auth_admin_Entities/UserPermissions" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Capabilities.FilterRestrictions">
+        <Record>
+          <PropertyValue Property="NonFilterableProperties">
+            <Collection>
+              <PropertyPath>Update_mc</PropertyPath>
+              <PropertyPath>Delete_mc</PropertyPath>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+      <Annotation Term="Capabilities.SortRestrictions">
+        <Record>
+          <PropertyValue Property="NonSortableProperties">
+            <Collection>
+              <PropertyPath>Update_mc</PropertyPath>
+              <PropertyPath>Delete_mc</PropertyPath>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.HeaderInfo">
+        <Record Type="UI.HeaderInfoType">
+          <PropertyValue Property="TypeName" String="User Permission"/>
+          <PropertyValue Property="TypeNamePlural" String="User Permissions"/>
+          <PropertyValue Property="Title">
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="Username"/>
+            </Record>
+          </PropertyValue>
+          <PropertyValue Property="Description">
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="TableName"/>
+            </Record>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
+      <Annotation Term="UI.SelectionFields">
+        <Collection>
+          <PropertyPath>Username</PropertyPath>
+          <PropertyPath>TableName</PropertyPath>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.LineItem">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="Username"/>
+            <PropertyValue Property="Label" String="User Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="TableName"/>
+            <PropertyValue Property="Label" String="Table Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Facets">
+        <Collection>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="Assignment"/>
+            <PropertyValue Property="Label" String="Assignment"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#Assignment"/>
+          </Record>
+          <Record Type="UI.ReferenceFacet">
+            <PropertyValue Property="ID" String="Permissions"/>
+            <PropertyValue Property="Label" String="Permissions"/>
+            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#Permissions"/>
+          </Record>
+        </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.FieldGroup" Qualifier="Assignment">
+        <Record Type="UI.FieldGroupType">
+          <PropertyValue Property="Data">
+            <Collection>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="Username"/>
+                <PropertyValue Property="Label" String="User Name"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="TableName"/>
+                <PropertyValue Property="Label" String="Table Name"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
+      <Annotation Term="UI.FieldGroup" Qualifier="Permissions">
+        <Record Type="UI.FieldGroupType">
+          <PropertyValue Property="Data">
+            <Collection>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="CanView"/>
+                <PropertyValue Property="Label" String="View"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="CanCreate"/>
+                <PropertyValue Property="Label" String="Create"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="CanUpdate"/>
+                <PropertyValue Property="Label" String="Update"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="CanDelete"/>
+                <PropertyValue Property="Label" String="Delete"/>
+              </Record>
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="CanUpload"/>
+                <PropertyValue Property="Label" String="Upload"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/Username" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="User Name"/>
+      <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/Mandatory"/>
+      <Annotation Term="Common.Immutable"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Table Name"/>
+      <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/Mandatory"/>
+      <Annotation Term="Common.Immutable"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanView" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="View"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanCreate" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Create"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanUpdate" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Update"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanDelete" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Delete"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanUpload" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Upload"/>
+    </Annotations>
+  </edmx:DataServices>
+</edmx:Edmx>

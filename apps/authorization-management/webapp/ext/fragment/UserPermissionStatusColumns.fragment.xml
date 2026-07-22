@@ -1,0 +1,32 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Column width="7rem" importance="High">
+    <Text text="View"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"CanViewStatus","leadingProperty":"CanView","sortProperty":"CanView","filterProperty":"CanView","columnIndex":"3"}'/>
+    </customData>
+  </Column>
+  <Column width="7rem" importance="High">
+    <Text text="Create"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"CanCreateStatus","leadingProperty":"CanCreate","sortProperty":"CanCreate","filterProperty":"CanCreate","columnIndex":"4"}'/>
+    </customData>
+  </Column>
+  <Column width="7rem" importance="High">
+    <Text text="Update"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"CanUpdateStatus","leadingProperty":"CanUpdate","sortProperty":"CanUpdate","filterProperty":"CanUpdate","columnIndex":"5"}'/>
+    </customData>
+  </Column>
+  <Column width="7rem" importance="High">
+    <Text text="Delete"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"CanDeleteStatus","leadingProperty":"CanDelete","sortProperty":"CanDelete","filterProperty":"CanDelete","columnIndex":"6"}'/>
+    </customData>
+  </Column>
+  <Column width="7rem" importance="High">
+    <Text text="Upload"/>
+    <customData>
+      <core:CustomData key="p13nData" value='\{"columnKey":"CanUploadStatus","leadingProperty":"CanUpload","sortProperty":"CanUpload","filterProperty":"CanUpload","columnIndex":"7"}'/>
+    </customData>
+  </Column>
+</core:FragmentDefinition>

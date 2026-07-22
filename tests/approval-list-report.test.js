@@ -66,7 +66,13 @@ function loadController() {
             ControllerExtension,
             { load: function () {} },
             JSONModel,
-            formatter
+            formatter,
+            {
+              attachGlobalHandlers: function () {},
+              extractBackendMessage: function () {
+                return "";
+              }
+            }
           );
         }
       }
@@ -230,6 +236,9 @@ assertJsonEqual(infoRows.map((row) => row.label), [
   "Submitted By",
   "Submitted At"
 ], "empty reviewed fields are hidden");
+assert.ok(/07:00:00/.test(infoRows[5].value), "submitted UTC time is converted to Vietnam time");
+assert.ok(/GMT\+7/.test(infoRows[5].value), "submitted time shows Vietnam timezone");
+assert.ok(/17:58:52/.test(api.formatVietnamTimestamp("2026-07-14T10:58:52.098366Z")), "microsecond UTC timestamp is converted to Vietnam time");
 
 const singleApprovalItems = createControl("Approval Items");
 const singleExcelItems = createControl("Excel Approval Items");

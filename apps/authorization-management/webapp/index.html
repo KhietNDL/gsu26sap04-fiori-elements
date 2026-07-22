@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization Management</title>
+    <style>
+        html,
+        body,
+        #content,
+        #container {
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <script id="sap-ui-bootstrap"
+        src="/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-resourceroots='{ "ztbl.authorization.ui": "./", "ztbl.authorization.users.ui": "./users/", "ztbl.authorization.userpermissions.ui": "./user-permissions/", "ztbl.authorization.tablepermissions.ui": "./table-permissions/" }'
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-frameOptions="trusted">
+    </script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ui.require(["sap/ui/core/ComponentContainer"], function (ComponentContainer) {
+                new ComponentContainer({
+                    name: "ztbl.authorization.ui",
+                    manifest: true,
+                    async: true,
+                    height: "100%"
+                }).placeAt("container");
+            });
+        });
+    </script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content">
+    <div id="container"></div>
+</body>
+</html>

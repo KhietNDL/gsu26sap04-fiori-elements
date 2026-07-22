@@ -1,0 +1,25 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  core:require="{formatter: 'ztbl/authorization/ui/ext/formatter/AuthorizationFormatter'}">
+  <ObjectStatus
+    text="{path: 'CanView', formatter: 'formatter.flagText'}"
+    state="{path: 'CanView', formatter: 'formatter.flagState'}"
+    tooltip="{path: 'CanView', formatter: 'formatter.flagTooltip'}"/>
+  <ObjectStatus
+    text="{path: 'CanCreate', formatter: 'formatter.flagText'}"
+    state="{path: 'CanCreate', formatter: 'formatter.flagState'}"
+    tooltip="{path: 'CanCreate', formatter: 'formatter.flagTooltip'}"/>
+  <ObjectStatus
+    text="{path: 'CanUpdate', formatter: 'formatter.flagText'}"
+    state="{path: 'CanUpdate', formatter: 'formatter.flagState'}"
+    tooltip="{path: 'CanUpdate', formatter: 'formatter.flagTooltip'}"/>
+  <ObjectStatus
+    text="{path: 'CanDelete', formatter: 'formatter.flagText'}"
+    state="{path: 'CanDelete', formatter: 'formatter.flagState'}"
+    tooltip="{path: 'CanDelete', formatter: 'formatter.flagTooltip'}"/>
+  <ObjectStatus
+    text="{path: 'CanUpload', formatter: 'formatter.flagText'}"
+    state="{path: 'CanUpload', formatter: 'formatter.flagState'}"
+    tooltip="{path: 'CanUpload', formatter: 'formatter.flagTooltip'}"/>
+</core:FragmentDefinition>
