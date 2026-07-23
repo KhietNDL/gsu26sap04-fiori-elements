@@ -2,7 +2,7 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
   core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
-  <ObjectStatus
-    text="{path: 'ActionType', formatter: 'formatter.formatActionText'}"
-    state="{path: 'ActionType', formatter: 'formatter.formatActionState'}"/>
+  <Text
+    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatRowActionText'}"
+    wrapping="false"/>
 </core:FragmentDefinition>

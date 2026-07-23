@@ -59,7 +59,7 @@
             },
             "ResponsiveTableCellsExtension|UserPermissions": {
               "className": "sap.ui.core.Fragment",
-              "fragmentName": "ztbl.authorization.ui.ext.fragment.UserPermissionStatusCells",
+              "fragmentName": "ztbl.authorization.ui.ext.fragment.UserPermissionStatusCellsRedDisabled",
               "type": "XML"
             }
           }

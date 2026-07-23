@@ -49,6 +49,23 @@
   white-space: normal;
 }
 
+.auditBulkButton.sapMBtn {
+  height: 1.75rem;
+  padding: 0;
+}
+
+.auditBulkButton .sapMBtnInner {
+  height: 1.625rem;
+  min-width: 0;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.auditBulkButton .sapMBtnIcon {
+  font-size: 0.875rem;
+}
+
 .auditTechnicalPanel .sapMTextAreaInner {
   background: #f7f9fb;
   color: #0a263f;
@@ -56,4 +73,25 @@
   font-size: 0.8125rem;
   line-height: 1.45;
   white-space: pre-wrap;
+}
+
+.auditBulkDialogContent {
+  box-sizing: border-box;
+  padding: 1rem;
+}
+
+.auditBulkHeaderGrid {
+  gap: 1rem;
+}
+
+.auditBulkHeaderCell {
+  min-width: 10rem;
+  max-width: 18rem;
+}
+
+.auditBulkDialog .sapMListTblCell,
+.auditBulkDialog .sapMListTblHeaderCell {
+  min-width: 0;
+  vertical-align: top;
+  overflow-wrap: anywhere;
 }

@@ -128,9 +128,36 @@
     <Panel
       headerText="Rollback Eligibility"
       class="auditPanel sapUiSmallMarginBottom">
-      <ObjectStatus
-        text="{auditDetail>/rollbackText}"
-        state="{auditDetail>/rollbackState}"/>
+      <VBox width="100%">
+        <ObjectStatus
+          text="{auditDetail>/rollbackText}"
+          state="{auditDetail>/rollbackState}"/>
+        <Button
+          text="Rollback"
+          icon="sap-icon://undo"
+          type="Emphasized"
+          enabled="{auditDetail>/rollbackAvailable}"
+          press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onRollbackPress"
+          class="sapUiTinyMarginTop"/>
+      </VBox>
+    </Panel>
+
+    <Panel
+      headerText="Bulk Audit"
+      class="auditPanel sapUiSmallMarginBottom"
+      visible="{auditDetail>/bulkVisible}">
+      <VBox width="100%">
+        <Text
+          text="{auditDetail>/bulkText}"
+          wrapping="true"
+          class="auditMutedText"/>
+        <Button
+          text="View bulk items"
+          icon="sap-icon://list"
+          type="Transparent"
+          press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onBulkAuditItemsFromDetailPress"
+          class="sapUiTinyMarginTop"/>
+      </VBox>
     </Panel>
 
     <Panel

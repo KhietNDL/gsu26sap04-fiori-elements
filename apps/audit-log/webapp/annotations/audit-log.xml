@@ -5,9 +5,25 @@
   <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
     <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
   </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="Common"/>
+  </edmx:Reference>
 
   <edmx:DataServices>
     <Annotations Target="SAP.AuditLogType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.PresentationVariant">
+        <Record Type="UI.PresentationVariantType">
+          <PropertyValue Property="SortOrder">
+            <Collection>
+              <Record Type="Common.SortOrderType">
+                <PropertyValue Property="Property" PropertyPath="ChangedAt"/>
+                <PropertyValue Property="Descending" Bool="true"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
       <Annotation Term="UI.HeaderInfo">
         <Record Type="UI.HeaderInfoType">
           <PropertyValue Property="TypeName" String="Audit Log"/>

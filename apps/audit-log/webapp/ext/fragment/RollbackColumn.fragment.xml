@@ -1,0 +1,11 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
+  <Button
+    text="Rollback"
+    icon="sap-icon://undo"
+    type="Transparent"
+    tooltip="Rollback this audit record"
+    press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onRollbackPress"/>
+</core:FragmentDefinition>

@@ -147,7 +147,9 @@
                       },
                       "width": "20rem",
                       "properties": [
-                        "RecordKey"
+                        "RecordKey",
+                        "OldValue",
+                        "NewValue"
                       ]
                     },
                     "ActionColumn": {
@@ -159,7 +161,40 @@
                       },
                       "width": "8rem",
                       "properties": [
-                        "ActionType"
+                        "ActionType",
+                        "RecordKey"
+                      ]
+                    },
+                    "BulkItemsColumn": {
+                      "header": "Bulk",
+                      "template": "ztbl.audit.ui.ext.fragment.BulkItemsColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "ActionColumn"
+                      },
+                      "width": "7rem",
+                      "properties": [
+                        "RecordKey",
+                        "AuditId",
+                        "TableName",
+                        "ChangedBy",
+                        "ChangedAt",
+                        "ActionType",
+                        "OldValue",
+                        "NewValue"
+                      ]
+                    },
+                    "RollbackColumn": {
+                      "header": "Rollback",
+                      "template": "ztbl.audit.ui.ext.fragment.RollbackColumn",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "BulkItemsColumn"
+                      },
+                      "width": "8rem",
+                      "properties": [
+                        "AuditId",
+                        "TableName"
                       ]
                     },
                     "OldValueColumn": {
@@ -167,7 +202,7 @@
                       "template": "ztbl.audit.ui.ext.fragment.OldValueColumn",
                       "position": {
                         "placement": "After",
-                        "anchor": "ActionColumn"
+                        "anchor": "RollbackColumn"
                       },
                       "width": "14rem",
                       "properties": [

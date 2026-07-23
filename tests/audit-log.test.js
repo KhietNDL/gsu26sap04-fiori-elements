@@ -67,7 +67,25 @@ function loadAuditController(formatter) {
             return this.data[name.replace(/^\//, "")];
           };
 
-          moduleResult = factory(ControllerExtension, JSONModel, formatter, {
+          moduleResult = factory(ControllerExtension, {
+            registry: {
+              filter: function () {
+                return [];
+              }
+            }
+          }, {
+            load: function () {
+              return Promise.resolve({});
+            }
+          }, JSONModel, {
+            Action: {
+              CANCEL: "Cancel"
+            },
+            confirm: function () {},
+            error: function () {}
+          }, {
+            show: function () {}
+          }, formatter, {
             attachGlobalHandlers: function () {}
           });
         }
@@ -121,6 +139,21 @@ assertJsonEqual(api.getRecordKeyRows("{\"SCHEDULE_ID\":\"SCH010\"}"), [
 assertJsonEqual(api.getRecordKeyRows("{bad"), [
   { key: "RecordKey", field: "Record Key", value: "{bad" }
 ], "invalid RecordKey safely falls back");
+assertJsonEqual(api.getRecordKeyRows("{\"ID\":\"1\",\"MANDT\":\"324\",\"SNAPSHOT\":{\"A\":1},\"BATCH\":\"B1\"}"), [
+  { key: "ID", field: "Id", value: "1" }
+], "technical bulk fields are hidden from parsed record key rows");
+assertJsonEqual(api.getValueRows("ROOM: A101 | CLIENT: 324 | ROOM_TYPE: LAB"), [
+  { key: "ROOM", field: "Room", value: "A101" },
+  { key: "ROOM_TYPE", field: "Room Type", value: "LAB" }
+], "legacy FIELD: value audit text is parsed and technical fields are ignored");
+assert.strictEqual(api.getBulkCountText("", "Bulk audit: 3"), "3 item(s)", "bulk count extracts Bulk audit count");
+assert.strictEqual(api.getBulkCountText("1 item(s)", ""), "1 item(s)", "bulk count extracts item count");
+assert.strictEqual(api.getBulkCountText("x", "y"), "Bulk CRUD Operation", "bulk count falls back safely");
+assert.strictEqual(api.formatBulkButtonText("", "Bulk audit: 2"), "Bulk (2)", "bulk button shows a compact count");
+assert.strictEqual(api.formatBulkButtonText("x", "y"), "Bulk", "bulk button falls back compactly");
+assert.strictEqual(api.formatBulkRecordKeyText("BULK", "", "Bulk audit: 2"), "BULK · 2 item(s)", "bulk list row summarizes count");
+assert.strictEqual(api.formatRowActionText("U", "BULK"), "Bulk Update", "bulk row is explicit in the list");
+assert.strictEqual(api.getBulkActionText("U", [{ ActionType: "C" }, { ActionType: "D" }]), "Bulk", "mixed bulk child actions show generic bulk badge");
 
 const createDetail = controllerApi.buildAuditDetail({
   AuditId: "A1",
@@ -253,5 +286,41 @@ assert(columns.OldValueColumn, "List Report exposes Old Value column");
 assert(columns.NewValueColumn, "List Report exposes New Value column");
 assert.strictEqual((annotationXml.match(/DataFieldForAction/g) || []).length, 0, "local annotation does not create duplicate Rollback action");
 assert.strictEqual((annotationXml.match(/rollback/g) || []).length, 0, "local annotation does not duplicate rollback button");
+assert(columns.BulkItemsColumn, "List Report exposes View list column for bulk audit rows");
+assert(columns.RollbackColumn, "List Report exposes Rollback column");
+assert(columns.ActionColumn.properties.includes("RecordKey"), "Action column can detect bulk rows");
+assert(columns.RecordKeyColumn.properties.includes("OldValue"), "Record key column can show bulk count from audit values");
+assert.strictEqual(columns.BulkItemsColumn.position.anchor, "ActionColumn", "Bulk details column is visible next to Action");
+assert.strictEqual(columns.RollbackColumn.position.anchor, "BulkItemsColumn", "Rollback follows bulk details");
+assert(annotationXml.includes("<Annotation Term=\"UI.PresentationVariant\">"), "Audit list declares a default presentation variant");
+assert(annotationXml.includes("<PropertyValue Property=\"Property\" PropertyPath=\"ChangedAt\"/>"), "Audit list sorts by ChangedAt");
+assert(annotationXml.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>"), "Audit list sorts newest first");
+
+const bulkDialogData = controllerApi.buildBulkDialogData({
+  AuditId: "A8",
+  TableName: "Z251_SCHEDULE",
+  RecordKey: "BULK",
+  OldValue: "",
+  NewValue: "Bulk audit: 2",
+  ChangedBy: "DEV-253",
+  ChangedAt: "2026-07-18T18:42:24Z",
+  ActionType: "U"
+}, [{
+  AuditId: "A8-1",
+  RecordKey: "{\"ID\":\"1\",\"CLIENT\":\"324\"}",
+  OldValue: "{\"ROOM\":\"A\"}",
+  NewValue: "{\"ROOM\":\"B\"}",
+  ActionType: "U"
+}, {
+  AuditId: "A8-2",
+  RecordKey: "ID: 2 | MANDT: 324",
+  OldValue: "",
+  NewValue: "ROOM: C",
+  ActionType: "C"
+}]);
+assert.strictEqual(bulkDialogData.title, "Bulk Audit Items — 2", "bulk dialog title contains count");
+assert.strictEqual(bulkDialogData.actionText, "Bulk", "mixed bulk dialog action is generic");
+assert.strictEqual(bulkDialogData.items[0].recordKeyText, "Id: 1", "bulk dialog hides technical JSON key fields");
+assert.strictEqual(bulkDialogData.items[1].recordKeyText, "Id: 2", "bulk dialog parses legacy record key text");
 
 console.log("audit-log tests passed");

@@ -1,0 +1,13 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
+  <Button
+    text="{parts: [{path: 'OldValue'}, {path: 'NewValue'}], formatter: 'formatter.formatBulkButtonText'}"
+    icon="sap-icon://documents"
+    type="Transparent"
+    tooltip="View bulk audit items"
+    visible="{= ${RecordKey} === 'BULK' }"
+    press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onBulkAuditItemsPress"
+    class="auditBulkButton"/>
+</core:FragmentDefinition>

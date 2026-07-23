@@ -11,7 +11,11 @@ sap.ui.define([], function () {
     },
 
     flagState: function (value) {
-      return isActive(value) ? "Success" : "None";
+      return isActive(value) ? "Success" : "Error";
+    },
+
+    flagErrorState: function (value) {
+      return isActive(value) ? "Success" : "Error";
     },
 
     flagTooltip: function (value) {
@@ -27,7 +31,7 @@ sap.ui.define([], function () {
     },
 
     activeState: function (value) {
-      return isActive(value) ? "Success" : "Warning";
+      return isActive(value) ? "Success" : "Error";
     },
 
     activeSelected: function (value) {

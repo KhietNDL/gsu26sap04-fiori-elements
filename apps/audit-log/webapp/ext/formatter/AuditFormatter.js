@@ -1,6 +1,13 @@
 sap.ui.define([], function () {
   "use strict";
 
+  var TECHNICAL_FIELDS = {
+    CLIENT: true,
+    MANDT: true,
+    SNAPSHOT: true,
+    BATCH: true
+  };
+
   function titleCase(value) {
     return String(value || "")
       .toLowerCase()
@@ -11,6 +18,10 @@ sap.ui.define([], function () {
 
   function mapFieldLabel(key) {
     return titleCase(String(key || "").split(".").pop().replace(/_/g, " "));
+  }
+
+  function isTechnicalField(key) {
+    return !!TECHNICAL_FIELDS[String(key || "").split(".").pop().toUpperCase()];
   }
 
   function safeParseObject(value) {
@@ -33,10 +44,50 @@ sap.ui.define([], function () {
     return Object.getPrototypeOf(parsed) === Object.prototype ? parsed : {};
   }
 
+  function parseLegacyMap(value) {
+    var map = {};
+    var text = String(value || "");
+
+    if (text.indexOf(":") < 0) {
+      return map;
+    }
+
+    text.split("|").forEach(function (part) {
+      var index = part.indexOf(":");
+      var key;
+
+      if (index < 0) {
+        return;
+      }
+
+      key = part.slice(0, index).trim();
+
+      if (key) {
+        map[key] = part.slice(index + 1).trim();
+      }
+    });
+
+    return map;
+  }
+
+  function parseAuditMap(value) {
+    var parsed = safeParseObject(value);
+
+    if (Object.keys(parsed).length) {
+      return parsed;
+    }
+
+    return parseLegacyMap(value);
+  }
+
   function flattenObject(object, prefix, rows) {
     Object.keys(object || {}).forEach(function (key) {
       var value = object[key];
       var name = prefix ? prefix + "." + key : key;
+
+      if (isTechnicalField(name)) {
+        return;
+      }
 
       if (value && typeof value === "object" && !Array.isArray(value)) {
         flattenObject(value, name, rows);
@@ -54,20 +105,24 @@ sap.ui.define([], function () {
   function formatActionText(value) {
     var action = String(value || "").trim().toUpperCase();
 
-    if (action === "C" || action === "CREATE") {
+    if (action === "C" || action === "CREATE" || action === "01") {
       return "Create";
     }
 
-    if (action === "U" || action === "UPDATE") {
+    if (action === "U" || action === "UPDATE" || action === "02") {
       return "Update";
     }
 
-    if (action === "D" || action === "DELETE") {
+    if (action === "D" || action === "DELETE" || action === "03") {
       return "Delete";
     }
 
     if (action === "R" || action === "ROLLBACK") {
       return "Rollback";
+    }
+
+    if (action === "BULK" || action === "BULK CRUD OPERATION") {
+      return "Bulk";
     }
 
     return value === null || value === undefined || value === "" ? "—" : String(value);
@@ -90,6 +145,10 @@ sap.ui.define([], function () {
 
     if (action === "Rollback") {
       return "Warning";
+    }
+
+    if (action === "Bulk") {
+      return "Information";
     }
 
     return "None";
@@ -146,7 +205,7 @@ sap.ui.define([], function () {
   }
 
   function getRecordKeyRows(recordKey) {
-    var parsed = safeParseObject(recordKey);
+    var parsed = parseAuditMap(recordKey);
     var rows = [];
 
     flattenObject(parsed, "", rows);
@@ -167,7 +226,7 @@ sap.ui.define([], function () {
   }
 
   function getValueRows(rawValue) {
-    var parsed = safeParseObject(rawValue);
+    var parsed = parseAuditMap(rawValue);
     var rows = [];
 
     flattenObject(parsed, "", rows);
@@ -185,6 +244,104 @@ sap.ui.define([], function () {
     return rows.map(function (row) {
       return row.field + ": " + row.value;
     }).join(", ");
+  }
+
+  function isBulkRecordKey(recordKey) {
+    return String(recordKey || "").trim().toUpperCase() === "BULK";
+  }
+
+  function isBulkRecord(values) {
+    return isBulkRecordKey(values && values.RecordKey);
+  }
+
+  function getBulkCountText(oldValue, newValue) {
+    var text = [newValue, oldValue].map(function (value) {
+      return value === null || value === undefined ? "" : String(value);
+    }).join(" ");
+    var match = text.match(/(\d+)\s+item/i) || text.match(/Bulk audit:\s*(\d+)/i);
+
+    return match ? match[1] + " item(s)" : "Bulk CRUD Operation";
+  }
+
+  function formatBulkButtonText(oldValue, newValue) {
+    var countText = getBulkCountText(oldValue, newValue);
+    var match = String(countText || "").match(/^(\d+)/);
+
+    return match ? "Bulk (" + match[1] + ")" : "Bulk";
+  }
+
+  function formatBulkRecordKeyText(recordKey, oldValue, newValue) {
+    return isBulkRecordKey(recordKey) ? "BULK · " + getBulkCountText(oldValue, newValue) : formatRecordKeyText(recordKey);
+  }
+
+  function getBulkActionText(actionType, items) {
+    var normalized = [];
+    var seen = {};
+    var action;
+
+    (items || []).forEach(function (item) {
+      action = formatActionText(item && item.ActionType);
+
+      if (action && action !== "—" && !seen[action]) {
+        seen[action] = true;
+        normalized.push(action);
+      }
+    });
+
+    if (normalized.length === 1) {
+      return normalized[0];
+    }
+
+    if (normalized.length > 1) {
+      return "Bulk";
+    }
+
+    action = formatActionText(actionType);
+    return action === "—" ? "Bulk" : action;
+  }
+
+  function formatRowActionText(actionType, recordKey) {
+    var actionText = formatActionText(actionType);
+    return isBulkRecordKey(recordKey) ? (actionText === "—" ? "Bulk" : "Bulk " + actionText) : actionText;
+  }
+
+  function formatRowActionState(actionType, recordKey) {
+    return isBulkRecordKey(recordKey) ? "Information" : formatActionState(actionType);
+  }
+
+  function isBulkVisible(recordKey) {
+    return isBulkRecordKey(recordKey);
+  }
+
+  function formatItemNumber(value, index) {
+    return formatAuditValue(value || value === 0 ? value : index + 1);
+  }
+
+  function buildItemRows(values) {
+    return buildChangeRows({
+      ActionType: values && values.ActionType,
+      FieldName: values && values.FieldName,
+      OldValue: values && (values.OldValue !== undefined ? values.OldValue : values.OldData),
+      NewValue: values && (values.NewValue !== undefined ? values.NewValue : values.NewData)
+    });
+  }
+
+  function buildBulkItemViewModel(values, index) {
+    var actionText = formatActionText(values && values.ActionType);
+    var recordKeyRows = getRecordKeyRows(values && values.RecordKey);
+
+    return {
+      itemNumber: formatItemNumber(values && (values.ItemNo || values.ItemNumber), index || 0),
+      actionText: actionText,
+      actionState: formatActionState(values && values.ActionType),
+      recordKeyText: formatRecordKeyText(values && values.RecordKey),
+      recordKeyRows: recordKeyRows,
+      changeRows: buildItemRows(values || {}),
+      showOldColumn: actionText === "Update" || actionText === "Delete" || actionText === "Rollback",
+      showNewColumn: actionText === "Create" || actionText === "Update" || actionText === "Rollback",
+      oldColumnHeader: actionText === "Delete" ? "Old Value" : "Old",
+      newColumnHeader: actionText === "Create" ? "New Value" : "New"
+    };
   }
 
   function getChangeTitle(actionType) {
@@ -297,23 +454,43 @@ sap.ui.define([], function () {
     formatAuditValue: formatAuditValue,
     formatTimestamp: formatTimestamp,
     formatRecordKeyText: formatRecordKeyText,
+    formatBulkRecordKeyText: formatBulkRecordKeyText,
+    formatRowActionText: formatRowActionText,
+    formatRowActionState: formatRowActionState,
+    isBulkVisible: isBulkVisible,
     getRecordKeyRows: getRecordKeyRows,
     getValueRows: getValueRows,
     getChangeTitle: getChangeTitle,
     buildChangeRows: buildChangeRows,
+    getBulkCountText: getBulkCountText,
+    formatBulkButtonText: formatBulkButtonText,
+    getBulkActionText: getBulkActionText,
+    isBulkRecord: isBulkRecord,
+    buildBulkItemViewModel: buildBulkItemViewModel,
+    isRollbackAvailable: isRollbackAvailable,
     formatRollbackText: formatRollbackText,
     formatRollbackState: formatRollbackState,
     _test: {
       safeParseObject: safeParseObject,
+      parseAuditMap: parseAuditMap,
       formatActionText: formatActionText,
       formatActionState: formatActionState,
       formatAuditValue: formatAuditValue,
       formatTimestamp: formatTimestamp,
       formatRecordKeyText: formatRecordKeyText,
+      formatBulkRecordKeyText: formatBulkRecordKeyText,
+      formatRowActionText: formatRowActionText,
+      formatRowActionState: formatRowActionState,
+      isBulkVisible: isBulkVisible,
       getRecordKeyRows: getRecordKeyRows,
       getValueRows: getValueRows,
       getChangeTitle: getChangeTitle,
       buildChangeRows: buildChangeRows,
+      getBulkCountText: getBulkCountText,
+      formatBulkButtonText: formatBulkButtonText,
+      getBulkActionText: getBulkActionText,
+      isBulkRecord: isBulkRecord,
+      buildBulkItemViewModel: buildBulkItemViewModel,
       isRollbackAvailable: isRollbackAvailable,
       formatRollbackText: formatRollbackText,
       formatRollbackState: formatRollbackState

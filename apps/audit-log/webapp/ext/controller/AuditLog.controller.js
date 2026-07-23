@@ -1,9 +1,13 @@
 sap.ui.define([
   "sap/ui/core/mvc/ControllerExtension",
+  "sap/ui/core/Element",
+  "sap/ui/core/Fragment",
   "sap/ui/model/json/JSONModel",
+  "sap/m/MessageBox",
+  "sap/m/MessageToast",
   "ztbl/audit/ui/ext/formatter/AuditFormatter",
   "ztbl/audit/ui/ext/util/ODataErrorHandler"
-], function (ControllerExtension, JSONModel, AuditFormatter, ODataErrorHandler) {
+], function (ControllerExtension, Element, Fragment, JSONModel, MessageBox, MessageToast, AuditFormatter, ODataErrorHandler) {
   "use strict";
 
   var AUDIT_PROPERTIES = [
@@ -59,11 +63,36 @@ sap.ui.define([
         newColumnHeader: "After",
         rollbackText: "Rollback not available",
         rollbackState: "None",
+        rollbackAvailable: false,
+        bulkVisible: false,
+        bulkText: "",
         rawRecordKey: "",
         rawOldValue: "",
         rawNewValue: ""
       });
       view.setModel(model, "auditDetail");
+    }
+
+    return model;
+  }
+
+  function ensureBulkModel(view) {
+    var model = view && view.getModel && view.getModel("auditBulk");
+
+    if (!model && view && view.setModel) {
+      model = new JSONModel({
+        title: "Bulk Audit Items — 0",
+        auditId: "—",
+        changedBy: "—",
+        changedAt: "—",
+        actionText: "Bulk",
+        actionState: "Information",
+        summaryText: "",
+        emptyVisible: false,
+        emptyText: "",
+        items: []
+      });
+      view.setModel(model, "auditBulk");
     }
 
     return model;
@@ -101,15 +130,166 @@ sap.ui.define([
     });
   }
 
+  function escapeODataString(value) {
+    return String(value || "").replace(/'/g, "''");
+  }
+
+  function valuesFromObject(object) {
+    var values = {};
+
+    AUDIT_PROPERTIES.forEach(function (propertyName) {
+      values[propertyName] = object && object[propertyName];
+    });
+
+    if (object && object.ItemNo !== undefined) {
+      values.ItemNo = object.ItemNo;
+    }
+
+    if (object && object.ItemNumber !== undefined) {
+      values.ItemNumber = object.ItemNumber;
+    }
+
+    if (object && object.OldData !== undefined && values.OldValue === undefined) {
+      values.OldValue = object.OldData;
+    }
+
+    if (object && object.NewData !== undefined && values.NewValue === undefined) {
+      values.NewValue = object.NewData;
+    }
+
+    return values;
+  }
+
+  function requestContextsFromListBinding(binding) {
+    if (!binding || !binding.requestContexts) {
+      return Promise.resolve([]);
+    }
+
+    return binding.requestContexts(0, 200).then(function (contexts) {
+      return (contexts || []).map(function (context) {
+        return context && context.getObject ? context.getObject() : {};
+      });
+    });
+  }
+
+  function requestNavigationItems(context) {
+    var model = context && context.getModel && context.getModel();
+    var path = context && context.getPath && context.getPath();
+    var binding;
+
+    if (!model || !path || !model.bindList) {
+      return Promise.resolve([]);
+    }
+
+    try {
+      binding = model.bindList(path + "/_Items", null, null, null, {
+        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType"
+      });
+    } catch (error) {
+      return Promise.resolve([]);
+    }
+
+    return requestContextsFromListBinding(binding).catch(function () {
+      return [];
+    });
+  }
+
+  function requestAuditItemEntity(context, auditId) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+
+    if (!model || !model.bindList || !auditId) {
+      return Promise.resolve([]);
+    }
+
+    try {
+      binding = model.bindList("/AuditItem", null, null, null, {
+        $filter: "AuditId eq '" + escapeODataString(auditId) + "'",
+        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType"
+      });
+    } catch (error) {
+      return Promise.resolve([]);
+    }
+
+    return requestContextsFromListBinding(binding).catch(function () {
+      return [];
+    });
+  }
+
+  function isSameSecond(left, right, toleranceSeconds) {
+    var leftDate = new Date(left);
+    var rightDate = new Date(right);
+
+    if (isNaN(leftDate.getTime()) || isNaN(rightDate.getTime())) {
+      return false;
+    }
+
+    return Math.abs(leftDate.getTime() - rightDate.getTime()) <= toleranceSeconds * 1000;
+  }
+
+  function collectLoadedAuditRows(source, parentValues) {
+    var control = source;
+    var seen = {};
+    var rows = [];
+    var binding;
+    var contexts;
+
+    while (control && control.getParent) {
+      binding = control.getBinding && (control.getBinding("items") || control.getBinding("rows"));
+
+      if (binding && binding.getCurrentContexts) {
+        contexts = binding.getCurrentContexts() || [];
+        contexts.forEach(function (rowContext) {
+          var object = rowContext && rowContext.getObject && rowContext.getObject();
+          var isCandidate;
+
+          if (!object || object.RecordKey === "BULK") {
+            return;
+          }
+
+          isCandidate = object.TableName === parentValues.TableName ||
+            object.ChangedBy === parentValues.ChangedBy ||
+            (object.AuditId && parentValues.AuditId && String(object.AuditId).indexOf(String(parentValues.AuditId)) === 0) ||
+            isSameSecond(object.ChangedAt, parentValues.ChangedAt, 5);
+
+          if (isCandidate && !seen[object.AuditId + "|" + object.RecordKey + "|" + object.FieldName]) {
+            seen[object.AuditId + "|" + object.RecordKey + "|" + object.FieldName] = true;
+            rows.push(object);
+          }
+        });
+      }
+
+      control = control.getParent();
+    }
+
+    return rows;
+  }
+
+  function requestBulkItems(context, source, parentValues) {
+    return requestNavigationItems(context).then(function (items) {
+      if (items.length) {
+        return items;
+      }
+
+      return requestAuditItemEntity(context, parentValues.AuditId);
+    }).then(function (items) {
+      if (items.length) {
+        return items;
+      }
+
+      return collectLoadedAuditRows(source, parentValues);
+    });
+  }
+
   function buildInfoRows(values) {
     return [
-      { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId) },
-      { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName) },
-      { label: "Record Key", value: AuditFormatter.formatRecordKeyText(values.RecordKey) },
-      { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName) },
+      { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
+      { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
+      { label: "Record Key", value: AuditFormatter.formatRecordKeyText(values.RecordKey), state: "None" },
+      { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName), state: "None" },
       { label: "Action", value: AuditFormatter.formatActionText(values.ActionType), state: AuditFormatter.formatActionState(values.ActionType), isStatus: true },
-      { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy) },
-      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt) }
+      { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
+      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" }
     ];
   }
 
@@ -135,9 +315,40 @@ sap.ui.define([
       newColumnHeader: actionText === "Create" ? "New Value" : "After",
       rollbackText: AuditFormatter.formatRollbackText(operationControl),
       rollbackState: AuditFormatter.formatRollbackState(operationControl),
+      rollbackAvailable: AuditFormatter.isRollbackAvailable(operationControl),
+      bulkVisible: AuditFormatter.isBulkRecord(values),
+      bulkText: AuditFormatter.formatBulkRecordKeyText(values.RecordKey, values.OldValue, values.NewValue),
       rawRecordKey: AuditFormatter.formatAuditValue(values.RecordKey),
       rawOldValue: AuditFormatter.formatAuditValue(values.OldValue),
       rawNewValue: AuditFormatter.formatAuditValue(values.NewValue)
+    };
+  }
+
+  function buildBulkDialogData(parentValues, rawItems) {
+    var items = (rawItems || []).map(function (item, index) {
+      var viewModel = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), index);
+
+      viewModel.recordKeyVisible = viewModel.recordKeyRows.length > 0;
+      return viewModel;
+    });
+    var actionText = AuditFormatter.getBulkActionText(parentValues.ActionType, rawItems || []);
+    var countText = AuditFormatter.getBulkCountText(parentValues.OldValue, parentValues.NewValue);
+    var emptyText = "No child audit items were found for this bulk summary. Summary: " +
+      AuditFormatter.formatBulkRecordKeyText(parentValues.RecordKey, parentValues.OldValue, parentValues.NewValue) +
+      ". Old Value: " + AuditFormatter.formatAuditValue(parentValues.OldValue) +
+      ". New Value: " + AuditFormatter.formatAuditValue(parentValues.NewValue) + ".";
+
+    return {
+      title: "Bulk Audit Items — " + items.length,
+      auditId: AuditFormatter.formatAuditValue(parentValues.AuditId),
+      changedBy: AuditFormatter.formatAuditValue(parentValues.ChangedBy),
+      changedAt: AuditFormatter.formatTimestamp(parentValues.ChangedAt),
+      actionText: actionText,
+      actionState: actionText === "Bulk" ? "Information" : AuditFormatter.formatActionState(actionText),
+      summaryText: countText,
+      emptyVisible: items.length === 0,
+      emptyText: emptyText,
+      items: items
     };
   }
 
@@ -153,6 +364,114 @@ sap.ui.define([
     });
   }
 
+  function refreshAuditData(context) {
+    var model = context && context.getModel && context.getModel();
+    var binding = context && context.getBinding && context.getBinding();
+
+    if (binding && binding.refresh) {
+      binding.refresh();
+    }
+
+    if (model && model.refresh) {
+      model.refresh();
+    }
+  }
+
+  function executeRollback(context) {
+    var model = context && context.getModel && context.getModel();
+    var actionPath = context && context.getPath && context.getPath();
+    var actionBinding;
+
+    if (!model || !model.bindContext || !actionPath) {
+      return Promise.reject(new Error("Rollback action cannot be prepared for this audit record."));
+    }
+
+    actionBinding = model.bindContext(actionPath + "/com.sap.gateway.srvd.zsd_tbl_config.v0001.rollback(...)");
+    return actionBinding.execute().then(function () {
+      refreshAuditData(context);
+    });
+  }
+
+  function openBulkAuditItems(extension, context, source) {
+    var view = extension.base && extension.base.getView && extension.base.getView();
+    var model = ensureBulkModel(view);
+
+    if (!context || !view || !model) {
+      return;
+    }
+
+    requestAuditValues(context).then(function (parentValues) {
+      return requestBulkItems(context, source, parentValues).then(function (items) {
+        model.setData(buildBulkDialogData(parentValues, items));
+
+        return extension._getBulkAuditItemsDialog(view).then(function (dialog) {
+          dialog.open();
+        });
+      });
+    });
+  }
+
+  function findAuditFilterBar(view) {
+    var controls;
+    var viewId = view && view.getId && view.getId();
+
+    if (!view || !view.findAggregatedObjects) {
+      return null;
+    }
+
+    controls = view.findAggregatedObjects(true, function (control) {
+      var id = control && control.getId && control.getId();
+      var hasSearchApi = control && (control.triggerSearch || control.search);
+
+      return !!hasSearchApi && /FilterBar/i.test(id || "");
+    });
+
+    if (controls && controls[0]) {
+      return controls[0];
+    }
+
+    if (Element && Element.registry && Element.registry.filter) {
+      controls = Element.registry.filter(function (control) {
+        var id = control && control.getId && control.getId();
+        var hasSearchApi = control && (control.triggerSearch || control.search);
+
+        return !!hasSearchApi && /FilterBar/i.test(id || "") && (!viewId || id.indexOf(viewId) === 0);
+      });
+    }
+
+    return controls && controls[0] ? controls[0] : null;
+  }
+
+  function triggerInitialListLoad(extension, attemptsLeft) {
+    var view = extension.base && extension.base.getView && extension.base.getView();
+    var filterBar = findAuditFilterBar(view);
+
+    if (extension._auditInitialSearchTriggered) {
+      return;
+    }
+
+    if (filterBar) {
+      extension._auditInitialSearchTriggered = true;
+
+      if (filterBar.triggerSearch) {
+        filterBar.triggerSearch();
+        return;
+      }
+
+      if (filterBar.search) {
+        filterBar.search();
+      }
+
+      return;
+    }
+
+    if (attemptsLeft > 0) {
+      setTimeout(function () {
+        triggerInitialListLoad(extension, attemptsLeft - 1);
+      }, 250);
+    }
+  }
+
   var AuditLogExtension = ControllerExtension.extend("ztbl.audit.ui.ext.controller.AuditLog", {
     override: {
       onInit: function () {
@@ -161,6 +480,7 @@ sap.ui.define([
         if (view) {
           ensureAuditModel(view);
           ODataErrorHandler.attachGlobalHandlers("audit");
+          triggerInitialListLoad(this, 12);
 
           if (view.attachModelContextChange && !this._auditContextHandlerAttached) {
             this._auditContextHandlerAttached = true;
@@ -186,12 +506,123 @@ sap.ui.define([
     formatActionState: AuditFormatter.formatActionState,
     formatRecordKeyText: AuditFormatter.formatRecordKeyText,
     formatAuditValue: AuditFormatter.formatAuditValue,
-    formatTimestamp: AuditFormatter.formatTimestamp
+    formatTimestamp: AuditFormatter.formatTimestamp,
+    isRollbackAvailable: AuditFormatter.isRollbackAvailable,
+
+    onBulkAuditItemsPress: function (event) {
+      var source = event && event.getSource && event.getSource();
+      var context = source && source.getBindingContext && source.getBindingContext();
+
+      openBulkAuditItems(this, context, source);
+    },
+
+    onBulkAuditItemsFromDetailPress: function (event) {
+      var view = this.base && this.base.getView && this.base.getView();
+      var source = event && event.getSource && event.getSource();
+
+      openBulkAuditItems(this, getObjectPageContext(view), source);
+    },
+
+    onRollbackPress: function (event) {
+      var source = event && event.getSource && event.getSource();
+      var context = source && source.getBindingContext && source.getBindingContext() ||
+        getObjectPageContext(this.base && this.base.getView && this.base.getView());
+      var auditId = getContextValue(context, "AuditId");
+      var tableName = getContextValue(context, "TableName");
+
+      if (!context) {
+        MessageBox.error("No audit record is selected for rollback.");
+        return;
+      }
+
+      MessageBox.confirm("Rollback audit record " + AuditFormatter.formatAuditValue(auditId) + " for " + AuditFormatter.formatAuditValue(tableName) + "?", {
+        title: "Confirm Rollback",
+        actions: [MessageBox.Action.ROLLBACK || "Rollback", MessageBox.Action.CANCEL],
+        emphasizedAction: MessageBox.Action.ROLLBACK || "Rollback",
+        onClose: function (action) {
+          if (action !== (MessageBox.Action.ROLLBACK || "Rollback")) {
+            return;
+          }
+
+          executeRollback(context).then(function () {
+            MessageToast.show("Rollback completed.");
+          }).catch(function (error) {
+            ODataErrorHandler.showBackendError(error, "Rollback failed.");
+          });
+        }
+      });
+    },
+
+    onBulkAuditDialogClose: function () {
+      if (this._bulkAuditDialog) {
+        this._bulkAuditDialog.close();
+      }
+    },
+
+    onBulkAuditDialogAfterOpen: function () {
+      var that = this;
+
+      if (this._bulkAuditOutsideClickHandler) {
+        return;
+      }
+
+      this._bulkAuditOutsideClickHandler = function (event) {
+        var dialog = that._bulkAuditDialog;
+        var domRef = dialog && dialog.getDomRef && dialog.getDomRef();
+
+        if (!dialog || !domRef || domRef.contains(event.target)) {
+          return;
+        }
+
+        dialog.close();
+      };
+
+      document.addEventListener("mousedown", this._bulkAuditOutsideClickHandler, true);
+    },
+
+    onBulkAuditDialogAfterClose: function () {
+      if (this._bulkAuditOutsideClickHandler) {
+        document.removeEventListener("mousedown", this._bulkAuditOutsideClickHandler, true);
+        this._bulkAuditOutsideClickHandler = null;
+      }
+    },
+
+    _getBulkAuditItemsDialog: function (view) {
+      var that = this;
+
+      if (!this._bulkAuditDialogPromise) {
+        this._bulkAuditDialogPromise = Fragment.load({
+          id: view.getId(),
+          name: "ztbl.audit.ui.ext.fragment.BulkAuditItemsDialog",
+          controller: this
+        }).then(function (dialog) {
+          var closeButton = dialog.getBeginButton && dialog.getBeginButton();
+
+          view.addDependent(dialog);
+          dialog.attachAfterOpen(that.onBulkAuditDialogAfterOpen, that);
+          dialog.attachAfterClose(that.onBulkAuditDialogAfterClose, that);
+
+          if (closeButton && closeButton.attachPress && !closeButton.data("auditBulkCloseAttached")) {
+            closeButton.data("auditBulkCloseAttached", true);
+            closeButton.attachPress(that.onBulkAuditDialogClose, that);
+          }
+
+          that._bulkAuditDialog = dialog;
+          return dialog;
+        });
+      }
+
+      return this._bulkAuditDialogPromise;
+    }
   });
 
   AuditLogExtension._test = {
     buildAuditDetail: buildAuditDetail,
-    buildInfoRows: buildInfoRows
+    buildInfoRows: buildInfoRows,
+    buildBulkDialogData: buildBulkDialogData,
+    valuesFromObject: valuesFromObject,
+    collectLoadedAuditRows: collectLoadedAuditRows,
+    executeRollback: executeRollback
   };
 
   return AuditLogExtension;
