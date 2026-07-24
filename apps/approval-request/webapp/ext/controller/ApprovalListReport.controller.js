@@ -172,6 +172,27 @@ sap.ui.define([
     return titleCase(lastPart.replace(/_/g, " "));
   }
 
+  function parseLooseFlatJsonObject(value) {
+    var text = String(value || "").trim();
+    var parsed = {};
+    var pairPattern = /"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*("(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)/g;
+    var match;
+
+    if (!text || text.charAt(0) !== "{") {
+      return {};
+    }
+
+    while ((match = pairPattern.exec(text)) !== null) {
+      try {
+        parsed[JSON.parse("\"" + match[1] + "\"")] = JSON.parse(match[2]);
+      } catch (error) {
+        // Ignore malformed pairs; this fallback is only for complete pairs in truncated JSON.
+      }
+    }
+
+    return parsed;
+  }
+
   function safeParseObject(value) {
     var parsed;
 
@@ -182,7 +203,7 @@ sap.ui.define([
     try {
       parsed = typeof value === "string" ? JSON.parse(value) : value;
     } catch (error) {
-      return {};
+      return parseLooseFlatJsonObject(value);
     }
 
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {

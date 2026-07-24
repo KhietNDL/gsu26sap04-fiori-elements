@@ -191,6 +191,7 @@ assertPlainObject(api.safeParseObject(null), {}, "null JSON returns empty object
 assertPlainObject(api.safeParseObject("{bad"), {}, "malformed JSON returns empty object");
 assertPlainObject(api.safeParseObject("[1,2]"), {}, "arrays are rejected");
 assertPlainObject(api.safeParseObject("{\"A\":1}"), { A: 1 }, "plain object is accepted");
+assertPlainObject(api.safeParseObject("{\"A\":\"old\",\"COUNT\":0,\"BROKEN\":\"unterminated"), { A: "old", COUNT: 0 }, "truncated JSON preserves complete flat fields");
 
 assert.strictEqual(api.formatApprovalValue("QUANTITY", 0), "0", "numeric zero is preserved");
 assert.strictEqual(api.formatApprovalValue("DESCRIPTION", ""), "—", "empty string becomes dash");
@@ -212,9 +213,31 @@ const updateRows = api.buildApprovalDiff(
   "{\"ID\":\"1\"}"
 );
 assertJsonEqual(updateRows.map((row) => row.field), ["Name", "Extra"], "update shows changed and new-only fields only");
+assert.strictEqual(updateRows[0].oldValue, "Old", "update shows old value from OldData JSON");
+assert.strictEqual(updateRows[0].newValue, "New", "update shows new value from NewData JSON");
+
+const headerUpdateRows = api.buildApprovalDiff(
+  "U",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\",\"PRODUCT_CATEGORY\":\"PC06\",\"DESCRIPTION\":\"ABC\",\"STATUS\":\"I\",\"VALID_FROM\":\"2026-06-20\",\"VALID_TO\":\"2026-06-20\",\"COMPANY_CODE\":\"CCCL\",\"PLANT\":\"BD17\"}",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\",\"PRODUCT_CATEGORY\":\"PC06\",\"DESCRIPTION\":\"ABCDEF\",\"STATUS\":\"I\",\"VALID_FROM\":\"2026-06-20\",\"VALID_TO\":\"2026-06-20\",\"COMPANY_CODE\":\"CCCL\",\"PLANT\":\"BD17\"}",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\"}"
+);
+assertJsonEqual(headerUpdateRows.map((row) => row.field), ["Description"], "header update shows changed business fields only");
+assert.strictEqual(headerUpdateRows[0].oldValue, "ABC", "header update pulls old description from OldData JSON");
+assert.strictEqual(headerUpdateRows[0].newValue, "ABCDEF", "header update pulls new description from NewData JSON");
+
+const truncatedOldHeaderRows = api.buildApprovalDiff(
+  "U",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\",\"DESCRIPTION\":\"ABC\",\"CREATED_AT\":\"2026-06-20 12",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\",\"DESCRIPTION\":\"ABCDEF\",\"CREATED_AT\":\"2026-06-20 12:00:00\"}",
+  "{\"ENTITY_ID\":\"8B95F36A4F271FE19B946B389BE4FDB7\"}"
+);
+assertJsonEqual(truncatedOldHeaderRows.map((row) => row.field), ["Description"], "truncated old JSON still shows changed business fields");
+assert.strictEqual(truncatedOldHeaderRows[0].oldValue, "ABC", "truncated old JSON pulls complete old field values");
 
 const deleteRows = api.buildApprovalDiff("D", "{\"ID\":\"1\",\"NAME\":\"Old\"}", "", "{\"ID\":\"1\"}");
 assertJsonEqual(deleteRows.map((row) => row.field), ["Id", "Name"], "delete shows old record fields");
+assert.strictEqual(deleteRows[1].oldValue, "Old", "delete shows previous value");
 assert.strictEqual(deleteRows[0].newValue, "—", "delete has no after value");
 
 const infoRows = api.buildRequestInfoRows({
