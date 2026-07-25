@@ -182,10 +182,11 @@ Use this table to list every custom-designed screen affected by authorization se
 
 ## Combined Permission Scenarios
 
-Use this section to test realistic permission combinations.
+Use this section to test realistic permission combinations. Permission flags apply to active users with `RoleType = USER`; active admins bypass these table permission flags.
 
 | Scenario ID | CanView | CanCreate | CanUpdate | CanDelete | CanUpload | Expected User Experience | Pass/Fail | Notes |
 |---|---|---|---|---|---|---|---|---|
+| ADMIN-ACTIVE | blank | blank | blank | blank | blank | Admin can view and perform all actions |  | `RoleType = ADMIN` and `ActiveFlag = X` ignores table permissions |
 | FULL-ACCESS | X | X | X | X | X | User can view and perform all actions |  |  |
 | READ-ONLY | X | blank | blank | blank | blank | User can view data only; all actions disabled/hidden with explanation |  |  |
 | NO-VIEW | blank | X | X | X | X | Access Denied; no action buttons should be usable |  | View denial overrides other permissions |
@@ -222,16 +223,18 @@ Use this table to summarize test coverage and defects.
 
 ## Recommended Implementation Rules For Custom Design Apps
 
-1. Always check `CanView` before rendering sensitive data.
-2. If `CanView` is denied, show Access Denied instead of an empty table.
-3. Disable or hide Create when `CanCreate` is denied.
-4. Disable Edit or render read-only fields when `CanUpdate` or `Update_mc` is denied.
-5. Disable Delete when `CanDelete` or `Delete_mc` is denied.
-6. Disable Upload when `CanUpload` is denied.
-7. Add tooltips or helper messages for disabled actions.
-8. Do not expose raw backend authorization errors to end users.
-9. Treat direct URL/deep-link access as a separate test case.
-10. Refresh permission state after permission changes where technically possible.
+1. Check `RoleType` and `ActiveFlag` before applying table permission flags.
+2. If `RoleType = ADMIN` and `ActiveFlag = X`, allow full access and ignore `TablePermissions`.
+3. For active `USER`, always check `CanView` before rendering sensitive data.
+4. For active `USER`, if `CanView` is denied, show Access Denied instead of an empty table.
+5. For active `USER`, disable or hide Create when `CanCreate` is denied.
+6. For active `USER`, disable Edit or render read-only fields when `CanUpdate` or `Update_mc` is denied.
+7. For active `USER`, disable Delete when `CanDelete` or `Delete_mc` is denied.
+8. For active `USER`, disable Upload when `CanUpload` is denied.
+9. Add tooltips or helper messages for disabled actions.
+10. Do not expose raw backend authorization errors to end users.
+11. Treat direct URL/deep-link access as a separate test case.
+12. Refresh permission state after permission changes where technically possible.
 
 ## Manual Review Checklist
 

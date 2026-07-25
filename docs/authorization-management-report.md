@@ -304,7 +304,7 @@ Fields:
 - Delete
 - Upload
 
-The consistent structure helps users understand that User Permissions and Table Permissions use the same permission model at different levels.
+The consistent structure helps users understand that User Permissions and Table Permissions use the same permission model at different levels. Table Permissions define table-level defaults for active users with `RoleType = USER`; active admins keep full access and are not restricted by these flags.
 
 ## 12. Permission UX
 

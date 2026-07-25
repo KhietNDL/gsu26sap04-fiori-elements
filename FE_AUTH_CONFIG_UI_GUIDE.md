@@ -15,6 +15,8 @@ Backend đã bổ sung:
   - Field Config
 - User thường vẫn được đọc Table Config và Field Config để ứng dụng lấy metadata.
 - User inactive không được đọc config.
+- `TablePermissions` chỉ áp dụng cho `USER`.
+- `ADMIN` có `ActiveFlag = X` luôn có full quyền, không bị giới hạn bởi `TablePermissions`.
 - Chỉ ADMIN được đọc và chỉnh sửa:
   - User Master
   - User Permissions
@@ -108,6 +110,8 @@ const isAdmin =
   user?.ActiveFlag === "X";
 ```
 
+Nếu `isAdmin === true`, FE phải coi user có full quyền cho các thao tác nghiệp vụ và config. Không đọc `TablePermissions` để disable hoặc hide action của admin active.
+
 Với user thường, backend sẽ không trả dữ liệu từ entity admin. Khi response rỗng:
 
 ```javascript
@@ -171,6 +175,14 @@ DELETE {TABLE_CONFIG_BASE_URL}/TableConfig(...)
 
 FE phải xử lý response unauthorized và refresh lại dữ liệu nếu request thất bại.
 
+Đối với các app nghiệp vụ, rule áp quyền theo table là:
+
+```text
+ADMIN active -> full quyền
+USER active  -> theo UserPermissions/TablePermissions
+Inactive     -> không có quyền
+```
+
 ## 8. Ma trận kiểm thử
 
 | Trường hợp | ADMIN active | USER active | User inactive |
@@ -181,8 +193,8 @@ FE phải xử lý response unauthorized và refresh lại dữ liệu nếu req
 | Tạo/sửa/xóa Field Config | Có | Không | Không |
 | Xem User Permissions | Có | Không | Không |
 | Xem Approval Inbox | Có | Không | Không |
-| CRUD dữ liệu nghiệp vụ | Full quyền | Theo User Permissions | Không |
-| Upload Excel | Full quyền | Theo `CanUpload` | Không |
+| CRUD dữ liệu nghiệp vụ | Full quyền, bỏ qua `TablePermissions` | Theo `UserPermissions`/`TablePermissions` | Không |
+| Upload Excel | Full quyền, bỏ qua `CanUpload` table perm | Theo `CanUpload` | Không |
 | Rollback/Force Unlock | Có | Không | Không |
 
 ## 9. Sau khi backend được activate

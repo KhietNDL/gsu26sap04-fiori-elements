@@ -46,6 +46,16 @@ User fields:
 
 FE nên dùng `AuthUsers` để biết user hiện tại là `ADMIN` hay `USER`.
 
+Rule ưu tiên:
+
+```text
+ADMIN + ActiveFlag = X -> full quyền
+USER  + ActiveFlag = X -> quyền theo UserPermissions và TablePermissions
+ActiveFlag rỗng       -> không có quyền
+```
+
+`TablePermissions` chỉ có tác dụng với `USER`. Không dùng `TablePermissions` để giới hạn `ADMIN` đang active.
+
 Ví dụ đọc user hiện tại:
 
 ```http
@@ -86,13 +96,15 @@ CanUpload -> enable Excel upload/import
 
 Nếu field rỗng hoặc không có row permission thì coi như không có quyền.
 
+Rule này chỉ áp dụng cho user có `RoleType = USER`. Nếu user hiện tại là `ADMIN` và `ActiveFlag = X`, FE phải coi như có đủ `CanView`, `CanCreate`, `CanUpdate`, `CanDelete`, `CanUpload`.
+
 ### Table permission default
 
 ```http
 GET {AUTH_BASE}/TablePermissions('Z251_SCHEDULE')
 ```
 
-`TablePermissions` là policy/default theo table. FE có thể dùng để render config/admin screen, nhưng quyền thực thi cuối cùng vẫn do BE check.
+`TablePermissions` là policy/default theo table cho `USER`. FE có thể dùng để render config/admin screen hoặc tính quyền mặc định cho user thường, nhưng không được dùng nó để chặn `ADMIN` đang active. Quyền thực thi cuối cùng vẫn do BE check.
 
 ## 3. CRUD action payload rule
 
