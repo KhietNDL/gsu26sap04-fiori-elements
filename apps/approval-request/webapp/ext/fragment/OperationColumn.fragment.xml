@@ -3,6 +3,6 @@
   xmlns:core="sap.ui.core">
   <ObjectStatus
     class="approvalListCellText"
-    text="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
-    state="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"/>
+    text="{= ${RecordKey} === 'BULK' ? 'BULK' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
+    state="{= ${RecordKey} === 'BULK' ? 'None' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"/>
 </core:FragmentDefinition>

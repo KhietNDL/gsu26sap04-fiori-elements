@@ -25,6 +25,16 @@ function loadController() {
       if (action === "D" || action === "DELETE") return "Delete";
       return value || "-";
     },
+    formatRequestActionText: function (actionType, recordKey, recordKeyText) {
+      if ([recordKey, recordKeyText].some((value) => String(value || "").trim().toUpperCase() === "BULK")) {
+        return "BULK";
+      }
+
+      return this.formatActionText(actionType);
+    },
+    formatRequestActionState: function () {
+      return "None";
+    },
     formatActionState: function () {
       return "None";
     },
@@ -262,6 +272,18 @@ assertJsonEqual(infoRows.map((row) => row.label), [
 assert.ok(/07:00:00/.test(infoRows[5].value), "submitted UTC time is converted to Vietnam time");
 assert.ok(/GMT\+7/.test(infoRows[5].value), "submitted time shows Vietnam timezone");
 assert.ok(/17:58:52/.test(api.formatVietnamTimestamp("2026-07-14T10:58:52.098366Z")), "microsecond UTC timestamp is converted to Vietnam time");
+
+const bulkInfoRows = api.buildRequestInfoRows({
+  AprvlId: "REQ-BULK",
+  TableName: "Z251_SCHEDULE",
+  ActionType: "C",
+  RecordKey: "BULK",
+  Status: "PENDING",
+  SubmittedBy: "DEV-253",
+  SubmittedAt: "2026-07-25T08:22:50Z"
+});
+assert.strictEqual(bulkInfoRows[2].value, "BULK", "bulk request operation does not show first item action");
+assert.strictEqual(bulkInfoRows[2].isBulkOperation, true, "bulk request operation is flagged for purple styling");
 
 const singleApprovalItems = createControl("Approval Items");
 const singleExcelItems = createControl("Excel Approval Items");

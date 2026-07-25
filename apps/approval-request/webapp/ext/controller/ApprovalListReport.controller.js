@@ -530,10 +530,16 @@ sap.ui.define([
   }
 
   function buildRequestInfoRows(values) {
+    var actionText = ApprovalFormatter.formatRequestActionText ?
+      ApprovalFormatter.formatRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText) :
+      ApprovalFormatter.formatActionText(values.ActionType);
+    var actionState = ApprovalFormatter.formatRequestActionState ?
+      ApprovalFormatter.formatRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText) :
+      ApprovalFormatter.formatActionState(values.ActionType);
     var rows = [
       { label: "Approval ID", value: values.AprvlId },
       { label: "Table Name", value: values.TableName },
-      { label: "Operation", value: ApprovalFormatter.formatActionText(values.ActionType), state: ApprovalFormatter.formatActionState(values.ActionType) },
+      { label: "Operation", value: actionText, state: actionState, isBulkOperation: actionText === "BULK" },
       { label: "Status", value: ApprovalFormatter.formatStatusText(values.Status), state: ApprovalFormatter.formatStatusState(values.Status) },
       { label: "Submitted By", value: values.SubmittedBy },
       { label: "Submitted At", value: formatVietnamTimestamp(values.SubmittedAt) }
@@ -554,7 +560,8 @@ sap.ui.define([
         label: row.label,
         value: valueOrDash(row.value),
         state: row.state || "None",
-        isStatus: !!row.state
+        isStatus: !!row.state,
+        isBulkOperation: !!row.isBulkOperation
       };
     });
   }
@@ -601,11 +608,14 @@ sap.ui.define([
     return (knownValues ? Promise.resolve(knownValues) : requestContextValues(context)).then(function (values) {
       var currentContext = getObjectPageContext(view);
       var currentContextPath = currentContext && currentContext.getPath && currentContext.getPath();
-      var actionText = ApprovalFormatter.formatActionText(values.ActionType);
+      var actionText = ApprovalFormatter.formatRequestActionText ?
+        ApprovalFormatter.formatRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText) :
+        ApprovalFormatter.formatActionText(values.ActionType);
+      var changeActionText = ApprovalFormatter.formatActionText(values.ActionType);
       var recordKeyRows = getJsonRows(values.RecordKey);
       var changeRows = buildApprovalDiff(values.ActionType, values.OldData, values.NewData, values.RecordKey);
-      var showOldColumn = actionText === "Update" || actionText === "Delete";
-      var showNewColumn = actionText === "Create" || actionText === "Update";
+      var showOldColumn = changeActionText === "Update" || changeActionText === "Delete";
+      var showNewColumn = changeActionText === "Create" || changeActionText === "Update";
       var comment = values.AprvlComment || "-";
       var bulkVisible = isBulkValues(values.RecordKey);
       var sameApproval = model.getProperty("/approvalId") === values.AprvlId;
@@ -621,7 +631,9 @@ sap.ui.define([
       model.setData({
         approvalId: values.AprvlId || "-",
         operationText: actionText,
-        operationState: ApprovalFormatter.formatActionState(values.ActionType),
+        operationState: ApprovalFormatter.formatRequestActionState ?
+          ApprovalFormatter.formatRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText) :
+          ApprovalFormatter.formatActionState(values.ActionType),
         statusText: ApprovalFormatter.formatStatusText(values.Status),
         statusState: ApprovalFormatter.formatStatusState(values.Status),
         tableName: values.TableName || "-",
@@ -634,13 +646,13 @@ sap.ui.define([
         approvedAt: formatVietnamTimestamp(values.ApprovedAt),
         comment: comment,
         changeRows: changeRows,
-        changeTitle: getChangeTitle(actionText),
-        changeColumnCount: actionText === "Update" ? 3 : 2,
+        changeTitle: getChangeTitle(changeActionText),
+        changeColumnCount: changeActionText === "Update" ? 3 : 2,
         showOldColumn: showOldColumn,
         showNewColumn: showNewColumn,
-        oldColumnHeader: actionText === "Delete" ? "Previous Value" : "Old Value",
+        oldColumnHeader: changeActionText === "Delete" ? "Previous Value" : "Old Value",
         newColumnHeader: "New Value",
-        changeMessage: getChangeMessage(actionText, values.TableName, changeRows.length, false),
+        changeMessage: getChangeMessage(changeActionText, values.TableName, changeRows.length, false),
         technicalRecordKey: formatTechnicalJson(values.RecordKey),
         technicalOldData: formatRawJson(values.OldData),
         technicalNewData: formatRawJson(values.NewData),
@@ -1134,13 +1146,16 @@ sap.ui.define([
     updateCellClasses(cell, statusClasses, activeClassName);
   }
 
-  function syncActionCellClass(cell, actionType) {
-    var actionText = ApprovalFormatter.formatActionText(actionType);
+  function syncActionCellClass(cell, actionType, recordKey) {
+    var actionText = ApprovalFormatter.formatRequestActionText ?
+      ApprovalFormatter.formatRequestActionText(actionType, recordKey) :
+      ApprovalFormatter.formatActionText(actionType);
     var normalizedAction = String(actionText || "").trim().toLowerCase();
     var actionClasses = [
       "approvalActionText--create",
       "approvalActionText--update",
-      "approvalActionText--delete"
+      "approvalActionText--delete",
+      "approvalActionText--bulk"
     ];
     var activeClassName = "";
 
@@ -1150,6 +1165,8 @@ sap.ui.define([
       activeClassName = "approvalActionText--update";
     } else if (normalizedAction === "delete") {
       activeClassName = "approvalActionText--delete";
+    } else if (normalizedAction === "bulk") {
+      activeClassName = "approvalActionText--bulk";
     }
 
     updateCellClasses(cell, actionClasses, activeClassName);
@@ -1190,7 +1207,7 @@ sap.ui.define([
       var status = getContextValue(context, "Status");
 
       if (indexes.operation !== undefined) {
-        syncActionCellClass(cells[indexes.operation], actionType);
+        syncActionCellClass(cells[indexes.operation], actionType, recordKey);
       }
 
       if (indexes.recordKey !== undefined && cells[indexes.recordKey]) {

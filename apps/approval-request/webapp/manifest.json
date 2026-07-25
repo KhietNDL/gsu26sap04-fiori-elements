@@ -172,7 +172,8 @@
                         "anchor": "DataField::TableName"
                       },
                       "properties": [
-                        "ActionType"
+                        "ActionType",
+                        "RecordKey"
                       ]
                     },
                     "StatusColumn": {

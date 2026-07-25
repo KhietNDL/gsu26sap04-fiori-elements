@@ -22,11 +22,16 @@
             text="{approvalDetail>label}"
             class="approvalInfoLabel"/>
           <ObjectStatus
-            visible="{approvalDetail>isStatus}"
+            visible="{= ${approvalDetail>isStatus} &amp;&amp; !${approvalDetail>isBulkOperation} }"
             text="{approvalDetail>value}"
             state="{approvalDetail>state}"/>
           <Text
-            visible="{= !${approvalDetail>isStatus} }"
+            visible="{approvalDetail>isBulkOperation}"
+            text="{approvalDetail>value}"
+            wrapping="true"
+            class="approvalActionText--bulk"/>
+          <Text
+            visible="{= !${approvalDetail>isStatus} &amp;&amp; !${approvalDetail>isBulkOperation} }"
             text="{approvalDetail>value}"
             wrapping="true"/>
         </HBox>
