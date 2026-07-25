@@ -61,17 +61,6 @@
   color: #bb0000;
 }
 
-.sapMListTblCell .approvalActionText--bulk,
-.sapMListTblCell.approvalActionText--bulk,
-.sapMListTblCell .approvalActionText--bulk .sapMText,
-.sapMListTblCell .approvalActionText--bulk .sapMObjStatusText,
-.sapMListTblCell.approvalActionText--bulk .sapMText,
-.sapMListTblCell.approvalActionText--bulk .sapMObjStatusText,
-.approvalOverview .approvalActionText--bulk,
-.approvalOverview .approvalActionText--bulk .sapMText {
-  color: #8a3ffc !important;
-}
-
 .sapMListTblCell .approvalStatusText--approved,
 .sapMListTblCell .approvalStatusText--approved .sapMText,
 .sapMListTblCell .approvalStatusText--approved .sapMObjStatusText {

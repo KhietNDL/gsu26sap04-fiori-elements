@@ -278,12 +278,17 @@ const bulkInfoRows = api.buildRequestInfoRows({
   TableName: "Z251_SCHEDULE",
   ActionType: "C",
   RecordKey: "BULK",
+  ItemCount: 1,
   Status: "PENDING",
   SubmittedBy: "DEV-253",
   SubmittedAt: "2026-07-25T08:22:50Z"
 });
-assert.strictEqual(bulkInfoRows[2].value, "BULK", "bulk request operation does not show first item action");
-assert.strictEqual(bulkInfoRows[2].isBulkOperation, true, "bulk request operation is flagged for purple styling");
+assert.strictEqual(bulkInfoRows[2].value, "Create", "bulk marker with one item keeps the real action");
+assert.strictEqual(bulkInfoRows[2].isBulkOperation, false, "single-action bulk marker is not flagged as bulk operation");
+assert.strictEqual(api.getRequestActionText("U", "BULK"), "BULK", "unknown bulk item count shows bulk in the list first");
+assert.strictEqual(api.getRequestActionText("U", "BULK", "", 1), "Update", "one bulk item shows its real action");
+assert.strictEqual(api.getRequestActionText("D", "BULK", "", 2), "BULK", "two or more bulk items show the bulk label");
+assert.strictEqual(api.getRequestActionState("D", "BULK", "", 2), "None", "bulk label is neutral instead of forcing a highlight color");
 
 const singleApprovalItems = createControl("Approval Items");
 const singleExcelItems = createControl("Excel Approval Items");

@@ -530,12 +530,8 @@ sap.ui.define([
   }
 
   function buildRequestInfoRows(values) {
-    var actionText = ApprovalFormatter.formatRequestActionText ?
-      ApprovalFormatter.formatRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText) :
-      ApprovalFormatter.formatActionText(values.ActionType);
-    var actionState = ApprovalFormatter.formatRequestActionState ?
-      ApprovalFormatter.formatRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText) :
-      ApprovalFormatter.formatActionState(values.ActionType);
+    var actionText = getRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText, values.ItemCount);
+    var actionState = getRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText, values.ItemCount);
     var rows = [
       { label: "Approval ID", value: values.AprvlId },
       { label: "Table Name", value: values.TableName },
@@ -608,9 +604,6 @@ sap.ui.define([
     return (knownValues ? Promise.resolve(knownValues) : requestContextValues(context)).then(function (values) {
       var currentContext = getObjectPageContext(view);
       var currentContextPath = currentContext && currentContext.getPath && currentContext.getPath();
-      var actionText = ApprovalFormatter.formatRequestActionText ?
-        ApprovalFormatter.formatRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText) :
-        ApprovalFormatter.formatActionText(values.ActionType);
       var changeActionText = ApprovalFormatter.formatActionText(values.ActionType);
       var recordKeyRows = getJsonRows(values.RecordKey);
       var changeRows = buildApprovalDiff(values.ActionType, values.OldData, values.NewData, values.RecordKey);
@@ -623,6 +616,8 @@ sap.ui.define([
       var sameBindingPath = model.getProperty("/currentItemsBindingPath") === contextPath;
       var keepBulkItem = bulkVisible && sameApproval && sameBindingPath && model.getProperty("/bulkItemSelected");
       var keepItemsState = bulkVisible && sameBindingPath;
+      var itemCount = keepItemsState ? model.getProperty("/itemCount") : undefined;
+      var actionText = getRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText, itemCount);
 
       if (initialContextPath && currentContextPath && initialContextPath !== currentContextPath) {
         return;
@@ -630,14 +625,15 @@ sap.ui.define([
 
       model.setData({
         approvalId: values.AprvlId || "-",
+        rawActionType: values.ActionType,
+        rawRecordKey: values.RecordKey,
+        rawRecordKeyText: values.RecordKeyText,
         operationText: actionText,
-        operationState: ApprovalFormatter.formatRequestActionState ?
-          ApprovalFormatter.formatRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText) :
-          ApprovalFormatter.formatActionState(values.ActionType),
+        operationState: getRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText, itemCount),
         statusText: ApprovalFormatter.formatStatusText(values.Status),
         statusState: ApprovalFormatter.formatStatusState(values.Status),
         tableName: values.TableName || "-",
-        requestInfoRows: buildRequestInfoRows(values),
+        requestInfoRows: buildRequestInfoRows(Object.assign({}, values, { ItemCount: itemCount })),
         recordKeyRows: recordKeyRows.length ? recordKeyRows : [],
         recordKeyVisible: recordKeyRows.length > 0,
         submittedBy: values.SubmittedBy || "-",
@@ -695,12 +691,23 @@ sap.ui.define([
     });
   }
 
+  function getRequestActionText(actionType, recordKey, recordKeyText, itemCount) {
+    return isBulkValues(recordKey, recordKeyText) && (itemCount === undefined || itemCount === null || Number(itemCount) >= 2) ?
+      "BULK" :
+      ApprovalFormatter.formatActionText(actionType);
+  }
+
+  function getRequestActionState(actionType, recordKey, recordKeyText, itemCount) {
+    return isBulkValues(recordKey, recordKeyText) && (itemCount === undefined || itemCount === null || Number(itemCount) >= 2) ?
+      "None" :
+      ApprovalFormatter.formatActionState(actionType);
+  }
+
   function isBulkRequest(view) {
     var context = getObjectPageContext(view);
     var recordKey = getContextValue(context, "RecordKey");
-    var recordKeyText = getContextValue(context, "RecordKeyText");
 
-    return isBulkValues(recordKey, recordKeyText);
+    return isBulkValues(recordKey);
   }
 
   function isApprovalItemsSection(control) {
@@ -842,6 +849,13 @@ sap.ui.define([
   function finishItemsLoading(model, items, errorText, sequence, eventName) {
     var count = items && items.length ? items.length : 0;
     var itemsLoadingBefore;
+    var actionType;
+    var recordKey;
+    var recordKeyText;
+    var operationText;
+    var operationState;
+    var requestInfoRows;
+    var operationRow;
 
     if (!model) {
       return;
@@ -869,6 +883,29 @@ sap.ui.define([
     model.setProperty("/itemsErrorVisible", !!errorText);
     model.setProperty("/bulkSummaryText", errorText ? "" : buildBulkSummary(items || []));
     model.setProperty("/bulkSummaryVisible", !errorText && count > 0);
+
+    actionType = count === 1 && items[0] ?
+      getItemContextValue(items[0].getBindingContext && items[0].getBindingContext(), "ActionType") :
+      model.getProperty("/rawActionType");
+    recordKey = model.getProperty("/rawRecordKey");
+    recordKeyText = model.getProperty("/rawRecordKeyText");
+    operationText = getRequestActionText(actionType, recordKey, recordKeyText, errorText || count === 0 ? undefined : count);
+    operationState = getRequestActionState(actionType, recordKey, recordKeyText, errorText || count === 0 ? undefined : count);
+    requestInfoRows = model.getProperty("/requestInfoRows") || [];
+    operationRow = requestInfoRows.filter(function (row) {
+      return row.label === "Operation";
+    })[0];
+
+    model.setProperty("/operationText", operationText);
+    model.setProperty("/operationState", operationState);
+
+    if (operationRow) {
+      operationRow.value = operationText;
+      operationRow.state = operationState;
+      operationRow.isStatus = true;
+      operationRow.isBulkOperation = operationText === "BULK";
+      model.setProperty("/requestInfoRows", requestInfoRows.slice());
+    }
 
     if (!count) {
       clearBulkItemSelection(model);
@@ -1146,16 +1183,12 @@ sap.ui.define([
     updateCellClasses(cell, statusClasses, activeClassName);
   }
 
-  function syncActionCellClass(cell, actionType, recordKey) {
-    var actionText = ApprovalFormatter.formatRequestActionText ?
-      ApprovalFormatter.formatRequestActionText(actionType, recordKey) :
-      ApprovalFormatter.formatActionText(actionType);
+  function syncActionCellClass(cell, actionText) {
     var normalizedAction = String(actionText || "").trim().toLowerCase();
     var actionClasses = [
       "approvalActionText--create",
       "approvalActionText--update",
-      "approvalActionText--delete",
-      "approvalActionText--bulk"
+      "approvalActionText--delete"
     ];
     var activeClassName = "";
 
@@ -1165,11 +1198,110 @@ sap.ui.define([
       activeClassName = "approvalActionText--update";
     } else if (normalizedAction === "delete") {
       activeClassName = "approvalActionText--delete";
-    } else if (normalizedAction === "bulk") {
-      activeClassName = "approvalActionText--bulk";
     }
 
     updateCellClasses(cell, actionClasses, activeClassName);
+  }
+
+  function syncActionCellDisplay(cell, actionType, recordKey, recordKeyText, itemCount) {
+    var actionText = getRequestActionText(actionType, recordKey, recordKeyText, itemCount);
+    var actionState = getRequestActionState(actionType, recordKey, recordKeyText, itemCount);
+
+    if (!cell) {
+      return;
+    }
+
+    if (cell.setText) {
+      cell.setText(actionText);
+    }
+
+    if (cell.setState) {
+      cell.setState(actionState);
+    }
+
+    syncActionCellClass(cell, actionText);
+  }
+
+  function requestApprovalItemsPreviewFromContext(context) {
+    if (!context || !context.requestObject) {
+      return Promise.resolve(null);
+    }
+
+    return context.requestObject("_Items").then(function (items) {
+      return (Array.isArray(items) ? items : items && items.value || []).slice(0, 2).map(function (item) {
+        return {
+          ActionType: item && item.ActionType
+        };
+      });
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function requestApprovalItemsPreview(context) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+
+    if (!model || !model.bindList) {
+      return requestApprovalItemsPreviewFromContext(context);
+    }
+
+    try {
+      binding = model.bindList("_Items", context, undefined, undefined, {
+        $select: "ActionType",
+        $orderby: "ItemNo"
+      });
+    } catch (error) {
+      return requestApprovalItemsPreviewFromContext(context);
+    }
+
+    if (!binding || !binding.requestContexts) {
+      return requestApprovalItemsPreviewFromContext(context);
+    }
+
+    return binding.requestContexts(0, 2).then(function (contexts) {
+      return (contexts || []).map(function (itemContext) {
+        return {
+          ActionType: getContextValue(itemContext, "ActionType")
+        };
+      });
+    }).catch(function () {
+      return requestApprovalItemsPreviewFromContext(context);
+    }).finally(function () {
+      if (binding && binding.destroy) {
+        binding.destroy();
+      }
+    });
+  }
+
+  function syncBulkActionCellFromItems(cell, context, actionType, recordKey, recordKeyText) {
+    var path = context && context.getPath && context.getPath();
+    var token = String(path || "") + "|" + String(actionType || "") + "|" + String(recordKey || "") + "|" + Date.now();
+
+    if (!cell || !isBulkValues(recordKey, recordKeyText)) {
+      return;
+    }
+
+    if (cell.data) {
+      cell.data("approvalBulkActionToken", token);
+    }
+
+    requestApprovalItemsPreview(context).then(function (items) {
+      var firstActionType;
+      var itemCount = items && items.length;
+
+      if (cell.data && cell.data("approvalBulkActionToken") !== token) {
+        return;
+      }
+
+      if (!items || itemCount === 0) {
+        syncActionCellDisplay(cell, actionType, recordKey, recordKeyText);
+        return;
+      }
+
+      firstActionType = itemCount === 1 && items[0] ? items[0].ActionType : actionType;
+      syncActionCellDisplay(cell, firstActionType, recordKey, recordKeyText, itemCount);
+    });
   }
 
   function applyReadableListTable(table) {
@@ -1207,7 +1339,8 @@ sap.ui.define([
       var status = getContextValue(context, "Status");
 
       if (indexes.operation !== undefined) {
-        syncActionCellClass(cells[indexes.operation], actionType, recordKey);
+        syncActionCellDisplay(cells[indexes.operation], actionType, recordKey);
+        syncBulkActionCellFromItems(cells[indexes.operation], context, actionType, recordKey);
       }
 
       if (indexes.recordKey !== undefined && cells[indexes.recordKey]) {
@@ -1481,7 +1614,9 @@ sap.ui.define([
     handleApprovalContextChanged: handleApprovalContextChanged,
     formatRawJson: formatRawJson,
     formatVietnamTimestamp: formatVietnamTimestamp,
-    buildRequestInfoRows: buildRequestInfoRows
+    buildRequestInfoRows: buildRequestInfoRows,
+    getRequestActionText: getRequestActionText,
+    getRequestActionState: getRequestActionState
   };
 
   return ApprovalListReportExtension;
