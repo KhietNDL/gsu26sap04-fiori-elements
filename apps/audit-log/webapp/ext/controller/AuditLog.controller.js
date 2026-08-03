@@ -20,6 +20,7 @@ sap.ui.define([
     "ChangedBy",
     "ChangedAt",
     "ActionType",
+    "RollbackAuditId",
     "__OperationControl"
   ];
 
@@ -71,6 +72,17 @@ sap.ui.define([
         rawNewValue: ""
       });
       view.setModel(model, "auditDetail");
+    }
+
+    return model;
+  }
+
+  function ensureAuditItemsModel(view) {
+    var model = view && view.getModel && view.getModel("auditItems");
+
+    if (!model && view && view.setModel) {
+      model = new JSONModel({ rows: [] });
+      view.setModel(model, "auditItems");
     }
 
     return model;
@@ -183,7 +195,7 @@ sap.ui.define([
 
     try {
       binding = model.bindList(path + "/_Items", null, null, null, {
-        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType"
+        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType,RollbackAuditId"
       });
     } catch (error) {
       return Promise.resolve([]);
@@ -289,7 +301,19 @@ sap.ui.define([
       { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName), state: "None" },
       { label: "Action", value: AuditFormatter.formatActionText(values.ActionType), state: AuditFormatter.formatActionState(values.ActionType), isStatus: true },
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
-      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" }
+      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" },
+      { label: "Rollback Audit ID", value: AuditFormatter.formatAuditValue(values.RollbackAuditId), state: "None" }
+    ];
+  }
+
+  function buildOverviewRows(values) {
+    return [
+      { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
+      { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
+      { label: "Action Type", value: AuditFormatter.formatActionText(values.ActionType), state: AuditFormatter.formatActionState(values.ActionType) },
+      { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
+      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" },
+      { label: "Rollback Audit ID", value: AuditFormatter.formatAuditValue(values.RollbackAuditId), state: "None" }
     ];
   }
 
@@ -304,6 +328,7 @@ sap.ui.define([
       subtitle: "Audit " + AuditFormatter.formatAuditValue(values.AuditId),
       actionText: actionText,
       actionState: AuditFormatter.formatActionState(values.ActionType),
+      overviewRows: buildOverviewRows(values),
       infoRows: buildInfoRows(values),
       recordKeyRows: recordKeyRows,
       recordKeyVisible: recordKeyRows.length > 0,
@@ -361,6 +386,29 @@ sap.ui.define([
 
     return requestAuditValues(context).then(function (values) {
       model.setData(buildAuditDetail(values));
+      return requestNavigationItems(context).then(function (items) {
+        var rows = [];
+
+        (items || []).forEach(function (item, index) {
+          var itemView = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), index);
+
+          (itemView.changeRows || []).forEach(function (change) {
+            rows.push({
+              item: itemView.itemNumber,
+              actionText: itemView.actionText,
+              actionState: itemView.actionState,
+              recordKey: itemView.recordKeyText,
+              field: change.field,
+              oldValue: change.oldValue,
+              newValue: change.newValue,
+              showOldColumn: itemView.showOldColumn,
+              showNewColumn: itemView.showNewColumn
+            });
+          });
+        });
+
+        ensureAuditItemsModel(view).setData({ rows: rows });
+      });
     });
   }
 

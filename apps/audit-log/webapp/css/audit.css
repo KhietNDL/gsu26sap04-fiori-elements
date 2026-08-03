@@ -49,6 +49,34 @@
   white-space: normal;
 }
 
+.auditBusinessChange {
+  box-sizing: border-box;
+}
+
+.auditObjectKeyPanel .sapMPanelContent {
+  padding: 0.75rem 1rem;
+}
+
+.auditObjectKeyPanel .sapMListTblCell,
+.auditObjectKeyPanel .sapMListTblHeaderCell,
+.auditChangeSapTable .sapMListTblCell,
+.auditChangeSapTable .sapMListTblHeaderCell {
+  min-width: 0;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.auditChangeSapTable .sapMListTblHeaderCell {
+  background: #f7f9fb;
+  color: #354a5f;
+  font-weight: 600;
+}
+
+.auditChangeSapTable .sapMListTblCell {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
 .auditBulkButton.sapMBtn {
   height: 1.75rem;
   padding: 0;

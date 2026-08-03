@@ -32,5 +32,49 @@
         </HBox>
       </CustomListItem>
     </List>
+
+    <Panel
+      expandable="false"
+      headerText="Approval Comment"
+      class="sapUiSmallMarginTop approvalCommentPanel">
+      <VBox class="approvalCommentContent">
+        <Text
+          text="{approvalDetail>/comment}"
+          wrapping="true"
+          class="approvalCommentText"/>
+      </VBox>
+    </Panel>
+
+    <Panel
+      expandable="true"
+      expanded="false"
+      headerText="Approval Comment Debug"
+      class="sapUiSmallMarginTop"
+      visible="{approvalDetail>/commentDebugVisible}">
+      <Table
+        width="100%"
+        fixedLayout="false"
+        showNoData="false"
+        items="{approvalDetail>/commentDebugRows}">
+        <columns>
+          <Column width="16rem">
+            <Text text="Field"/>
+          </Column>
+          <Column>
+            <Text text="Value"/>
+          </Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{approvalDetail>field}"/>
+              <Text
+                text="{approvalDetail>value}"
+                wrapping="true"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </Panel>
   </VBox>
 </core:FragmentDefinition>

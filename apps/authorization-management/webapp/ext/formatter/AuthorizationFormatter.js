@@ -2,7 +2,8 @@ sap.ui.define([], function () {
   "use strict";
 
   function isActive(value) {
-    return String(value || "").toUpperCase() === "X";
+    var normalized = String(value || "").trim().toUpperCase();
+    return normalized === "X" || normalized === "YES" || normalized === "ACTIVE" || normalized === "TRUE" || normalized === "1";
   }
 
   return {

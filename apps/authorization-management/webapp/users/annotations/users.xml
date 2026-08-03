@@ -77,6 +77,12 @@
         </Collection>
       </Annotation>
 
+      <Annotation Term="UI.RequestAtLeast">
+        <Collection>
+          <PropertyPath>ActiveFlag</PropertyPath>
+        </Collection>
+      </Annotation>
+
       <Annotation Term="UI.Facets">
         <Collection>
           <Record Type="UI.ReferenceFacet">

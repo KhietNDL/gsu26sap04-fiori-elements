@@ -88,7 +88,16 @@
             <PropertyValue Property="Label" String="Changed At"/>
             <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="RollbackAuditId"/>
+            <PropertyValue Property="Label" String="Rollback Audit ID"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
         </Collection>
+      </Annotation>
+
+      <Annotation Term="UI.Facets">
+        <Collection/>
       </Annotation>
     </Annotations>
   </edmx:DataServices>

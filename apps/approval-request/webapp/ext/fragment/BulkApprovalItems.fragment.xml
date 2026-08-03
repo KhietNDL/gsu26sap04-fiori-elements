@@ -51,7 +51,7 @@
       noDataText="No approval items found."
       updateStarted=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateStarted"
       updateFinished=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateFinished"
-      items="{path: '_Items', events: {dataRequested: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataRequested', dataReceived: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataReceived'}, parameters: {$select: 'AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,Message,OldData,NewData'}}">
+      items="{path: '_Items', events: {dataRequested: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataRequested', dataReceived: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataReceived'}, parameters: {$select: 'AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,OldData,NewData'}}">
       <columns>
         <Column width="6rem">
           <Text text="ItemNo"/>
@@ -64,9 +64,6 @@
         </Column>
         <Column width="8rem">
           <Text text="Status"/>
-        </Column>
-        <Column minScreenWidth="Tablet" demandPopin="true">
-          <Text text="Message"/>
         </Column>
         <Column width="9rem" hAlign="End">
           <Text text="View Changes"/>
@@ -87,9 +84,6 @@
             <ObjectStatus
               text="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Approved' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Pending' : ${Status} === 'R' || ${Status} === 'REJECTED' ? 'Rejected' : ${Status} }"
               state="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Success' : ${Status} === 'R' || ${Status} === 'REJECTED' || ${Status} === 'E' || ${Status} === 'ERROR' ? 'Error' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Warning' : 'Information' }"/>
-            <Text
-              text="{Message}"
-              wrapping="true"/>
             <Button
               text="View Changes"
               icon="sap-icon://display"

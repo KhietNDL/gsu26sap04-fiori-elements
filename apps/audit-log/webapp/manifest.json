@@ -165,31 +165,12 @@
                         "RecordKey"
                       ]
                     },
-                    "BulkItemsColumn": {
-                      "header": "Bulk",
-                      "template": "ztbl.audit.ui.ext.fragment.BulkItemsColumn",
-                      "position": {
-                        "placement": "After",
-                        "anchor": "ActionColumn"
-                      },
-                      "width": "7rem",
-                      "properties": [
-                        "RecordKey",
-                        "AuditId",
-                        "TableName",
-                        "ChangedBy",
-                        "ChangedAt",
-                        "ActionType",
-                        "OldValue",
-                        "NewValue"
-                      ]
-                    },
                     "RollbackColumn": {
                       "header": "Rollback",
                       "template": "ztbl.audit.ui.ext.fragment.RollbackColumn",
                       "position": {
                         "placement": "After",
-                        "anchor": "BulkItemsColumn"
+                        "anchor": "NewValueColumn"
                       },
                       "width": "8rem",
                       "properties": [
@@ -241,9 +222,25 @@
               "content": {
                 "body": {
                   "sections": {
-                    "AuditReadableSection": {
-                      "title": "Audit Details",
-                      "template": "ztbl.audit.ui.ext.fragment.AuditReadableSection"
+                    "AuditOverviewSection": {
+                      "title": "Audit Overview",
+                      "template": "ztbl.audit.ui.ext.fragment.AuditOverviewSection",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "ParsedAuditItemsSection"
+                      }
+                    },
+                    "ParsedAuditItemsSection": {
+                      "title": "Audit Items",
+                      "template": "ztbl.audit.ui.ext.fragment.ParsedAuditItemsSection",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "ParsedValuesSection"
+                      }
+                    },
+                    "ParsedValuesSection": {
+                      "title": "Parsed Values",
+                      "template": "ztbl.audit.ui.ext.fragment.ParsedValuesSection"
                     }
                   }
                 }

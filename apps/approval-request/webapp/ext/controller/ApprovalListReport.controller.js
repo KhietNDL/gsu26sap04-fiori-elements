@@ -116,6 +116,11 @@ sap.ui.define([
         technicalRecordKey: "",
         technicalOldData: "",
         technicalNewData: "",
+        comment: "-",
+        commentEmpty: true,
+        commentVisible: true,
+        commentDebugVisible: false,
+        commentDebugRows: [],
         bulkVisible: false,
         bulkSummaryText: "",
         bulkSummaryVisible: false,
@@ -464,7 +469,29 @@ sap.ui.define([
         values[propertyName] = getContextValue(context, propertyName);
       });
     })).then(function () {
-      return values;
+      var objectPromise;
+
+      if (!context.requestObject) {
+        return values;
+      }
+
+      try {
+        objectPromise = context.requestObject();
+      } catch (error) {
+        return values;
+      }
+
+      return objectPromise.then(function (object) {
+        Object.keys(object || {}).forEach(function (propertyName) {
+          if (values[propertyName] === undefined) {
+            values[propertyName] = object[propertyName];
+          }
+        });
+
+        return values;
+      }).catch(function () {
+        return values;
+      });
     });
   }
 
@@ -474,6 +501,194 @@ sap.ui.define([
 
   function isEmptyValue(value) {
     return value === null || value === undefined || String(value).trim() === "";
+  }
+
+  function getCommentValue(values) {
+    if (!isEmptyValue(values && values.AprvlComment)) {
+      return values.AprvlComment;
+    }
+
+    return "";
+  }
+
+  function buildCommentDebugRows(values) {
+    var value = values && values.AprvlComment;
+
+    return [
+      {
+        field: "AprvlComment",
+        value: isEmptyValue(value) ? "—" : String(value)
+      }
+    ];
+  }
+
+  function isApprovalDebugEnabled() {
+    var query;
+
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    query = window.location && window.location.search || "";
+
+    return /(?:[?&])approvalDebug=true(?:&|$)/i.test(query) ||
+      /approvalDebug=true/i.test(window.location && window.location.hash || "");
+  }
+
+  function normalizeRemarks(value) {
+    return String(value || "").trim().slice(0, 255);
+  }
+
+  function getControlFromDom(domRef) {
+    var id = domRef && domRef.id;
+
+    return id && sap.ui && sap.ui.getCore ? sap.ui.getCore().byId(id) : null;
+  }
+
+  function getParentDialog(control) {
+    var current = control;
+
+    while (current) {
+      if (current.isA && current.isA("sap.m.Dialog")) {
+        return current;
+      }
+
+      current = current.getParent && current.getParent();
+    }
+
+    return null;
+  }
+
+  function getDialogActionName(dialog) {
+    var title = dialog && dialog.getTitle && dialog.getTitle();
+    var normalizedTitle = String(title || "").trim().toLowerCase();
+
+    if (normalizedTitle.indexOf("approve") === 0) {
+      return "approve";
+    }
+
+    if (normalizedTitle.indexOf("reject") === 0) {
+      return "reject";
+    }
+
+    return "";
+  }
+
+  function findRemarksInput(dialog) {
+    var input = null;
+
+    if (!dialog || !dialog.findAggregatedObjects) {
+      return null;
+    }
+
+    dialog.findAggregatedObjects(true, function (control) {
+      if (!input && control.isA && (control.isA("sap.m.Input") || control.isA("sap.m.TextArea"))) {
+        input = control;
+        return true;
+      }
+
+      return false;
+    });
+
+    return input;
+  }
+
+  function captureApprovalActionRemarks(event) {
+    var button = getControlFromDom(event && event.target && event.target.closest && event.target.closest(".sapMBtn"));
+    var dialog = getParentDialog(button);
+    var actionName = getDialogActionName(dialog);
+    var buttonText = button && button.getText && String(button.getText()).trim().toLowerCase();
+    var input;
+
+    if (!actionName || buttonText !== actionName) {
+      return;
+    }
+
+    input = findRemarksInput(dialog);
+    window.__ztblApprovalActionRemarks = {
+      action: actionName,
+      remarks: normalizeRemarks(input && input.getValue && input.getValue()),
+      timestamp: Date.now()
+    };
+  }
+
+  function isApprovalActionUrl(url) {
+    return /\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$)/.test(String(url || ""));
+  }
+
+  function getApprovalActionFromUrl(url) {
+    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$)/);
+
+    return match && match[1] || "";
+  }
+
+  function getCapturedRemarksForAction(actionName) {
+    var captured = typeof window !== "undefined" && window.__ztblApprovalActionRemarks;
+
+    if (!captured || captured.action !== actionName || Date.now() - captured.timestamp > 60000) {
+      return null;
+    }
+
+    return captured.remarks;
+  }
+
+  function patchApprovalActionPayloads() {
+    var originalOpen;
+    var originalSend;
+
+    if (typeof window === "undefined" || !window.XMLHttpRequest || window.__ztblApprovalActionPayloadPatch) {
+      return;
+    }
+
+    window.__ztblApprovalActionPayloadPatch = true;
+    originalOpen = window.XMLHttpRequest.prototype.open;
+    originalSend = window.XMLHttpRequest.prototype.send;
+
+    window.XMLHttpRequest.prototype.open = function (method, url) {
+      this.__ztblApprovalActionUrl = String(url || "");
+      return originalOpen.apply(this, arguments);
+    };
+
+    window.XMLHttpRequest.prototype.send = function (body) {
+      var actionName = getApprovalActionFromUrl(this.__ztblApprovalActionUrl);
+      var remarks = getCapturedRemarksForAction(actionName);
+      var payload;
+
+      if (!actionName || remarks === null || !isApprovalActionUrl(this.__ztblApprovalActionUrl)) {
+        return originalSend.apply(this, arguments);
+      }
+
+      try {
+        payload = body ? JSON.parse(body) : {};
+      } catch (error) {
+        payload = {};
+      }
+
+      payload.remarks = normalizeRemarks(payload.remarks || remarks);
+
+      return originalSend.call(this, JSON.stringify(payload));
+    };
+  }
+
+  function registerApprovalActionPayloadFix(owner) {
+    if (!owner || typeof document === "undefined" || owner._approvalActionPayloadFixAttached) {
+      return;
+    }
+
+    patchApprovalActionPayloads();
+    owner._approvalActionPayloadFixAttached = true;
+    owner._approvalActionPayloadCapture = captureApprovalActionRemarks;
+    document.addEventListener("click", owner._approvalActionPayloadCapture, true);
+  }
+
+  function unregisterApprovalActionPayloadFix(owner) {
+    if (!owner || typeof document === "undefined" || !owner._approvalActionPayloadFixAttached) {
+      return;
+    }
+
+    document.removeEventListener("click", owner._approvalActionPayloadCapture, true);
+    owner._approvalActionPayloadFixAttached = false;
+    owner._approvalActionPayloadCapture = null;
   }
 
   function parseApprovalTimestamp(value) {
@@ -526,7 +741,7 @@ sap.ui.define([
       hour12: false
     }).format(date);
 
-    return formatted.replace(",", "") + " (GMT+7)";
+    return formatted.replace(",", "");
   }
 
   function buildRequestInfoRows(values) {
@@ -543,8 +758,7 @@ sap.ui.define([
 
     [
       { label: "Reviewed By", value: values.ApprovedBy },
-      { label: "Reviewed At", value: formatVietnamTimestamp(values.ApprovedAt), rawValue: values.ApprovedAt },
-      { label: "Remarks", value: values.AprvlComment }
+      { label: "Reviewed At", value: formatVietnamTimestamp(values.ApprovedAt), rawValue: values.ApprovedAt }
     ].forEach(function (row) {
       if (!isEmptyValue(row.rawValue !== undefined ? row.rawValue : row.value)) {
         rows.push(row);
@@ -609,7 +823,8 @@ sap.ui.define([
       var changeRows = buildApprovalDiff(values.ActionType, values.OldData, values.NewData, values.RecordKey);
       var showOldColumn = changeActionText === "Update" || changeActionText === "Delete";
       var showNewColumn = changeActionText === "Create" || changeActionText === "Update";
-      var comment = values.AprvlComment || "-";
+      var comment = getCommentValue(values) || "-";
+      var commentEmpty = comment === "-";
       var bulkVisible = isBulkValues(values.RecordKey);
       var sameApproval = model.getProperty("/approvalId") === values.AprvlId;
       var contextPath = initialContextPath || values.AprvlId;
@@ -641,6 +856,10 @@ sap.ui.define([
         approvedBy: values.ApprovedBy || "-",
         approvedAt: formatVietnamTimestamp(values.ApprovedAt),
         comment: comment,
+        commentEmpty: commentEmpty,
+        commentVisible: true,
+        commentDebugVisible: isApprovalDebugEnabled(),
+        commentDebugRows: buildCommentDebugRows(values),
         changeRows: changeRows,
         changeTitle: getChangeTitle(changeActionText),
         changeColumnCount: changeActionText === "Update" ? 3 : 2,
@@ -1388,6 +1607,7 @@ sap.ui.define([
         if (view) {
           ensureDetailModel(view);
           ODataErrorHandler.attachGlobalHandlers("approval");
+          registerApprovalActionPayloadFix(this);
 
           if (view.attachModelContextChange && !this._approvalContextHandlerAttached) {
             this._approvalContextHandlerAttached = true;
@@ -1417,6 +1637,11 @@ sap.ui.define([
 
         applyReadableListTables(view);
         syncApprovalItemsVisibility(view);
+        registerApprovalActionPayloadFix(this);
+      },
+
+      onExit: function () {
+        unregisterApprovalActionPayloadFix(this);
       }
     },
 

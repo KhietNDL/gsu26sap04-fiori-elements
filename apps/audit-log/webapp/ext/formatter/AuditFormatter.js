@@ -26,15 +26,21 @@ sap.ui.define([], function () {
 
   function safeParseObject(value) {
     var parsed;
+    var attempts = 0;
 
     if (value === null || value === undefined || String(value).trim() === "") {
       return {};
     }
 
-    try {
-      parsed = typeof value === "string" ? JSON.parse(value) : value;
-    } catch (error) {
-      return {};
+    parsed = value;
+
+    while (typeof parsed === "string" && attempts < 3) {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (error) {
+        return {};
+      }
+      attempts += 1;
     }
 
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
