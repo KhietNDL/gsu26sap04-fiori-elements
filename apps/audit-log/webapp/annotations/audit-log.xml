@@ -96,9 +96,6 @@
         </Collection>
       </Annotation>
 
-      <Annotation Term="UI.Facets">
-        <Collection/>
-      </Annotation>
     </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>

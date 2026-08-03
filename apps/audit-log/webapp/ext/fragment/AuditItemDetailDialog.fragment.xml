@@ -1,0 +1,86 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <Dialog
+    title="Audit Item"
+    contentWidth="64rem"
+    contentHeight="80%"
+    stretchOnPhone="true"
+    resizable="true"
+    draggable="true"
+    class="auditBulkItemDialog"
+    afterOpen=".onAuditItemDialogAfterOpen"
+    afterClose=".onAuditItemDialogAfterClose">
+    <content>
+      <VBox width="100%" class="auditBulkDialogContent">
+        <VBox class="auditItemDialogHeader sapUiSmallMarginBottom">
+          <FlexBox width="100%" wrap="Wrap" class="auditItemHeaderGrid">
+            <VBox class="auditItemHeaderCell">
+              <Label text="Item Number"/>
+              <Text text="{auditItemDetail>/itemNumber}"/>
+            </VBox>
+            <VBox class="auditItemHeaderCell">
+              <Label text="Action Type"/>
+              <ObjectStatus text="{auditItemDetail>/actionText}" state="{auditItemDetail>/actionState}"/>
+            </VBox>
+            <VBox class="auditItemHeaderCell">
+              <Label text="Status"/>
+              <ObjectStatus text="{auditItemDetail>/statusText}" state="{auditItemDetail>/statusState}"/>
+            </VBox>
+          </FlexBox>
+          <VBox class="auditItemRecordKeySummary">
+            <Label text="Record Key"/>
+            <Text text="{auditItemDetail>/recordKeyText}" wrapping="true" class="auditItemRecordKeyText"/>
+          </VBox>
+        </VBox>
+
+        <Title text="Record Key" level="H4" class="sapUiTinyMarginBottom"/>
+        <Table width="100%" fixedLayout="true" class="auditChangeSapTable sapUiSmallMarginBottom" items="{auditItemDetail>/recordKeyRows}">
+          <columns>
+            <Column width="16rem"><Text text="Field"/></Column>
+            <Column><Text text="Value"/></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <ObjectIdentifier title="{auditItemDetail>field}" class="auditFieldName"/>
+                <Text text="{auditItemDetail>value}" wrapping="true"/>
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+
+        <Title text="{auditItemDetail>changeTitle}" level="H4" class="sapUiTinyMarginBottom"/>
+        <MessageStrip type="Information" showIcon="true" text="{auditItemDetail>/changeMessage}" class="sapUiTinyMarginBottom"/>
+        <Table width="100%" class="auditChangeSapTable" fixedLayout="true" items="{auditItemDetail>/changeRows}">
+          <columns>
+            <Column width="16rem"><Text text="Field"/></Column>
+            <Column visible="{auditItemDetail>/showOldColumn}"><Text text="{auditItemDetail>/oldColumnHeader}"/></Column>
+            <Column visible="{auditItemDetail>/showNewColumn}"><Text text="{auditItemDetail>/newColumnHeader}"/></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <ObjectIdentifier title="{auditItemDetail>field}" class="auditFieldName"/>
+                <Text text="{auditItemDetail>oldValue}" visible="{auditItemDetail>/showOldColumn}" wrapping="true"/>
+                <Text text="{auditItemDetail>newValue}" visible="{auditItemDetail>/showNewColumn}" wrapping="true"/>
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+
+        <Panel expandable="true" expanded="false" headerText="Technical JSON" class="auditRawJsonPanel sapUiSmallMarginTop">
+          <VBox>
+            <Label text="RecordKey JSON"/>
+            <TextArea value="{auditItemDetail>/rawRecordKey}" editable="false" rows="4" growing="true"/>
+            <Label text="OldValue JSON" class="sapUiSmallMarginTop"/>
+            <TextArea value="{auditItemDetail>/rawOldValue}" editable="false" rows="6" growing="true"/>
+            <Label text="NewValue JSON" class="sapUiSmallMarginTop"/>
+            <TextArea value="{auditItemDetail>/rawNewValue}" editable="false" rows="6" growing="true"/>
+          </VBox>
+        </Panel>
+      </VBox>
+    </content>
+    <beginButton><Button text="Close" press=".onAuditItemDialogClose"/></beginButton>
+  </Dialog>
+</core:FragmentDefinition>

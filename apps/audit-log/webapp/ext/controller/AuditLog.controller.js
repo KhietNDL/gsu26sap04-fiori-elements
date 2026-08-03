@@ -194,9 +194,7 @@ sap.ui.define([
     }
 
     try {
-      binding = model.bindList(path + "/_Items", null, null, null, {
-        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType,RollbackAuditId"
-      });
+      binding = model.bindList(path + "/_Items");
     } catch (error) {
       return Promise.resolve([]);
     }
@@ -216,8 +214,7 @@ sap.ui.define([
 
     try {
       binding = model.bindList("/AuditItem", null, null, null, {
-        $filter: "AuditId eq '" + escapeODataString(auditId) + "'",
-        $select: "AuditId,ItemNo,ItemNumber,TableName,RecordKey,FieldName,OldValue,NewValue,OldData,NewData,ChangedBy,ChangedAt,ActionType"
+        $filter: "AuditId eq '" + escapeODataString(auditId) + "'"
       });
     } catch (error) {
       return Promise.resolve([]);
@@ -307,13 +304,17 @@ sap.ui.define([
   }
 
   function buildOverviewRows(values) {
+    var operation = AuditFormatter.isBulkRecord(values.RecordKey) ||
+      String(values.NewValue || values.OldValue || "").toUpperCase().indexOf("BULK AUDIT") >= 0
+      ? "Bulk"
+      : AuditFormatter.formatActionText(values.ActionType);
+
     return [
       { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
       { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
-      { label: "Action Type", value: AuditFormatter.formatActionText(values.ActionType), state: AuditFormatter.formatActionState(values.ActionType) },
+      { label: "Operation", value: operation, state: operation === "Bulk" ? "Information" : AuditFormatter.formatActionState(values.ActionType) },
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
-      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" },
-      { label: "Rollback Audit ID", value: AuditFormatter.formatAuditValue(values.RollbackAuditId), state: "None" }
+      { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" }
     ];
   }
 
@@ -328,6 +329,8 @@ sap.ui.define([
       subtitle: "Audit " + AuditFormatter.formatAuditValue(values.AuditId),
       actionText: actionText,
       actionState: AuditFormatter.formatActionState(values.ActionType),
+      rollbackMessageVisible: String(values.ActionType || "").trim().toUpperCase() === "R" || !!(values.RollbackAuditId && String(values.RollbackAuditId).trim()),
+      rollbackMessage: "Rollback completed for this audit record.",
       overviewRows: buildOverviewRows(values),
       infoRows: buildInfoRows(values),
       recordKeyRows: recordKeyRows,
@@ -377,6 +380,32 @@ sap.ui.define([
     };
   }
 
+  function buildAuditItemDetail(item, tableName, index) {
+    var values = valuesFromObject(item || {});
+    var itemView = AuditFormatter.buildBulkItemViewModel(values, index || 0);
+    var actionText = itemView.actionText;
+
+    return {
+      itemNumber: itemView.itemNumber,
+      actionText: actionText,
+      actionState: itemView.actionState,
+      statusText: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Rollback available" : "Review required",
+      statusState: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Success" : "Information",
+      recordKeyText: itemView.recordKeyText,
+      recordKeyRows: itemView.recordKeyRows,
+      changeTitle: AuditFormatter.getChangeTitle(values.ActionType),
+      changeMessage: actionText === "Delete" ? "Delete request for " + AuditFormatter.formatAuditValue(tableName) + ". Review the record values that will be removed." : "Update request for " + AuditFormatter.formatAuditValue(tableName) + ". Showing changed fields only.",
+      changeRows: itemView.changeRows,
+      showOldColumn: itemView.showOldColumn,
+      showNewColumn: itemView.showNewColumn,
+      oldColumnHeader: actionText === "Delete" ? "Current Value" : itemView.oldColumnHeader,
+      newColumnHeader: actionText === "Create" ? "New Value" : itemView.newColumnHeader,
+      rawRecordKey: AuditFormatter.formatAuditValue(values.RecordKey),
+      rawOldValue: AuditFormatter.formatAuditValue(values.OldValue),
+      rawNewValue: AuditFormatter.formatAuditValue(values.NewValue)
+    };
+  }
+
   function updateAuditModel(view, context) {
     var model = ensureAuditModel(view);
 
@@ -387,10 +416,33 @@ sap.ui.define([
     return requestAuditValues(context).then(function (values) {
       model.setData(buildAuditDetail(values));
       return requestNavigationItems(context).then(function (items) {
+        if ((!items || !items.length) && values.AuditId) {
+          return requestAuditItemEntity(context, values.AuditId);
+        }
+        return items || [];
+      }).then(function (items) {
         var rows = [];
+        var itemRows = [];
 
         (items || []).forEach(function (item, index) {
           var itemView = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), index);
+
+          itemRows.push({
+            item: itemView.itemNumber,
+            actionText: itemView.actionText,
+            actionState: itemView.actionState,
+            recordKey: itemView.recordKeyText,
+            recordKeyRows: itemView.recordKeyRows,
+            changeRows: itemView.changeRows,
+            showOldColumn: itemView.showOldColumn,
+            showNewColumn: itemView.showNewColumn,
+            oldColumnHeader: itemView.oldColumnHeader,
+            newColumnHeader: itemView.newColumnHeader,
+            statusText: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Rollback available" : "Review required",
+            statusState: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Success" : "Information",
+            message: "Changed by " + AuditFormatter.formatAuditValue(values.ChangedBy) +
+              " · " + AuditFormatter.formatTimestamp(values.ChangedAt)
+          });
 
           (itemView.changeRows || []).forEach(function (change) {
             rows.push({
@@ -407,8 +459,30 @@ sap.ui.define([
           });
         });
 
-        ensureAuditItemsModel(view).setData({ rows: rows });
+        ensureAuditItemsModel(view).setData({
+          rows: rows,
+          itemRows: itemRows,
+          itemSummary: itemRows.length + " item(s)"
+        });
       });
+    });
+  }
+
+  function hideGeneratedAuditSections(view) {
+    if (!view || !view.findAggregatedObjects) {
+      return;
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      var title = control && control.getTitle && control.getTitle();
+
+      if (title === "Audit Detail" || title === "Audit Items") {
+        if (control.setVisible) {
+          control.setVisible(false);
+        }
+      }
+
+      return false;
     });
   }
 
@@ -457,6 +531,22 @@ sap.ui.define([
         });
       });
     });
+  }
+
+  function ensureAuditItemDialog(extension, view) {
+    if (!extension._auditItemDialogPromise) {
+      extension._auditItemDialogPromise = Fragment.load({
+        id: view.getId(),
+        name: "ztbl.audit.ui.ext.fragment.AuditItemDetailDialog",
+        controller: extension
+      }).then(function (dialog) {
+        view.addDependent(dialog);
+        extension._auditItemDialog = dialog;
+        return dialog;
+      });
+    }
+
+    return extension._auditItemDialogPromise;
   }
 
   function findAuditFilterBar(view) {
@@ -536,6 +626,10 @@ sap.ui.define([
               updateAuditModel(view, getObjectPageContext(view));
             });
           }
+
+          setTimeout(function () {
+            hideGeneratedAuditSections(view);
+          }, 0);
         }
       },
 
@@ -545,6 +639,9 @@ sap.ui.define([
 
           if (view) {
             updateAuditModel(view, context || getObjectPageContext(view));
+            setTimeout(function () {
+              hideGeneratedAuditSections(view);
+            }, 0);
           }
         }
       }
@@ -604,6 +701,71 @@ sap.ui.define([
     onBulkAuditDialogClose: function () {
       if (this._bulkAuditDialog) {
         this._bulkAuditDialog.close();
+      }
+    },
+
+    onAuditItemViewChangesPress: function (event) {
+      var source = event && event.getSource && event.getSource();
+      var itemNumber = source && source.getBindingContext && source.getBindingContext("auditItems") && source.getBindingContext("auditItems").getProperty("item");
+      var view = this.base && this.base.getView && this.base.getView();
+      var parentContext = getObjectPageContext(view);
+      var tableName = getContextValue(parentContext, "TableName");
+      var that = this;
+
+      requestNavigationItems(parentContext).then(function (items) {
+        var index = -1;
+        var selected = (items || []).filter(function (item, itemIndex) {
+          var viewModel = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), itemIndex);
+          if (String(viewModel.itemNumber) === String(itemNumber)) {
+            index = itemIndex;
+            return true;
+          }
+          return false;
+        })[0];
+
+        if (!selected) {
+          MessageBox.information("No detail is available for this audit item.");
+          return;
+        }
+
+        ensureAuditItemDialog(that, view).then(function (dialog) {
+          dialog.setModel(new JSONModel(buildAuditItemDetail(selected, tableName, index)), "auditItemDetail");
+          dialog.open();
+        });
+      }).catch(function (error) {
+        ODataErrorHandler.showBackendError(error, "Audit item details could not be loaded.");
+      });
+    },
+
+    onAuditItemDialogClose: function () {
+      if (this._auditItemDialog) {
+        this._auditItemDialog.close();
+      }
+    },
+
+    onAuditItemDialogAfterOpen: function () {
+      var that = this;
+      var dialog = this._auditItemDialog;
+
+      if (this._auditItemOutsideClickHandler || !dialog) {
+        return;
+      }
+
+      this._auditItemOutsideClickHandler = function (event) {
+        var domRef = dialog.getDomRef && dialog.getDomRef();
+
+        if (domRef && !domRef.contains(event.target)) {
+          that.onAuditItemDialogClose();
+        }
+      };
+
+      document.addEventListener("mousedown", this._auditItemOutsideClickHandler, true);
+    },
+
+    onAuditItemDialogAfterClose: function () {
+      if (this._auditItemOutsideClickHandler) {
+        document.removeEventListener("mousedown", this._auditItemOutsideClickHandler, true);
+        this._auditItemOutsideClickHandler = null;
       }
     },
 

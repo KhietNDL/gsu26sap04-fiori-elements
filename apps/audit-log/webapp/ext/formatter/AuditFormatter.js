@@ -311,6 +311,17 @@ sap.ui.define([], function () {
     return isBulkRecordKey(recordKey) ? (actionText === "—" ? "Bulk" : "Bulk " + actionText) : actionText;
   }
 
+  function formatOperationText(actionType, recordKey) {
+    var rawAction = String(actionType || "").trim().toUpperCase();
+    var action = rawAction.split(/\s+/)[0];
+
+    if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
+      return "Bulk";
+    }
+
+    return formatActionText(action);
+  }
+
   function formatRowActionState(actionType, recordKey) {
     return isBulkRecordKey(recordKey) ? "Information" : formatActionState(actionType);
   }
@@ -454,6 +465,18 @@ sap.ui.define([], function () {
     return isRollbackAvailable(operationControl) ? "Success" : "None";
   }
 
+  function formatAuditListStatusText(actionType, rollbackAuditId) {
+    if (String(actionType || "").trim().toUpperCase() === "R") {
+      return "Rolled back";
+    }
+
+    return rollbackAuditId && String(rollbackAuditId).trim() ? "Rolled back" : "Review required";
+  }
+
+  function formatAuditListStatusState(actionType, rollbackAuditId) {
+    return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back" ? "Success" : "Information";
+  }
+
   return {
     formatActionText: formatActionText,
     formatActionState: formatActionState,
@@ -462,6 +485,7 @@ sap.ui.define([], function () {
     formatRecordKeyText: formatRecordKeyText,
     formatBulkRecordKeyText: formatBulkRecordKeyText,
     formatRowActionText: formatRowActionText,
+    formatOperationText: formatOperationText,
     formatRowActionState: formatRowActionState,
     isBulkVisible: isBulkVisible,
     getRecordKeyRows: getRecordKeyRows,
@@ -476,6 +500,8 @@ sap.ui.define([], function () {
     isRollbackAvailable: isRollbackAvailable,
     formatRollbackText: formatRollbackText,
     formatRollbackState: formatRollbackState,
+    formatAuditListStatusText: formatAuditListStatusText,
+    formatAuditListStatusState: formatAuditListStatusState,
     _test: {
       safeParseObject: safeParseObject,
       parseAuditMap: parseAuditMap,
@@ -486,6 +512,7 @@ sap.ui.define([], function () {
       formatRecordKeyText: formatRecordKeyText,
       formatBulkRecordKeyText: formatBulkRecordKeyText,
       formatRowActionText: formatRowActionText,
+      formatOperationText: formatOperationText,
       formatRowActionState: formatRowActionState,
       isBulkVisible: isBulkVisible,
       getRecordKeyRows: getRecordKeyRows,
