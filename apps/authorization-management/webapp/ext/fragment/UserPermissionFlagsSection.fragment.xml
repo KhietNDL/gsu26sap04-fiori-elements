@@ -36,12 +36,6 @@
         selected="{path: 'CanDelete', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
         enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
         tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
-      <Label text="Upload"/>
-      <CheckBox
-        text="{path: 'CanUpload', formatter: 'formatter.flagText'}"
-        selected="{path: 'CanUpload', type: 'ztbl.authorization.ui.ext.type.StringFlag'}"
-        enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
-        tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
     </layout:SimpleForm>
   </VBox>
 </core:FragmentDefinition>
