@@ -188,6 +188,32 @@ ABAP BSP app:
 ZZTBL_AUDIT_UI
 ```
 
+### Authorization Management
+
+Path:
+
+```text
+apps/authorization-management/webapp
+```
+
+Component id:
+
+```text
+ztbl.authorization.ui
+```
+
+FLP intent:
+
+```text
+#ZAuthorizationManagement-manage
+```
+
+ABAP BSP app:
+
+```text
+ZZTBL_AUTH_UI
+```
+
 ## 5. Cach chay local
 
 Table Config:
@@ -208,6 +234,12 @@ Audit Log:
 npm run start:audit
 ```
 
+Authorization Management:
+
+```powershell
+npm run start:authorization
+```
+
 Neu can login backend local, dang nhap bang SAP user/password khi browser hoi.
 
 ## 6. Cach build
@@ -216,6 +248,7 @@ Neu can login backend local, dang nhap bang SAP user/password khi browser hoi.
 npm run build:table
 npm run build:approval
 npm run build:audit
+npm run build:authorization
 npm run build:all
 ```
 
@@ -225,6 +258,7 @@ Build output:
 dist/table-config
 dist/approval-request
 dist/audit-log
+dist/authorization-management
 ```
 
 ## 7. Cach deploy
@@ -252,6 +286,12 @@ Deploy Audit:
 
 ```powershell
 npm run build:deploy:audit
+```
+
+Deploy Authorization:
+
+```powershell
+npm run build:deploy:authorization
 ```
 
 ## 8. FLP target mapping
@@ -284,6 +324,16 @@ Action: display
 Application Type: SAPUI5 Fiori App
 URL: /sap/bc/ui5_ui5/sap/zztbl_audit_ui
 ID / Component ID: ztbl.audit.ui
+```
+
+Authorization:
+
+```text
+Semantic Object: ZAuthorizationManagement
+Action: manage
+Application Type: SAPUI5 Fiori App
+URL: /sap/bc/ui5_ui5/sap/zztbl_auth_ui
+ID / Component ID: ztbl.authorization.ui
 ```
 
 ## 9. Nhiem vu thanh vien 2

@@ -21,13 +21,16 @@
     "build:table:deploy-dist": "ui5 build preload --clean-dest --config ui5.yaml --dest dist",
     "build:approval:deploy-dist": "ui5 build preload --clean-dest --config ui5-approval.yaml --dest dist",
     "build:audit:deploy-dist": "ui5 build preload --clean-dest --config ui5-audit.yaml --dest dist",
+    "build:authorization:deploy-dist": "ui5 build preload --clean-dest --config ui5-authorization.yaml --dest dist",
     "deploy": "npm run deploy:table",
     "deploy:table": "fiori deploy --config ui5-deploy.yaml --yes",
     "deploy:approval": "fiori deploy --config ui5-deploy-approval.yaml --yes",
     "deploy:audit": "fiori deploy --config ui5-deploy-audit.yaml --yes",
+    "deploy:authorization": "fiori deploy --config ui5-deploy-authorization.yaml --yes",
     "build:deploy": "npm run clean:dist && npm run build:table:deploy-dist && npm run deploy:table",
     "build:deploy:approval": "npm run clean:dist && npm run build:approval:deploy-dist && npm run deploy:approval",
-    "build:deploy:audit": "npm run clean:dist && npm run build:audit:deploy-dist && npm run deploy:audit"
+    "build:deploy:audit": "npm run clean:dist && npm run build:audit:deploy-dist && npm run deploy:audit",
+    "build:deploy:authorization": "npm run clean:dist && npm run build:authorization:deploy-dist && npm run deploy:authorization"
   },
   "devDependencies": {
     "@sap-ux/ui5-middleware-fe-mockserver": "^2.4.13",
