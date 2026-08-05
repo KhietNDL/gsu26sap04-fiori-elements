@@ -154,7 +154,7 @@ sap.ui.define([], function () {
     }
 
     if (action === "Bulk") {
-      return "Information";
+      return "None";
     }
 
     return "None";
@@ -322,8 +322,16 @@ sap.ui.define([], function () {
     return formatActionText(action);
   }
 
+  function formatOperationState(actionType, recordKey) {
+    var state = formatOperationText(actionType, recordKey) === "Bulk"
+      ? "None"
+      : formatActionState(actionType);
+
+    return state || "None";
+  }
+
   function formatRowActionState(actionType, recordKey) {
-    return isBulkRecordKey(recordKey) ? "Information" : formatActionState(actionType);
+    return isBulkRecordKey(recordKey) ? "None" : formatActionState(actionType);
   }
 
   function isBulkVisible(recordKey) {
@@ -426,7 +434,21 @@ sap.ui.define([], function () {
       return {
         field: (newRow || oldRow || {}).field || mapFieldLabel(key),
         oldValue: oldRow ? oldRow.value : "—",
-        newValue: newRow ? newRow.value : "—"
+        newValue: newRow ? newRow.value : "—",
+        oldCompare: oldRow ? oldRow.value : "",
+        newCompare: newRow ? newRow.value : ""
+      };
+    }).filter(function (row) {
+      if (actionText === "Update") {
+        return row.oldCompare !== row.newCompare;
+      }
+
+      return row.oldValue !== "—" || row.newValue !== "—";
+    }).map(function (row) {
+      return {
+        field: row.field,
+        oldValue: row.oldValue,
+        newValue: row.newValue
       };
     });
   }
@@ -438,6 +460,10 @@ sap.ui.define([], function () {
 
     if (oldRows.length || newRows.length) {
       return buildJsonChangeRows(values, actionText, oldRows, newRows);
+    }
+
+    if (actionText === "Update" && formatAuditValue(values.OldValue) === formatAuditValue(values.NewValue)) {
+      return [];
     }
 
     return [{
@@ -486,6 +512,7 @@ sap.ui.define([], function () {
     formatBulkRecordKeyText: formatBulkRecordKeyText,
     formatRowActionText: formatRowActionText,
     formatOperationText: formatOperationText,
+    formatOperationState: formatOperationState,
     formatRowActionState: formatRowActionState,
     isBulkVisible: isBulkVisible,
     getRecordKeyRows: getRecordKeyRows,
@@ -513,6 +540,7 @@ sap.ui.define([], function () {
       formatBulkRecordKeyText: formatBulkRecordKeyText,
       formatRowActionText: formatRowActionText,
       formatOperationText: formatOperationText,
+      formatOperationState: formatOperationState,
       formatRowActionState: formatRowActionState,
       isBulkVisible: isBulkVisible,
       getRecordKeyRows: getRecordKeyRows,

@@ -119,6 +119,11 @@ assert.strictEqual(api.formatActionState("C"), "Success", "Create semantic state
 assert.strictEqual(api.formatActionState("U"), "Information", "Update semantic state");
 assert.strictEqual(api.formatActionState("D"), "Error", "Delete semantic state");
 assert.strictEqual(api.formatActionState("R"), "Warning", "Rollback semantic state");
+assert.strictEqual(api.formatActionState("BULK"), "None", "bulk uses neutral gray state");
+assert.strictEqual(api.formatOperationText("C", "ENTITY_ID=0001"), "Create", "operation hides normal record key");
+assert.strictEqual(api.formatOperationText("D", "{\"ENTITY_ID\":\"\"}"), "Delete", "operation hides JSON record key");
+assert.strictEqual(api.formatOperationText("U", "BULK"), "Bulk", "bulk operation remains compact");
+assert.strictEqual(api.formatOperationState("C", "ENTITY_ID=0001"), "Success", "operation uses semantic state");
 
 assert.strictEqual(api.formatAuditValue(""), "—", "empty string becomes dash");
 assert.strictEqual(api.formatAuditValue("   "), "—", "whitespace string becomes dash");
@@ -246,6 +251,31 @@ assertJsonEqual(plainStringDetail.changeRows, [{
   newValue: "A102"
 }], "plain field-level values render directly");
 
+const normalAuditItems = controllerApi.buildAuditItemsData({
+  AuditId: "A-NORMAL",
+  TableName: "ZTPC_HEADER",
+  RecordKey: "ENTITY_ID=00000000000000000000000000000000",
+  FieldName: "",
+  OldValue: "",
+  NewValue: JSON.stringify({
+    ENTITY_ID: "1",
+    PRODUCT_CATEGORY: "PC01",
+    DESCRIPTION: "em đẹp lắm",
+    STATUS: "I",
+    VALID_FROM: "2026-05-20",
+    VALID_TO: "2026-05-28",
+    COMPANY_CODE: "1000",
+    PLANT: "01BD"
+  }),
+  ChangedBy: "DEV-251",
+  ChangedAt: "2026-05-20T16:47:00Z",
+  ActionType: "C"
+}, []);
+assert.strictEqual(normalAuditItems.itemRows.length, 1, "normal audit without child entity renders one item");
+assert.strictEqual(normalAuditItems.rows.length, 8, "normal audit item renders fields from NewValue snapshot");
+assert.strictEqual(normalAuditItems.rows[1].field, "Product Category", "normal audit item preserves snapshot field labels");
+assert.strictEqual(normalAuditItems.rows[1].newValue, "PC01", "normal audit item preserves snapshot values");
+
 const jsonValueDetail = controllerApi.buildAuditDetail({
   AuditId: "A6",
   TableName: "Z251_SCHEDULE",
@@ -259,9 +289,18 @@ const jsonValueDetail = controllerApi.buildAuditDetail({
 });
 assertJsonEqual(jsonValueDetail.changeRows, [
   { field: "Room", oldValue: "A101", newValue: "A102" },
-  { field: "Seats", oldValue: "0", newValue: "0" },
   { field: "Active", oldValue: "No", newValue: "Yes" }
-], "JSON OldValue/NewValue are parsed into readable rows");
+], "JSON OldValue/NewValue show changed fields only");
+
+const unchangedDetail = controllerApi.buildAuditDetail({
+  AuditId: "A-UNCHANGED",
+  TableName: "ZTPC_HEADER",
+  RecordKey: "ENTITY_ID=1",
+  OldValue: JSON.stringify({ STATUS: "I", ERDAT: "2026-05-20" }),
+  NewValue: JSON.stringify({ STATUS: "I", ERDAT: "2026-05-20" }),
+  ActionType: "U"
+});
+assert.strictEqual(unchangedDetail.changeRows.length, 0, "update with no changed fields renders no rows");
 
 const zeroFalseDetail = controllerApi.buildAuditDetail({
   AuditId: "A7",

@@ -406,6 +406,58 @@ sap.ui.define([
     };
   }
 
+  function buildAuditItemsData(parentValues, items) {
+    var rows = [];
+    var itemRows = [];
+    var operationControl = parentValues.__OperationControl;
+
+    if ((!items || !items.length) && !AuditFormatter.isBulkRecord(parentValues)) {
+      items = [parentValues];
+    }
+
+    (items || []).forEach(function (item, index) {
+      var itemValues = valuesFromObject(item);
+      var itemView = AuditFormatter.buildBulkItemViewModel(itemValues, index);
+
+      itemRows.push({
+        item: itemView.itemNumber,
+        actionText: itemView.actionText,
+        actionState: itemView.actionState,
+        recordKey: itemView.recordKeyText,
+        recordKeyRows: itemView.recordKeyRows,
+        changeRows: itemView.changeRows,
+        showOldColumn: itemView.showOldColumn,
+        showNewColumn: itemView.showNewColumn,
+        oldColumnHeader: itemView.oldColumnHeader,
+        newColumnHeader: itemView.newColumnHeader,
+        statusText: AuditFormatter.isRollbackAvailable(operationControl) ? "Rollback available" : "Review required",
+        statusState: AuditFormatter.isRollbackAvailable(operationControl) ? "Success" : "Information",
+        message: "Changed by " + AuditFormatter.formatAuditValue(parentValues.ChangedBy) +
+          " · " + AuditFormatter.formatTimestamp(parentValues.ChangedAt)
+      });
+
+      (itemView.changeRows || []).forEach(function (change) {
+        rows.push({
+          item: itemView.itemNumber,
+          actionText: itemView.actionText,
+          actionState: itemView.actionState,
+          recordKey: itemView.recordKeyText,
+          field: change.field,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          showOldColumn: itemView.showOldColumn,
+          showNewColumn: itemView.showNewColumn
+        });
+      });
+    });
+
+    return {
+      rows: rows,
+      itemRows: itemRows,
+      itemSummary: itemRows.length + " item(s)"
+    };
+  }
+
   function updateAuditModel(view, context) {
     var model = ensureAuditModel(view);
 
@@ -421,49 +473,11 @@ sap.ui.define([
         }
         return items || [];
       }).then(function (items) {
-        var rows = [];
-        var itemRows = [];
-
-        (items || []).forEach(function (item, index) {
-          var itemView = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), index);
-
-          itemRows.push({
-            item: itemView.itemNumber,
-            actionText: itemView.actionText,
-            actionState: itemView.actionState,
-            recordKey: itemView.recordKeyText,
-            recordKeyRows: itemView.recordKeyRows,
-            changeRows: itemView.changeRows,
-            showOldColumn: itemView.showOldColumn,
-            showNewColumn: itemView.showNewColumn,
-            oldColumnHeader: itemView.oldColumnHeader,
-            newColumnHeader: itemView.newColumnHeader,
-            statusText: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Rollback available" : "Review required",
-            statusState: AuditFormatter.isRollbackAvailable(values.__OperationControl) ? "Success" : "Information",
-            message: "Changed by " + AuditFormatter.formatAuditValue(values.ChangedBy) +
-              " · " + AuditFormatter.formatTimestamp(values.ChangedAt)
-          });
-
-          (itemView.changeRows || []).forEach(function (change) {
-            rows.push({
-              item: itemView.itemNumber,
-              actionText: itemView.actionText,
-              actionState: itemView.actionState,
-              recordKey: itemView.recordKeyText,
-              field: change.field,
-              oldValue: change.oldValue,
-              newValue: change.newValue,
-              showOldColumn: itemView.showOldColumn,
-              showNewColumn: itemView.showNewColumn
-            });
-          });
-        });
-
-        ensureAuditItemsModel(view).setData({
-          rows: rows,
-          itemRows: itemRows,
-          itemSummary: itemRows.length + " item(s)"
-        });
+        // Normal audit rows do not have an AuditItem child. Their NewValue/
+        // OldValue snapshot is still one logical item and must be rendered.
+        // Keep an empty result for bulk rows so the bulk dialog remains the
+        // single source of truth when child items are missing.
+        ensureAuditItemsModel(view).setData(buildAuditItemsData(values, items));
       });
     });
   }
@@ -830,6 +844,7 @@ sap.ui.define([
     buildAuditDetail: buildAuditDetail,
     buildInfoRows: buildInfoRows,
     buildBulkDialogData: buildBulkDialogData,
+    buildAuditItemsData: buildAuditItemsData,
     valuesFromObject: valuesFromObject,
     collectLoadedAuditRows: collectLoadedAuditRows,
     executeRollback: executeRollback

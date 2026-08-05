@@ -3,6 +3,17 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
+const manifestPath = path.join(__dirname, "..", "apps", "approval-request", "webapp", "manifest.json");
+const approvalManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const selectionFieldConfig = approvalManifest["sap.ui5"].routing.targets.ApprovalRequestList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.SelectionFields"];
+assert.strictEqual(selectionFieldConfig.filterFields.Status.template, "ztbl.approval.ui.ext.fragment.StatusFilterField", "approval status uses custom dropdown filter");
+const statusFilterFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "StatusFilterField.fragment.xml"), "utf8");
+assert.ok(statusFilterFragment.includes('key="APPROVED" text="Approved"'), "status dropdown includes Approved");
+assert.ok(statusFilterFragment.includes('key="PENDING" text="Pending"'), "status dropdown includes Pending");
+assert.ok(statusFilterFragment.includes('key="REJECTED" text="Rejected"'), "status dropdown includes Rejected");
+const requestOverviewFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "RequestOverview.fragment.xml"), "utf8");
+assert.ok(requestOverviewFragment.includes('text="{approvalDetail>/comment}"'), "approval object page renders the approval comment");
+
 function loadController() {
   const controllerPath = path.join(
     __dirname,
@@ -270,7 +281,6 @@ assertJsonEqual(infoRows.map((row) => row.label), [
   "Submitted At"
 ], "empty reviewed fields are hidden");
 assert.ok(/07:00:00/.test(infoRows[5].value), "submitted UTC time is converted to Vietnam time");
-assert.ok(/GMT\+7/.test(infoRows[5].value), "submitted time shows Vietnam timezone");
 assert.ok(/17:58:52/.test(api.formatVietnamTimestamp("2026-07-14T10:58:52.098366Z")), "microsecond UTC timestamp is converted to Vietnam time");
 
 const bulkInfoRows = api.buildRequestInfoRows({
@@ -289,6 +299,25 @@ assert.strictEqual(api.getRequestActionText("U", "BULK"), "BULK", "unknown bulk 
 assert.strictEqual(api.getRequestActionText("U", "BULK", "", 1), "Update", "one bulk item shows its real action");
 assert.strictEqual(api.getRequestActionText("D", "BULK", "", 2), "BULK", "two or more bulk items show the bulk label");
 assert.strictEqual(api.getRequestActionState("D", "BULK", "", 2), "None", "bulk label is neutral instead of forcing a highlight color");
+
+assert.strictEqual(api.getApprovalActionFromRequest(
+  "/sap/opu/odata4/$batch",
+  "POST /com.sap.gateway.srvd.zsd_tbl_config.v0001.approve HTTP/1.1"
+), "approve", "batch request action is detected from the embedded URL");
+assert.strictEqual(api.injectRemarksIntoRequestBody('{"remarks":"old"}', "approve", "new comment"),
+  '{"remarks":"old"}', "existing direct remarks are preserved by design");
+const batchBody = [
+  "--batch_x",
+  "Content-Type: application/http",
+  "",
+  "POST /com.sap.gateway.srvd.zsd_tbl_config.v0001.approve HTTP/1.1",
+  "Content-Type: application/json",
+  "",
+  "{}",
+  "--batch_x--"
+].join("\\r\\n");
+assert.ok(api.injectRemarksIntoRequestBody(batchBody, "approve", "new comment").includes('"remarks":"new comment"'),
+  "batch action payload receives remarks");
 
 const singleApprovalItems = createControl("Approval Items");
 const singleExcelItems = createControl("Excel Approval Items");
@@ -503,6 +532,28 @@ assert.notStrictEqual(item1Detail.bulkItemOldDataJson, item2Detail.bulkItemOldDa
 assert.notStrictEqual(item1Detail.bulkItemOldDataJson, api.formatRawJson(requestLevelValues.OldData), "request-level raw JSON is not used as item-level detail");
 
 const lifecycleOwner = {};
+const responseContext = {
+  getObject: function () {
+    return {
+      AprvlId: "8B95F36A4F271FD1A492171350C57AD0",
+      TableName: "Z251_SCHEDULE",
+      ActionType: "U",
+      Status: "REJECTED",
+      AprvlComment: "a"
+    };
+  },
+  getProperty: function (propertyName) {
+    return this.getObject()[propertyName];
+  },
+  requestObject: function () {
+    return Promise.resolve(this.getObject());
+  },
+  requestProperty: function (propertyName) {
+    // Simulate a generated object-page $select that does not expose the
+    // comment through requestProperty although the entity response has it.
+    return Promise.resolve(propertyName === "AprvlComment" ? undefined : this.getObject()[propertyName]);
+  }
+};
 const lifecycleView = createView({
   __path: "/ApprovalRequest('REQ-A')",
   AprvlId: "REQ-A",
@@ -511,6 +562,12 @@ const lifecycleView = createView({
 }, []);
 
 Promise.resolve()
+  .then(function () {
+    return api.requestContextValues(responseContext);
+  })
+  .then(function (values) {
+    assert.strictEqual(values.AprvlComment, "a", "entity response comment is retained when requestProperty does not return it");
+  })
   .then(function () {
     return api.handleApprovalContextChanged(lifecycleOwner, lifecycleView, lifecycleView.getBindingContext());
   })

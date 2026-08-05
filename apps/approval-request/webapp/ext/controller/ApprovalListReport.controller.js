@@ -443,55 +443,71 @@ sap.ui.define([
 
   function requestContextValues(context) {
     var values = {};
+    var objectPromise;
+
+    function mergeObject(object) {
+      Object.keys(object || {}).forEach(function (propertyName) {
+        if (values[propertyName] === undefined) {
+          values[propertyName] = object[propertyName];
+        }
+      });
+    }
 
     if (!context) {
       return Promise.resolve(values);
     }
 
-    return Promise.all(DETAIL_PROPERTIES.map(function (propertyName) {
-      var propertyPromise;
-
-      if (!context.requestProperty) {
-        values[propertyName] = getContextValue(context, propertyName);
-        return Promise.resolve();
-      }
-
+    // Read the entity once first. This is important for ApprovalRequest:
+    // AprvlComment can be present in the entity response even when the
+    // generated object-page binding did not include it in its initial $select.
+    if (context.requestObject) {
       try {
-        propertyPromise = context.requestProperty(propertyName);
+        objectPromise = Promise.resolve(context.requestObject());
       } catch (error) {
-        values[propertyName] = getContextValue(context, propertyName);
-        return Promise.resolve();
+        objectPromise = Promise.resolve(null);
       }
+    } else {
+      objectPromise = Promise.resolve(null);
+    }
 
-      return propertyPromise.then(function (value) {
-        values[propertyName] = value;
-      }).catch(function () {
-        values[propertyName] = getContextValue(context, propertyName);
-      });
-    })).then(function () {
-      var objectPromise;
+    return objectPromise.then(function (object) {
+      mergeObject(object);
 
-      if (!context.requestObject) {
-        return values;
-      }
+      return Promise.all(DETAIL_PROPERTIES.map(function (propertyName) {
+        var propertyPromise;
 
-      try {
-        objectPromise = context.requestObject();
-      } catch (error) {
-        return values;
-      }
+        if (values[propertyName] !== undefined) {
+          return Promise.resolve();
+        }
 
-      return objectPromise.then(function (object) {
-        Object.keys(object || {}).forEach(function (propertyName) {
-          if (values[propertyName] === undefined) {
-            values[propertyName] = object[propertyName];
+        if (!context.requestProperty) {
+          values[propertyName] = getContextValue(context, propertyName);
+          return Promise.resolve();
+        }
+
+        try {
+          propertyPromise = Promise.resolve(context.requestProperty(propertyName));
+        } catch (error) {
+          values[propertyName] = getContextValue(context, propertyName);
+          return Promise.resolve();
+        }
+
+        return propertyPromise.then(function (value) {
+          if (value !== undefined) {
+            values[propertyName] = value;
           }
+        }).catch(function () {
+          values[propertyName] = getContextValue(context, propertyName);
         });
-
-        return values;
-      }).catch(function () {
-        return values;
+      }));
+    }).then(function () {
+      DETAIL_PROPERTIES.forEach(function (propertyName) {
+        if (values[propertyName] === undefined) {
+          values[propertyName] = getContextValue(context, propertyName);
+        }
       });
+
+      return values;
     });
   }
 
@@ -574,6 +590,28 @@ sap.ui.define([
     return "";
   }
 
+  function getDomDialogActionName(domDialog) {
+    var titleElement;
+    var title;
+
+    if (!domDialog || !domDialog.querySelector) {
+      return "";
+    }
+
+    titleElement = domDialog.querySelector(".sapMDialogTitle, .sapMDialogTitleGroup, [role='heading']");
+    title = String(titleElement && titleElement.textContent || "").trim().toLowerCase();
+
+    if (title.indexOf("approve") === 0) {
+      return "approve";
+    }
+
+    if (title.indexOf("reject") === 0) {
+      return "reject";
+    }
+
+    return "";
+  }
+
   function findRemarksInput(dialog) {
     var input = null;
 
@@ -594,20 +632,31 @@ sap.ui.define([
   }
 
   function captureApprovalActionRemarks(event) {
-    var button = getControlFromDom(event && event.target && event.target.closest && event.target.closest(".sapMBtn"));
+    var target = event && event.target;
+    var domButton = target && target.closest && target.closest(".sapMBtn");
+    var domDialog = target && target.closest && target.closest(".sapMDialog");
+    var button = getControlFromDom(domButton);
     var dialog = getParentDialog(button);
-    var actionName = getDialogActionName(dialog);
+    var actionName = getDialogActionName(dialog) || getDomDialogActionName(domDialog);
     var buttonText = button && button.getText && String(button.getText()).trim().toLowerCase();
     var input;
+    var domInput;
+    var remarks;
 
-    if (!actionName || buttonText !== actionName) {
+    // FE may render the action submit button as Approve/Reject, OK, Apply,
+    // or a translated label. The dialog title identifies the action; only
+    // ignore buttons that clearly cancel/close the dialog.
+    if (!actionName || /^(cancel|close|back)$/i.test(buttonText)) {
       return;
     }
 
     input = findRemarksInput(dialog);
+    domInput = domDialog && domDialog.querySelector && domDialog.querySelector("textarea, input:not([type='hidden'])");
+    remarks = domInput && domInput.value !== undefined ? domInput.value : input && input.getValue && input.getValue();
+
     window.__ztblApprovalActionRemarks = {
       action: actionName,
-      remarks: normalizeRemarks(input && input.getValue && input.getValue()),
+      remarks: normalizeRemarks(remarks),
       timestamp: Date.now()
     };
   }
@@ -617,9 +666,87 @@ sap.ui.define([
   }
 
   function getApprovalActionFromUrl(url) {
-    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$)/);
+    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$|[\s"'])/);
 
     return match && match[1] || "";
+  }
+
+  function getApprovalActionFromRequest(url, body) {
+    return getApprovalActionFromUrl(url) || getApprovalActionFromUrl(body);
+  }
+
+  function injectRemarksIntoRequestBody(body, actionName, remarks) {
+    var payload;
+    var actionIndex;
+    var separatorIndex;
+    var separatorLength;
+    var payloadStart;
+    var payloadEnd;
+    var payloadText;
+    var lineBreak = "\r\n";
+    var escapedLineBreak = "\\r\\n";
+
+    if (typeof body !== "string") {
+      return body;
+    }
+
+    try {
+      payload = JSON.parse(body);
+      payload.remarks = normalizeRemarks(payload.remarks || remarks);
+      return JSON.stringify(payload);
+    } catch (error) {
+      // OData V4 may wrap the action in a multipart $batch request.
+    }
+
+    actionIndex = String(body).indexOf("." + actionName);
+
+    if (actionIndex < 0) {
+      return body;
+    }
+
+    separatorIndex = body.indexOf(lineBreak + lineBreak, actionIndex);
+    separatorLength = (lineBreak + lineBreak).length;
+
+    if (separatorIndex < 0) {
+      separatorIndex = body.indexOf("\n\n", actionIndex);
+      separatorLength = 2;
+    }
+
+    if (separatorIndex < 0) {
+      separatorIndex = body.indexOf(escapedLineBreak + escapedLineBreak, actionIndex);
+      separatorLength = (escapedLineBreak + escapedLineBreak).length;
+    }
+
+    if (separatorIndex < 0) {
+      return body;
+    }
+
+    payloadStart = separatorIndex + separatorLength;
+    payloadEnd = body.indexOf(lineBreak + "--", payloadStart);
+
+    if (payloadEnd < 0) {
+      payloadEnd = body.indexOf("\n--", payloadStart);
+    }
+
+    if (payloadEnd < 0) {
+      payloadEnd = body.indexOf(escapedLineBreak + "--", payloadStart);
+    }
+
+    if (payloadEnd < 0) {
+      payloadEnd = body.length;
+    }
+
+    payloadText = body.slice(payloadStart, payloadEnd).trim();
+
+    try {
+      payload = JSON.parse(payloadText);
+    } catch (parseError) {
+      return body;
+    }
+
+    payload.remarks = normalizeRemarks(payload.remarks || remarks);
+
+    return body.slice(0, payloadStart) + JSON.stringify(payload) + body.slice(payloadEnd);
   }
 
   function getCapturedRemarksForAction(actionName) {
@@ -650,23 +777,14 @@ sap.ui.define([
     };
 
     window.XMLHttpRequest.prototype.send = function (body) {
-      var actionName = getApprovalActionFromUrl(this.__ztblApprovalActionUrl);
+      var actionName = getApprovalActionFromRequest(this.__ztblApprovalActionUrl, body);
       var remarks = getCapturedRemarksForAction(actionName);
-      var payload;
 
-      if (!actionName || remarks === null || !isApprovalActionUrl(this.__ztblApprovalActionUrl)) {
+      if (!actionName || remarks === null) {
         return originalSend.apply(this, arguments);
       }
 
-      try {
-        payload = body ? JSON.parse(body) : {};
-      } catch (error) {
-        payload = {};
-      }
-
-      payload.remarks = normalizeRemarks(payload.remarks || remarks);
-
-      return originalSend.call(this, JSON.stringify(payload));
+      return originalSend.call(this, injectRemarksIntoRequestBody(body, actionName, remarks));
     };
   }
 
@@ -925,8 +1043,9 @@ sap.ui.define([
   function isBulkRequest(view) {
     var context = getObjectPageContext(view);
     var recordKey = getContextValue(context, "RecordKey");
+    var recordKeyText = getContextValue(context, "RecordKeyText");
 
-    return isBulkValues(recordKey);
+    return isBulkValues(recordKey, recordKeyText);
   }
 
   function isApprovalItemsSection(control) {
@@ -1837,11 +1956,14 @@ sap.ui.define([
     clearBulkItemSelection: clearBulkItemSelection,
     clearItemsLoadingForSingle: clearItemsLoadingForSingle,
     handleApprovalContextChanged: handleApprovalContextChanged,
+    requestContextValues: requestContextValues,
     formatRawJson: formatRawJson,
     formatVietnamTimestamp: formatVietnamTimestamp,
     buildRequestInfoRows: buildRequestInfoRows,
     getRequestActionText: getRequestActionText,
-    getRequestActionState: getRequestActionState
+    getRequestActionState: getRequestActionState,
+    getApprovalActionFromRequest: getApprovalActionFromRequest,
+    injectRemarksIntoRequestBody: injectRemarksIntoRequestBody
   };
 
   return ApprovalListReportExtension;

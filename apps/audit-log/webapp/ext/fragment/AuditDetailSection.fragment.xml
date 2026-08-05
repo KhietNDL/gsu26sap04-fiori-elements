@@ -26,41 +26,98 @@
       visible="{auditDetail>/rollbackMessageVisible}"
       class="sapUiSmallMarginBottom"/>
 
-    <Title text="Audit Items" level="H3" class="sapUiTinyMarginBottom"/>
-    <MessageStrip
-      type="Information"
-      showIcon="true"
-      text="Review the audit item and open the detail before performing a rollback."
-      class="sapUiSmallMarginBottom"/>
-    <Text
-      text="{auditItems>/itemSummary}"
-      class="auditItemsSummary sapUiTinyMarginBottom"/>
-    <List
-      width="100%"
-      showNoData="true"
-      noDataText="No audit items available"
-      items="{auditItems>/itemRows}">
-      <CustomListItem>
-        <VBox class="auditInlineItemCard">
-          <FlexBox wrap="Wrap" class="auditInlineItemHeader">
-            <VBox class="auditInlineItemCell"><Label text="Item Number"/><Text text="{auditItems>item}"/></VBox>
-            <VBox class="auditInlineItemCell"><Label text="Action Type"/><ObjectStatus text="{auditItems>actionText}" state="{auditItems>actionState}"/></VBox>
-            <VBox class="auditInlineItemCell"><Label text="Status"/><ObjectStatus text="{auditItems>statusText}" state="{auditItems>statusState}"/></VBox>
-          </FlexBox>
-          <Label text="Record Key" class="sapUiSmallMarginTop"/>
-          <Text text="{auditItems>recordKey}" wrapping="true" class="auditItemRecordKeyText"/>
-          <Table width="100%" fixedLayout="false" class="auditChangeSapTable sapUiSmallMarginTop" items="{auditItems>recordKeyRows}">
-            <columns><Column width="16rem"><Text text="Field"/></Column><Column><Text text="Value"/></Column></columns>
-            <items><ColumnListItem><cells><ObjectIdentifier title="{auditItems>field}" class="auditFieldName"/><Text text="{auditItems>value}" wrapping="true"/></cells></ColumnListItem></items>
-          </Table>
-          <MessageStrip type="Information" showIcon="true" text="{auditItems>message}" class="sapUiTinyMarginTop"/>
-          <Table width="100%" fixedLayout="false" class="auditChangeSapTable sapUiSmallMarginTop" items="{auditItems>changeRows}">
-            <columns><Column width="16rem"><Text text="Field"/></Column><Column visible="{auditItems>showOldColumn}"><Text text="{auditItems>oldColumnHeader}"/></Column><Column visible="{auditItems>showNewColumn}"><Text text="{auditItems>newColumnHeader}"/></Column></columns>
-            <items><ColumnListItem><cells><ObjectIdentifier title="{auditItems>field}" class="auditFieldName"/><Text text="{auditItems>oldValue}" visible="{auditItems>showOldColumn}" wrapping="true"/><Text text="{auditItems>newValue}" visible="{auditItems>showNewColumn}" wrapping="true"/></cells></ColumnListItem></items>
-          </Table>
-        </VBox>
-      </CustomListItem>
-    </List>
+    <VBox visible="{= !${auditDetail>/bulkVisible} }" class="auditRequestDetail auditBusinessChange">
+      <Panel
+        expandable="true"
+        expanded="true"
+        headerText="Record Key"
+        class="auditObjectKeyPanel sapUiSmallMarginBottom"
+        visible="{auditDetail>/recordKeyVisible}">
+        <Table width="100%" fixedLayout="false" showNoData="false" items="{auditDetail>/recordKeyRows}">
+          <columns>
+            <Column width="16rem"><Text text="Field"/></Column>
+            <Column><Text text="Value"/></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <ObjectIdentifier title="{auditDetail>field}" class="auditFieldName"/>
+                <Text text="{auditDetail>value}" wrapping="true"/>
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </Panel>
+
+      <Title text="{auditDetail>/changeTitle}" level="H3" class="sapUiTinyMarginBottom"/>
+      <MessageStrip
+        type="Information"
+        showIcon="true"
+        text="Review the field values changed by this audit operation."
+        class="sapUiSmallMarginBottom"/>
+      <Table
+        width="100%"
+        class="auditChangeSapTable"
+        fixedLayout="false"
+        showNoData="true"
+        noDataText="No business field changes available"
+        items="{auditDetail>/changeRows}">
+        <columns>
+          <Column width="16rem"><Text text="Field"/></Column>
+          <Column visible="{auditDetail>/showOldColumn}"><Text text="{auditDetail>/oldColumnHeader}"/></Column>
+          <Column visible="{auditDetail>/showNewColumn}"><Text text="{auditDetail>/newColumnHeader}"/></Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <ObjectIdentifier title="{auditDetail>field}" class="auditFieldName"/>
+              <Text text="{auditDetail>oldValue}" visible="{auditDetail>/showOldColumn}" wrapping="true"/>
+              <Text text="{auditDetail>newValue}" visible="{auditDetail>/showNewColumn}" wrapping="true"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </VBox>
+
+    <VBox visible="{auditDetail>/bulkVisible}" class="auditBulkItems sapUiSmallMarginTop">
+      <Title text="Audit Items" level="H3" class="sapUiTinyMarginBottom"/>
+      <MessageStrip
+        type="Information"
+        showIcon="true"
+        text="Review each audit item before performing a rollback."
+        class="sapUiSmallMarginBottom"/>
+      <Text text="{auditItems>/itemSummary}" class="auditItemsSummary sapUiTinyMarginBottom"/>
+      <Table
+        width="100%"
+        class="auditChangeSapTable"
+        fixedLayout="false"
+        growing="true"
+        showNoData="true"
+        noDataText="No audit items available"
+        items="{auditItems>/itemRows}">
+        <columns>
+          <Column width="6rem"><Text text="Item No"/></Column>
+          <Column width="9rem"><Text text="Action"/></Column>
+          <Column><Text text="Record Key"/></Column>
+          <Column width="10rem" hAlign="End"><Text text="View Changes"/></Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{auditItems>item}"/>
+              <ObjectStatus text="{auditItems>actionText}" state="{auditItems>actionState}"/>
+              <Text text="{auditItems>recordKey}" wrapping="true" class="auditLongText"/>
+              <Button
+                text="View Changes"
+                icon="sap-icon://display"
+                type="Transparent"
+                tooltip="View parsed item changes"
+                press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onAuditItemViewChangesPress"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </VBox>
 
     <Panel
       headerText="Raw JSON"
