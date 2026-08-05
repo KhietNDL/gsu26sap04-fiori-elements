@@ -518,6 +518,17 @@
   overflow-wrap: anywhere;
 }
 
+.viewChangesButton .sapMBtnContent,
+.viewChangesButton .sapMBtnIcon {
+  color: #b26a00;
+}
+
+.viewChangesButton.sapMBtn:hover .sapMBtnInner,
+.viewChangesButton.sapMBtn:focus .sapMBtnInner {
+  background-color: #fff3cd;
+  border-color: #d99a00;
+}
+
 @media (max-width: 37.5rem) {
   .approvalChangeTable--cols3 {
     grid-template-columns: minmax(8rem, 34%) minmax(0, 1fr) minmax(0, 1fr);

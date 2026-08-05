@@ -130,8 +130,23 @@
                 }
               },
               "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.SelectionFields": {
+                  "filterFields": {
+                    "ActionType": {
+                      "label": "Operation",
+                      "template": "ztbl.audit.ui.ext.fragment.ActionTypeFilterField",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "ChangedBy"
+                      }
+                    }
+                  }
+                },
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "columns": {
+                    "DataField::AuditId": {
+                      "width": "20rem"
+                    },
                     "DataField::RecordKey": {
                       "availability": "Hidden"
                     },

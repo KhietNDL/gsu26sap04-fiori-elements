@@ -1,9 +1,8 @@
 <core:FragmentDefinition
   xmlns="sap.m"
-  xmlns:core="sap.ui.core"
-  core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
+  xmlns:core="sap.ui.core">
   <ObjectStatus
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatOperationText'}"
-    state="None"
+    text="{= ${RecordKey} === 'BULK' ? 'Bulk' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
+    state="{= ${RecordKey} === 'BULK' ? 'None' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"
     class="auditOperationStatus"/>
 </core:FragmentDefinition>

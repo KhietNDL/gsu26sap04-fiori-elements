@@ -49,6 +49,32 @@
   white-space: normal;
 }
 
+.auditListReportTable .auditListAuditIdCell,
+.auditListReportTable .auditListAuditIdCell .sapMText,
+.auditListReportTable .auditListAuditIdCell .sapMObjectIdentifierTitle,
+.auditListReportTable .auditListAuditIdCell .sapMObjectIdentifierText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auditListReportTable .auditListOperationCell,
+.auditListReportTable .auditListOperationCell .sapMObjStatusText {
+  white-space: nowrap;
+}
+
+.auditOperationStatus {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auditOperationStatus .sapMObjStatusText {
+  white-space: nowrap;
+}
+
 .auditBusinessChange {
   box-sizing: border-box;
 }
@@ -214,4 +240,15 @@
   min-width: 0;
   vertical-align: top;
   overflow-wrap: anywhere;
+}
+
+.viewChangesButton .sapMBtnContent,
+.viewChangesButton .sapMBtnIcon {
+  color: #b26a00;
+}
+
+.viewChangesButton.sapMBtn:hover .sapMBtnInner,
+.viewChangesButton.sapMBtn:focus .sapMBtnInner {
+  background-color: #fff3cd;
+  border-color: #d99a00;
 }

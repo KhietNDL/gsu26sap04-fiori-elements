@@ -128,6 +128,10 @@
                 <PropertyValue Property="Value" Path="CanDelete"/>
                 <PropertyValue Property="Label" String="Delete"/>
               </Record>
+              <Record Type="UI.DataField">
+             <PropertyValue Property="Value" Path="CanUpload"/>
+                <PropertyValue Property="Label" String="Upload"/>
+              </Record>
             </Collection>
           </PropertyValue>
         </Record>
@@ -160,6 +164,10 @@
 
     <Annotations Target="AUTH.UserPermissionsType/CanDelete" xmlns="http://docs.oasis-open.org/odata/ns/edm">
       <Annotation Term="Common.Label" String="Delete"/>
+    </Annotations>
+
+    <Annotations Target="AUTH.UserPermissionsType/CanUpload" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Upload"/>
     </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>

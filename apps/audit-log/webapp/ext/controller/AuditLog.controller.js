@@ -6,8 +6,11 @@ sap.ui.define([
   "sap/m/MessageBox",
   "sap/m/MessageToast",
   "ztbl/audit/ui/ext/formatter/AuditFormatter",
-  "ztbl/audit/ui/ext/util/ODataErrorHandler"
-], function (ControllerExtension, Element, Fragment, JSONModel, MessageBox, MessageToast, AuditFormatter, ODataErrorHandler) {
+  "ztbl/audit/ui/ext/util/ODataErrorHandler",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
+  "sap/ui/model/Sorter"
+], function (ControllerExtension, Element, Fragment, JSONModel, MessageBox, MessageToast, AuditFormatter, ODataErrorHandler, Filter, FilterOperator, Sorter) {
   "use strict";
 
   var AUDIT_PROPERTIES = [
@@ -81,7 +84,14 @@ sap.ui.define([
     var model = view && view.getModel && view.getModel("auditItems");
 
     if (!model && view && view.setModel) {
-      model = new JSONModel({ rows: [] });
+      model = new JSONModel({
+        rows: [],
+        itemRows: [],
+        itemSummary: "",
+        itemsLoading: false,
+        itemsErrorVisible: false,
+        itemsErrorText: ""
+      });
       view.setModel(model, "auditItems");
     }
 
@@ -98,7 +108,7 @@ sap.ui.define([
         changedBy: "—",
         changedAt: "—",
         actionText: "Bulk",
-        actionState: "Information",
+        actionState: "None",
         summaryText: "",
         emptyVisible: false,
         emptyText: "",
@@ -113,31 +123,69 @@ sap.ui.define([
   function requestAuditValues(context) {
     var values = {};
 
+    function mergeObject(object) {
+      Object.keys(object || {}).forEach(function (propertyName) {
+        if (values[propertyName] === undefined) {
+          values[propertyName] = object[propertyName];
+        }
+      });
+    }
+
+    var objectPromise;
+
     if (!context) {
       return Promise.resolve(values);
     }
 
-    return Promise.all(AUDIT_PROPERTIES.map(function (propertyName) {
-      var propertyPromise;
-
-      if (!context.requestProperty) {
-        values[propertyName] = getContextValue(context, propertyName);
-        return Promise.resolve();
-      }
-
+    if (context.requestObject) {
       try {
-        propertyPromise = context.requestProperty(propertyName);
+        objectPromise = Promise.resolve(context.requestObject()).catch(function () {
+          return null;
+        });
       } catch (error) {
-        values[propertyName] = getContextValue(context, propertyName);
-        return Promise.resolve();
+        objectPromise = Promise.resolve(null);
       }
+    } else {
+      objectPromise = Promise.resolve(null);
+    }
 
-      return propertyPromise.then(function (value) {
-        values[propertyName] = value;
-      }).catch(function () {
-        values[propertyName] = getContextValue(context, propertyName);
+    return objectPromise.then(function (object) {
+      mergeObject(object);
+
+      return Promise.all(AUDIT_PROPERTIES.map(function (propertyName) {
+        var propertyPromise;
+
+        if (values[propertyName] !== undefined) {
+          return Promise.resolve();
+        }
+
+        if (!context.requestProperty) {
+          values[propertyName] = getContextValue(context, propertyName);
+          return Promise.resolve();
+        }
+
+        try {
+          propertyPromise = Promise.resolve(context.requestProperty(propertyName));
+        } catch (error) {
+          values[propertyName] = getContextValue(context, propertyName);
+          return Promise.resolve();
+        }
+
+        return propertyPromise.then(function (value) {
+          if (value !== undefined) {
+            values[propertyName] = value;
+          }
+        }).catch(function () {
+          values[propertyName] = getContextValue(context, propertyName);
+        });
+      }));
+    }).then(function () {
+      AUDIT_PROPERTIES.forEach(function (propertyName) {
+        if (values[propertyName] === undefined) {
+          values[propertyName] = getContextValue(context, propertyName);
+        }
       });
-    })).then(function () {
+
       return values;
     });
   }
@@ -177,10 +225,16 @@ sap.ui.define([
       return Promise.resolve([]);
     }
 
-    return binding.requestContexts(0, 200).then(function (contexts) {
+    return Promise.resolve().then(function () {
+      return binding.requestContexts(0, 1000);
+    }).then(function (contexts) {
       return (contexts || []).map(function (context) {
         return context && context.getObject ? context.getObject() : {};
       });
+    }).finally(function () {
+      if (binding && binding.destroy) {
+        binding.destroy();
+      }
     });
   }
 
@@ -212,15 +266,131 @@ sap.ui.define([
       return Promise.resolve([]);
     }
 
+    if (!Filter || !FilterOperator) {
+      return Promise.resolve([]);
+    }
+
     try {
-      binding = model.bindList("/AuditItem", null, null, null, {
-        $filter: "AuditId eq '" + escapeODataString(auditId) + "'"
+      binding = model.bindList("/AuditItem", null, null, [
+        new Filter("AuditId", FilterOperator.EQ, auditId)
+      ], {
+        $orderby: "ItemNo"
       });
     } catch (error) {
       return Promise.resolve([]);
     }
 
     return requestContextsFromListBinding(binding).catch(function () {
+      return [];
+    });
+  }
+
+  function isAuditChildRow(object, parentValues) {
+    var sameAuditPrefix;
+    var sameTable;
+    var sameChangedBy;
+    var sameTimestamp;
+
+    if (!object || String(object.RecordKey || "").trim().toUpperCase() === "BULK") {
+      return false;
+    }
+
+    sameAuditPrefix = object.AuditId && parentValues.AuditId &&
+      String(object.AuditId).indexOf(String(parentValues.AuditId)) === 0;
+    sameTable = object.TableName === parentValues.TableName;
+    sameChangedBy = object.ChangedBy === parentValues.ChangedBy;
+    sameTimestamp = isSameSecond(object.ChangedAt, parentValues.ChangedAt, 5);
+
+    return sameAuditPrefix || sameTable && sameChangedBy && sameTimestamp;
+  }
+
+  function filterAuditChildRows(items, parentValues) {
+    var seen = {};
+
+    return (items || []).filter(function (object) {
+      var key;
+
+      if (!isAuditChildRow(object, parentValues)) {
+        return false;
+      }
+
+      key = object.AuditId + "|" + object.RecordKey + "|" + object.FieldName;
+
+      if (seen[key]) {
+        return false;
+      }
+
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function requestAuditLogChildRows(context, parentValues) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+    var auditId = escapeODataString(parentValues && parentValues.AuditId);
+    var tableName = escapeODataString(parentValues && parentValues.TableName);
+    var changedBy = escapeODataString(parentValues && parentValues.ChangedBy);
+    var prefixFilter;
+    var candidateFilter;
+
+    if (!model || !model.bindList || !parentValues || !parentValues.AuditId) {
+      return Promise.resolve([]);
+    }
+
+    prefixFilter = "startswith(AuditId, '" + auditId + "') and AuditId ne '" + auditId + "'";
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, null, {
+        $filter: prefixFilter,
+        $orderby: "ChangedAt"
+      });
+    } catch (error) {
+      binding = null;
+    }
+
+    if (binding) {
+      return requestContextsFromListBinding(binding).then(function (items) {
+        return filterAuditChildRows(items, parentValues);
+      }).catch(function () {
+        return [];
+      }).then(function (items) {
+        if (items.length) {
+          return items;
+        }
+
+        return requestAuditLogCandidates(context, parentValues, tableName, changedBy);
+      });
+    }
+
+    candidateFilter = tableName && changedBy ?
+      "TableName eq '" + tableName + "' and ChangedBy eq '" + changedBy + "'" : "";
+
+    return candidateFilter ? requestAuditLogCandidates(context, parentValues, tableName, changedBy) : Promise.resolve([]);
+  }
+
+  function requestAuditLogCandidates(context, parentValues, tableName, changedBy) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+    var filter = tableName && changedBy ?
+      "TableName eq '" + tableName + "' and ChangedBy eq '" + changedBy + "'" : "";
+
+    if (!model || !model.bindList || !filter) {
+      return Promise.resolve([]);
+    }
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, null, {
+        $filter: filter,
+        $orderby: "ChangedAt desc"
+      });
+    } catch (error) {
+      return Promise.resolve([]);
+    }
+
+    return requestContextsFromListBinding(binding).then(function (items) {
+      return filterAuditChildRows(items, parentValues);
+    }).catch(function () {
       return [];
     });
   }
@@ -238,8 +408,7 @@ sap.ui.define([
 
   function collectLoadedAuditRows(source, parentValues) {
     var control = source;
-    var seen = {};
-    var rows = [];
+    var loadedRows = [];
     var binding;
     var contexts;
 
@@ -250,20 +419,9 @@ sap.ui.define([
         contexts = binding.getCurrentContexts() || [];
         contexts.forEach(function (rowContext) {
           var object = rowContext && rowContext.getObject && rowContext.getObject();
-          var isCandidate;
 
-          if (!object || object.RecordKey === "BULK") {
-            return;
-          }
-
-          isCandidate = object.TableName === parentValues.TableName ||
-            object.ChangedBy === parentValues.ChangedBy ||
-            (object.AuditId && parentValues.AuditId && String(object.AuditId).indexOf(String(parentValues.AuditId)) === 0) ||
-            isSameSecond(object.ChangedAt, parentValues.ChangedAt, 5);
-
-          if (isCandidate && !seen[object.AuditId + "|" + object.RecordKey + "|" + object.FieldName]) {
-            seen[object.AuditId + "|" + object.RecordKey + "|" + object.FieldName] = true;
-            rows.push(object);
+          if (object) {
+            loadedRows.push(object);
           }
         });
       }
@@ -271,7 +429,7 @@ sap.ui.define([
       control = control.getParent();
     }
 
-    return rows;
+    return filterAuditChildRows(loadedRows, parentValues);
   }
 
   function requestBulkItems(context, source, parentValues) {
@@ -281,6 +439,12 @@ sap.ui.define([
       }
 
       return requestAuditItemEntity(context, parentValues.AuditId);
+    }).then(function (items) {
+      if (items.length) {
+        return items;
+      }
+
+      return requestAuditLogChildRows(context, parentValues);
     }).then(function (items) {
       if (items.length) {
         return items;
@@ -304,22 +468,30 @@ sap.ui.define([
   }
 
   function buildOverviewRows(values) {
-    var operation = AuditFormatter.isBulkRecord(values.RecordKey) ||
-      String(values.NewValue || values.OldValue || "").toUpperCase().indexOf("BULK AUDIT") >= 0
-      ? "Bulk"
-      : AuditFormatter.formatActionText(values.ActionType);
+    var operation = AuditFormatter.formatOperationText(
+      values.ActionType,
+      values.RecordKey,
+      values.OldValue,
+      values.NewValue
+    );
 
     return [
       { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
       { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
-      { label: "Operation", value: operation, state: operation === "Bulk" ? "Information" : AuditFormatter.formatActionState(values.ActionType) },
+      { label: "Operation", value: operation, state: operation === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType) },
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
       { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" }
     ];
   }
 
   function buildAuditDetail(values) {
-    var actionText = AuditFormatter.formatActionText(values.ActionType);
+    var baseActionText = AuditFormatter.formatActionText(values.ActionType);
+    var actionText = AuditFormatter.formatOperationText(
+      values.ActionType,
+      values.RecordKey,
+      values.OldValue,
+      values.NewValue
+    );
     var recordKeyRows = AuditFormatter.getRecordKeyRows(values.RecordKey);
     var title = AuditFormatter.formatAuditValue(values.TableName);
     var operationControl = values.__OperationControl || {};
@@ -328,19 +500,19 @@ sap.ui.define([
       title: title + " · " + actionText,
       subtitle: "Audit " + AuditFormatter.formatAuditValue(values.AuditId),
       actionText: actionText,
-      actionState: AuditFormatter.formatActionState(values.ActionType),
+      actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
       rollbackMessageVisible: String(values.ActionType || "").trim().toUpperCase() === "R" || !!(values.RollbackAuditId && String(values.RollbackAuditId).trim()),
       rollbackMessage: "Rollback completed for this audit record.",
       overviewRows: buildOverviewRows(values),
       infoRows: buildInfoRows(values),
       recordKeyRows: recordKeyRows,
       recordKeyVisible: recordKeyRows.length > 0,
-      changeTitle: AuditFormatter.getChangeTitle(values.ActionType),
+      changeTitle: AuditFormatter.getChangeTitle(baseActionText),
       changeRows: AuditFormatter.buildChangeRows(values),
-      showOldColumn: actionText === "Update" || actionText === "Delete" || actionText === "Rollback",
-      showNewColumn: actionText === "Create" || actionText === "Update" || actionText === "Rollback",
-      oldColumnHeader: actionText === "Delete" ? "Previous Value" : "Before",
-      newColumnHeader: actionText === "Create" ? "New Value" : "After",
+      showOldColumn: baseActionText === "Update" || baseActionText === "Delete" || baseActionText === "Rollback",
+      showNewColumn: baseActionText === "Create" || baseActionText === "Update" || baseActionText === "Rollback",
+      oldColumnHeader: baseActionText === "Delete" ? "Previous Value" : "Before",
+      newColumnHeader: baseActionText === "Create" ? "New Value" : "After",
       rollbackText: AuditFormatter.formatRollbackText(operationControl),
       rollbackState: AuditFormatter.formatRollbackState(operationControl),
       rollbackAvailable: AuditFormatter.isRollbackAvailable(operationControl),
@@ -372,7 +544,7 @@ sap.ui.define([
       changedBy: AuditFormatter.formatAuditValue(parentValues.ChangedBy),
       changedAt: AuditFormatter.formatTimestamp(parentValues.ChangedAt),
       actionText: actionText,
-      actionState: actionText === "Bulk" ? "Information" : AuditFormatter.formatActionState(actionText),
+      actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(actionText),
       summaryText: countText,
       emptyVisible: items.length === 0,
       emptyText: emptyText,
@@ -454,30 +626,80 @@ sap.ui.define([
     return {
       rows: rows,
       itemRows: itemRows,
-      itemSummary: itemRows.length + " item(s)"
+      itemSummary: itemRows.length + " item(s)",
+      itemsLoading: false,
+      itemsErrorVisible: false,
+      itemsErrorText: ""
     };
   }
 
   function updateAuditModel(view, context) {
     var model = ensureAuditModel(view);
+    var itemsModel = ensureAuditItemsModel(view);
+    var loadSequence;
 
     if (!model || !context) {
       return Promise.resolve();
     }
 
+    loadSequence = (view.__auditDetailLoadSequence || 0) + 1;
+    view.__auditDetailLoadSequence = loadSequence;
+
     return requestAuditValues(context).then(function (values) {
+      var itemsPromise;
+
       model.setData(buildAuditDetail(values));
-      return requestNavigationItems(context).then(function (items) {
-        if ((!items || !items.length) && values.AuditId) {
-          return requestAuditItemEntity(context, values.AuditId);
+
+      if (itemsModel && AuditFormatter.isBulkRecord(values)) {
+        itemsModel.setData({
+          rows: [],
+          itemRows: [],
+          itemSummary: "Loading audit items...",
+          itemsLoading: true,
+          itemsErrorVisible: false,
+          itemsErrorText: ""
+        });
+      }
+
+      if (AuditFormatter.isBulkRecord(values)) {
+        itemsPromise = requestBulkItems(context, null, values);
+      } else {
+        itemsPromise = requestNavigationItems(context).then(function (items) {
+          if ((!items || !items.length) && values.AuditId) {
+            return requestAuditItemEntity(context, values.AuditId);
+          }
+          return items || [];
+        });
+      }
+
+      return itemsPromise.then(function (items) {
+        var itemData;
+
+        if (loadSequence !== view.__auditDetailLoadSequence) {
+          return;
         }
-        return items || [];
-      }).then(function (items) {
+
         // Normal audit rows do not have an AuditItem child. Their NewValue/
         // OldValue snapshot is still one logical item and must be rendered.
         // Keep an empty result for bulk rows so the bulk dialog remains the
         // single source of truth when child items are missing.
-        ensureAuditItemsModel(view).setData(buildAuditItemsData(values, items));
+        itemData = buildAuditItemsData(values, items);
+        if (itemsModel) {
+          itemsModel.setData(itemData);
+        }
+      }).catch(function (error) {
+        if (loadSequence !== view.__auditDetailLoadSequence || !itemsModel) {
+          return;
+        }
+
+        itemsModel.setData({
+          rows: [],
+          itemRows: [],
+          itemSummary: "",
+          itemsLoading: false,
+          itemsErrorVisible: true,
+          itemsErrorText: ODataErrorHandler.extractBackendMessage(error) || "Audit items could not be loaded."
+        });
       });
     });
   }
@@ -544,6 +766,8 @@ sap.ui.define([
           dialog.open();
         });
       });
+    }).catch(function (error) {
+      ODataErrorHandler.showBackendError(error, "Bulk audit items could not be loaded.");
     });
   }
 
@@ -624,6 +848,168 @@ sap.ui.define([
     }
   }
 
+  function getColumnHeaderText(column) {
+    var header = column && column.getHeader && column.getHeader();
+
+    return header && header.getText ? String(header.getText()).trim() : "";
+  }
+
+  function getAuditListTableValues(table) {
+    return (table && table.getItems ? table.getItems() : []).map(function (item) {
+      var context = item && item.getBindingContext && item.getBindingContext();
+
+      return {
+        item: item,
+        context: context,
+        values: context && context.getObject ? context.getObject() || {} : {}
+      };
+    });
+  }
+
+  function getAuditListOperationText(values, sameAuditRowCount) {
+    if (sameAuditRowCount > 1) {
+      return "Bulk";
+    }
+
+    return AuditFormatter.formatOperationText(
+      values.ActionType,
+      values.RecordKey,
+      values.OldValue,
+      values.NewValue
+    );
+  }
+
+  function applyNewestFirstSort(table) {
+    var binding = table && table.getBinding && table.getBinding("items");
+    var orderBy = "ChangedAt desc";
+
+    if (!binding || !table || !table.data) {
+      return;
+    }
+
+    if (table.data("auditNewestFirstSortBinding") === binding) {
+      return;
+    }
+
+    try {
+      // For OData V4, updating $orderby is more reliable than replacing the
+      // client sorter after FE has created the list binding.
+      if (binding.changeParameters) {
+        binding.changeParameters({
+          $orderby: orderBy
+        });
+      } else if (binding.sort && Sorter) {
+        binding.sort(new Sorter("ChangedAt", true));
+      } else {
+        return;
+      }
+
+      table.data("auditNewestFirstSortBinding", binding);
+    } catch (error) {
+      // Keep the backend/annotation sort if the table binding does not support
+      // client-side sorter replacement.
+    }
+  }
+
+  function enhanceAuditListTable(table) {
+    var columns = table && table.getColumns ? table.getColumns() : [];
+    var columnIndexes = {};
+    var rows;
+    var auditIdCounts = {};
+
+    columns.forEach(function (column, index) {
+      var headerText = getColumnHeaderText(column).toLowerCase();
+
+      if (headerText === "audit id") {
+        columnIndexes.auditId = index;
+        if (column.setWidth) {
+          column.setWidth("20rem");
+        }
+      }
+
+      if (headerText === "operation") {
+        columnIndexes.operation = index;
+        if (column.setWidth) {
+          column.setWidth("9rem");
+        }
+      }
+    });
+
+    if (columnIndexes.auditId === undefined && columnIndexes.operation === undefined) {
+      return;
+    }
+
+    if (columnIndexes.operation !== undefined) {
+      applyNewestFirstSort(table);
+    }
+
+    if (table.addStyleClass) {
+      table.addStyleClass("auditListReportTable");
+    }
+
+    rows = getAuditListTableValues(table);
+    rows.forEach(function (row) {
+      var auditId = String(row.values.AuditId || "");
+
+      if (auditId) {
+        auditIdCounts[auditId] = (auditIdCounts[auditId] || 0) + 1;
+      }
+    });
+
+    rows.forEach(function (row) {
+      var cells = row.item && row.item.getCells ? row.item.getCells() : [];
+      var auditIdCell = columnIndexes.auditId !== undefined && cells[columnIndexes.auditId];
+      var operationCell = columnIndexes.operation !== undefined && cells[columnIndexes.operation];
+      var auditId = String(row.values.AuditId || "");
+      var operationText;
+
+      if (auditIdCell) {
+        if (auditIdCell.setWrapping) {
+          auditIdCell.setWrapping(false);
+        }
+        if (auditIdCell.addStyleClass) {
+          auditIdCell.addStyleClass("auditListAuditIdCell");
+        }
+        if (auditIdCell.setTooltip && auditId) {
+          auditIdCell.setTooltip(auditId);
+        }
+      }
+
+      if (operationCell && operationCell.setText) {
+        operationText = getAuditListOperationText(row.values, auditIdCounts[auditId] || 0);
+        operationCell.setText(operationText);
+        if (operationCell.setState) {
+          operationCell.setState(operationText === "Bulk" ? "None" : AuditFormatter.formatActionState(row.values.ActionType));
+        }
+        if (operationCell.addStyleClass) {
+          operationCell.addStyleClass("auditListOperationCell");
+        }
+      }
+    });
+  }
+
+  function enhanceAuditListTables(view) {
+    var tables;
+
+    if (!view || !view.findAggregatedObjects) {
+      return;
+    }
+
+    tables = view.findAggregatedObjects(true, function (control) {
+      return control && control.isA && control.isA("sap.m.Table");
+    }) || [];
+
+    tables.forEach(function (table) {
+      if (table.attachUpdateFinished && table.data && !table.data("auditListFormattingAttached")) {
+        table.data("auditListFormattingAttached", true);
+        table.attachUpdateFinished(function () {
+          enhanceAuditListTable(table);
+        });
+      }
+      enhanceAuditListTable(table);
+    });
+  }
+
   var AuditLogExtension = ControllerExtension.extend("ztbl.audit.ui.ext.controller.AuditLog", {
     override: {
       onInit: function () {
@@ -658,6 +1044,12 @@ sap.ui.define([
             }, 0);
           }
         }
+      },
+
+      onAfterRendering: function () {
+        var view = this.base && this.base.getView && this.base.getView();
+
+        enhanceAuditListTables(view);
       }
     },
 
@@ -726,7 +1118,9 @@ sap.ui.define([
       var tableName = getContextValue(parentContext, "TableName");
       var that = this;
 
-      requestNavigationItems(parentContext).then(function (items) {
+      requestAuditValues(parentContext).then(function (parentValues) {
+        return requestBulkItems(parentContext, source, parentValues);
+      }).then(function (items) {
         var index = -1;
         var selected = (items || []).filter(function (item, itemIndex) {
           var viewModel = AuditFormatter.buildBulkItemViewModel(valuesFromObject(item), itemIndex);
@@ -847,6 +1241,8 @@ sap.ui.define([
     buildAuditItemsData: buildAuditItemsData,
     valuesFromObject: valuesFromObject,
     collectLoadedAuditRows: collectLoadedAuditRows,
+    filterAuditChildRows: filterAuditChildRows,
+    requestAuditValues: requestAuditValues,
     executeRollback: executeRollback
   };
 
