@@ -1,0 +1,11 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <HBox alignItems="Center" class="auditIdContainer">
+    <core:Icon src="sap-icon://key" class="auditIdIcon sapUiTinyMarginEnd"/>
+    <Text
+      text="{path: 'AuditId', formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatShortAuditId'}"
+      tooltip="{AuditId}"
+      class="auditIdMonospace"/>
+  </HBox>
+</core:FragmentDefinition>

@@ -215,3 +215,72 @@
   vertical-align: top;
   overflow-wrap: anywhere;
 }
+
+/* --- Audit Log List Report Visual Enhancements --- */
+.auditOperationBadge .sapMObjStatusIcon {
+  font-size: 0.875rem;
+}
+
+.auditOperationBadge .sapMObjStatusText {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.auditRecordKeySubtext {
+  color: #5b738b;
+  font-size: 0.75rem;
+  font-family: "72Mono", Consolas, "Courier New", monospace;
+  margin-top: 0.125rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auditIdContainer {
+  align-items: center;
+}
+
+.auditIdIcon {
+  color: #0a6ed1;
+  font-size: 0.875rem;
+}
+
+.auditIdMonospace {
+  font-family: "72Mono", Consolas, "Courier New", monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1d2d3e;
+}
+
+.auditTableIcon {
+  color: #354a5f;
+  font-size: 0.875rem;
+}
+
+.auditTableNameText {
+  font-weight: 600;
+  color: #1d2d3e;
+}
+
+.auditUserAvatar {
+  background-color: #ebf3fa;
+  color: #0a6ed1;
+  border: 1px solid #d0e1f9;
+}
+
+.auditUserText {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.auditRecordKeySingleLine {
+  font-family: "72Mono", Consolas, "Courier New", monospace;
+  font-size: 0.8125rem;
+  color: #354a5f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+

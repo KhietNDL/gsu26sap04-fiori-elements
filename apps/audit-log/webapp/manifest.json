@@ -132,6 +132,12 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "columns": {
+                    "DataField::AuditId": {
+                      "availability": "Hidden"
+                    },
+                    "DataField::TableName": {
+                      "availability": "Hidden"
+                    },
                     "DataField::RecordKey": {
                       "availability": "Hidden"
                     },
@@ -147,20 +153,73 @@
                     "DataField::NewValue": {
                       "availability": "Hidden"
                     },
+                    "DataField::ChangedBy": {
+                      "availability": "Hidden"
+                    },
                     "DataField::RollbackAuditId": {
                       "availability": "Hidden"
+                    },
+                    "AuditIdColumn": {
+                      "header": "Audit ID",
+                      "template": "ztbl.audit.ui.ext.fragment.AuditIdColumn",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataField::TableName"
+                      },
+                      "width": "11rem",
+                      "properties": [
+                        "AuditId"
+                      ]
+                    },
+                    "TableNameColumn": {
+                      "header": "Table Name",
+                      "template": "ztbl.audit.ui.ext.fragment.TableNameColumn",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataField::RecordKey"
+                      },
+                      "width": "11rem",
+                      "properties": [
+                        "TableName"
+                      ]
                     },
                     "OperationColumn": {
                       "header": "Operation",
                       "template": "ztbl.audit.ui.ext.fragment.OperationColumn",
                       "position": {
-                        "placement": "After",
-                        "anchor": "DataField::TableName"
+                        "placement": "Before",
+                        "anchor": "DataField::FieldName"
                       },
-                      "width": "10rem",
+                      "width": "8rem",
                       "properties": [
                         "ActionType",
                         "RecordKey"
+                      ]
+                    },
+                    "RecordKeyColumn": {
+                      "header": "Record Key",
+                      "template": "ztbl.audit.ui.ext.fragment.RecordKeyColumn",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataField::ChangedBy"
+                      },
+                      "width": "14rem",
+                      "properties": [
+                        "RecordKey",
+                        "OldValue",
+                        "NewValue"
+                      ]
+                    },
+                    "ChangedByColumn": {
+                      "header": "Changed By",
+                      "template": "ztbl.audit.ui.ext.fragment.ChangedByColumn",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataField::ChangedAt"
+                      },
+                      "width": "8rem",
+                      "properties": [
+                        "ChangedBy"
                       ]
                     }
                   },

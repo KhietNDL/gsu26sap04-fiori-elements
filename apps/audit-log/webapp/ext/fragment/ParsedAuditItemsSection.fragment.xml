@@ -22,7 +22,7 @@
         <ColumnListItem>
           <cells>
             <Text text="{auditItems>item}"/>
-            <ObjectStatus text="{auditItems>actionText}" state="{auditItems>actionState}"/>
+            <ObjectStatus text="{auditItems>actionText}" state="{= ${auditItems>actionState} || 'None' }"/>
             <Text text="{auditItems>recordKey}" wrapping="true" class="auditLongText"/>
             <Text text="{auditItems>field}" class="auditFieldName"/>
             <Text text="{auditItems>oldValue}" wrapping="true" class="auditLongText"/>

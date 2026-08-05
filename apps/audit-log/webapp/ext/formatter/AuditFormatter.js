@@ -252,6 +252,34 @@ sap.ui.define([], function () {
     }).join(", ");
   }
 
+  function formatCleanRecordKey(recordKey) {
+    if (recordKey === null || recordKey === undefined || String(recordKey).trim() === "") {
+      return "—";
+    }
+
+    var str = String(recordKey).trim();
+
+    if (str.toUpperCase() === "BULK") {
+      return "BULK";
+    }
+
+    var parsed = parseAuditMap(str);
+    var rows = [];
+    flattenObject(parsed, "", rows);
+
+    if (rows.length > 0) {
+      return rows.map(function (r) {
+        return r.field + ": " + r.value;
+      }).join(", ");
+    }
+
+    var firstLine = str.split(/[\r\n]+/)[0].trim().replace(/^[\{\[\s]+|[\}\]\s]+$/g, "");
+    if (firstLine.length > 40) {
+      return firstLine.substring(0, 40) + "...";
+    }
+    return firstLine || "—";
+  }
+
   function isBulkRecordKey(recordKey) {
     return String(recordKey || "").trim().toUpperCase() === "BULK";
   }
@@ -328,6 +356,52 @@ sap.ui.define([], function () {
       : formatActionState(actionType);
 
     return state || "None";
+  }
+
+  function formatOperationIcon(actionType, recordKey) {
+    var rawAction = String(actionType || "").trim().toUpperCase();
+    var action = rawAction.split(/\s+/)[0];
+
+    if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
+      return "sap-icon://group-2";
+    }
+
+    if (action === "C" || action === "CREATE" || action === "01") {
+      return "sap-icon://add";
+    }
+
+    if (action === "U" || action === "UPDATE" || action === "02") {
+      return "sap-icon://edit";
+    }
+
+    if (action === "D" || action === "DELETE" || action === "03") {
+      return "sap-icon://delete";
+    }
+
+    if (action === "R" || action === "ROLLBACK") {
+      return "sap-icon://undo";
+    }
+
+    return "";
+  }
+
+  function formatShortAuditId(auditId) {
+    var str = String(auditId || "").trim();
+    if (!str) {
+      return "—";
+    }
+    if (str.length > 16) {
+      return str.substring(0, 8) + "..." + str.substring(str.length - 6);
+    }
+    return str;
+  }
+
+  function formatUserInitials(user) {
+    var str = String(user || "").trim().replace(/^DEV-/i, "");
+    if (!str) {
+      return "";
+    }
+    return str.substring(0, 2).toUpperCase();
   }
 
   function formatRowActionState(actionType, recordKey) {
@@ -503,16 +577,20 @@ sap.ui.define([], function () {
     return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back" ? "Success" : "Information";
   }
 
-  return {
+  var AuditFormatter = {
     formatActionText: formatActionText,
     formatActionState: formatActionState,
     formatAuditValue: formatAuditValue,
     formatTimestamp: formatTimestamp,
     formatRecordKeyText: formatRecordKeyText,
+    formatCleanRecordKey: formatCleanRecordKey,
     formatBulkRecordKeyText: formatBulkRecordKeyText,
     formatRowActionText: formatRowActionText,
     formatOperationText: formatOperationText,
     formatOperationState: formatOperationState,
+    formatOperationIcon: formatOperationIcon,
+    formatShortAuditId: formatShortAuditId,
+    formatUserInitials: formatUserInitials,
     formatRowActionState: formatRowActionState,
     isBulkVisible: isBulkVisible,
     getRecordKeyRows: getRecordKeyRows,
@@ -557,4 +635,19 @@ sap.ui.define([], function () {
       formatRollbackState: formatRollbackState
     }
   };
+
+  try {
+    if (typeof window !== "undefined") {
+      window.ztbl = window.ztbl || {};
+      window.ztbl.audit = window.ztbl.audit || {};
+      window.ztbl.audit.ui = window.ztbl.audit.ui || {};
+      window.ztbl.audit.ui.ext = window.ztbl.audit.ui.ext || {};
+      window.ztbl.audit.ui.ext.formatter = window.ztbl.audit.ui.ext.formatter || {};
+      window.ztbl.audit.ui.ext.formatter.AuditFormatter = AuditFormatter;
+    }
+  } catch (e) {
+    // Ignore in non-browser env
+  }
+
+  return AuditFormatter;
 });

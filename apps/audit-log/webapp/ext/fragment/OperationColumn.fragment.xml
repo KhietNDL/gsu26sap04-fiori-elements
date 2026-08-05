@@ -1,9 +1,9 @@
 <core:FragmentDefinition
   xmlns="sap.m"
-  xmlns:core="sap.ui.core"
-  core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
+  xmlns:core="sap.ui.core">
   <ObjectStatus
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatOperationText'}"
-    state="None"
-    class="auditOperationStatus"/>
+    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
+    state="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'Success' : (${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'Information' : (${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'Error' : (${ActionType} === 'R' || ${ActionType} === 'ROLLBACK' ? 'Warning' : 'None')))}"
+    icon="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'sap-icon://add' : (${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'sap-icon://edit' : (${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'sap-icon://delete' : (${ActionType} === 'R' || ${ActionType} === 'ROLLBACK' ? 'sap-icon://undo' : '')))}"
+    class="auditOperationBadge"/>
 </core:FragmentDefinition>

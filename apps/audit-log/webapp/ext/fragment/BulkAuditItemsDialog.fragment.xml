@@ -42,7 +42,7 @@
               <Label text="Action"/>
               <ObjectStatus
                 text="{auditBulk>/actionText}"
-                state="{auditBulk>/actionState}"/>
+                state="{= ${auditBulk>/actionState} || 'None' }"/>
             </VBox>
           </FlexBox>
           <Text
@@ -87,7 +87,7 @@
                   title="{auditBulk>itemNumber}"/>
                 <ObjectStatus
                   text="{auditBulk>actionText}"
-                  state="{auditBulk>actionState}"/>
+                  state="{= ${auditBulk>actionState} || 'None' }"/>
                 <VBox>
                   <Text
                     text="{auditBulk>recordKeyText}"
