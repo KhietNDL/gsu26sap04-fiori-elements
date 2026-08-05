@@ -131,6 +131,18 @@
                 }
               },
               "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.SelectionFields": {
+                  "filterFields": {
+                    "Status": {
+                      "label": "Status",
+                      "template": "ztbl.approval.ui.ext.fragment.StatusFilterField",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "TableName"
+                      }
+                    }
+                  }
+                },
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "columns": {
                     "DataField::AprvlId": {

@@ -4,5 +4,6 @@
   core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
   <ObjectStatus
     text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatOperationText'}"
-    state="None"/>
+    state="None"
+    class="auditOperationStatus"/>
 </core:FragmentDefinition>
