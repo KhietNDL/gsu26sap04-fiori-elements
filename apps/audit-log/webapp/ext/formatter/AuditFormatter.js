@@ -5,7 +5,13 @@ sap.ui.define([], function () {
     CLIENT: true,
     MANDT: true,
     SNAPSHOT: true,
-    BATCH: true
+    BATCH: true,
+    CREATED_BY: true,
+    CREATED_AT: true,
+    CHANGED_BY: true,
+    CHANGED_AT: true,
+    LAST_CHANGED_AT: true,
+    LOCAL_LAST_CHANGED_AT: true
   };
 
   function titleCase(value) {
@@ -54,13 +60,19 @@ sap.ui.define([], function () {
     var map = {};
     var text = String(value || "");
 
-    if (text.indexOf(":") < 0) {
+    if (!text || /^[\[{]/.test(text)) {
       return map;
     }
 
     text.split("|").forEach(function (part) {
-      var index = part.indexOf(":");
+      var colonIndex = part.indexOf(":");
+      var equalsIndex = part.indexOf("=");
+      var index = colonIndex;
       var key;
+
+      if (index < 0 || equalsIndex >= 0 && equalsIndex < index) {
+        index = equalsIndex;
+      }
 
       if (index < 0) {
         return;
@@ -339,19 +351,53 @@ sap.ui.define([], function () {
     return isBulkRecordKey(recordKey) ? (actionText === "—" ? "Bulk" : "Bulk " + actionText) : actionText;
   }
 
-  function formatOperationText(actionType, recordKey) {
+  function hasMultipleActions(actionType) {
+    var knownActions = {
+      C: true,
+      CREATE: true,
+      U: true,
+      UPDATE: true,
+      D: true,
+      DELETE: true,
+      R: true,
+      ROLLBACK: true
+    };
+    var actions = {};
+
+    String(actionType || "").toUpperCase().split(/[\s,;|/+]+/).forEach(function (part) {
+      if (knownActions[part]) {
+        actions[part] = true;
+      }
+    });
+
+    return Object.keys(actions).length > 1;
+  }
+
+  function hasBulkItemCount(oldValue, newValue) {
+    var text = [oldValue, newValue].map(function (value) {
+      return value === null || value === undefined ? "" : String(value);
+    }).join(" ");
+    var match = text.match(/bulk\s+audit\s*:\s*(\d+)/i) || text.match(/bulk[^0-9]{0,20}\b(\d+)\s+items?/i);
+
+    return !!match && Number(match[1]) >= 2;
+  }
+
+  function formatOperationText(actionType, recordKey, oldValue, newValue) {
     var rawAction = String(actionType || "").trim().toUpperCase();
     var action = rawAction.split(/\s+/)[0];
 
-    if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
+    if (rawAction.indexOf("BULK") >= 0 ||
+      String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0 ||
+      hasMultipleActions(actionType) ||
+      hasBulkItemCount(oldValue, newValue)) {
       return "Bulk";
     }
 
     return formatActionText(action);
   }
 
-  function formatOperationState(actionType, recordKey) {
-    var state = formatOperationText(actionType, recordKey) === "Bulk"
+  function formatOperationState(actionType, recordKey, oldValue, newValue) {
+    var state = formatOperationText(actionType, recordKey, oldValue, newValue) === "Bulk"
       ? "None"
       : formatActionState(actionType);
 

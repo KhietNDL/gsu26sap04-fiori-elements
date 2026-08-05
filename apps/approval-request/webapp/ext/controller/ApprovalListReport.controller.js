@@ -3,8 +3,11 @@ sap.ui.define([
   "sap/ui/core/Fragment",
   "sap/ui/model/json/JSONModel",
   "ztbl/approval/ui/ext/formatter/ApprovalFormatter",
-  "ztbl/approval/ui/ext/util/ODataErrorHandler"
-], function (ControllerExtension, Fragment, JSONModel, ApprovalFormatter, ODataErrorHandler) {
+  "ztbl/approval/ui/ext/util/ODataErrorHandler",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
+  "sap/ui/model/Sorter"
+], function (ControllerExtension, Fragment, JSONModel, ApprovalFormatter, ODataErrorHandler, Filter, FilterOperator, Sorter) {
   "use strict";
 
   var DETAIL_PROPERTIES = [
@@ -122,6 +125,7 @@ sap.ui.define([
         commentDebugVisible: false,
         commentDebugRows: [],
         bulkVisible: false,
+        bulkItems: [],
         bulkSummaryText: "",
         bulkSummaryVisible: false,
         currentApprovalId: "",
@@ -462,7 +466,9 @@ sap.ui.define([
     // generated object-page binding did not include it in its initial $select.
     if (context.requestObject) {
       try {
-        objectPromise = Promise.resolve(context.requestObject());
+        objectPromise = Promise.resolve(context.requestObject()).catch(function () {
+          return null;
+        });
       } catch (error) {
         objectPromise = Promise.resolve(null);
       }
@@ -943,7 +949,7 @@ sap.ui.define([
       var showNewColumn = changeActionText === "Create" || changeActionText === "Update";
       var comment = getCommentValue(values) || "-";
       var commentEmpty = comment === "-";
-      var bulkVisible = isBulkValues(values.RecordKey);
+      var bulkVisible = isBulkValues(values.RecordKey, values.RecordKeyText);
       var sameApproval = model.getProperty("/approvalId") === values.AprvlId;
       var contextPath = initialContextPath || values.AprvlId;
       var sameBindingPath = model.getProperty("/currentItemsBindingPath") === contextPath;
@@ -999,6 +1005,7 @@ sap.ui.define([
         itemsLoading: keepItemsState ? model.getProperty("/itemsLoading") : false,
         itemsLoaded: keepItemsState ? model.getProperty("/itemsLoaded") : false,
         itemCount: keepItemsState ? model.getProperty("/itemCount") : 0,
+        bulkItems: keepItemsState ? model.getProperty("/bulkItems") || [] : [],
         itemsEmptyVisible: keepItemsState ? model.getProperty("/itemsEmptyVisible") : false,
         itemsErrorText: keepItemsState ? model.getProperty("/itemsErrorText") : "",
         itemsErrorVisible: keepItemsState ? model.getProperty("/itemsErrorVisible") : false,
@@ -1076,6 +1083,10 @@ sap.ui.define([
   }
 
   function getItemContextValue(context, propertyName) {
+    if (context && typeof context === "object" && !context.getObject && !context.getProperty) {
+      return context[propertyName];
+    }
+
     return getContextValue(context, propertyName);
   }
 
@@ -1089,7 +1100,8 @@ sap.ui.define([
     };
 
     items.forEach(function (item) {
-      var context = item.getBindingContext && item.getBindingContext();
+      var context = item && item.getBindingContext ?
+        item.getBindingContext("approvalDetail") || item.getBindingContext() : item;
       var action = ApprovalFormatter.formatActionText(getItemContextValue(context, "ActionType"));
       var status = String(getItemContextValue(context, "Status") || "").trim().toUpperCase();
 
@@ -1165,6 +1177,7 @@ sap.ui.define([
     model.setProperty("/itemsEmptyVisible", false);
     model.setProperty("/itemsErrorText", "");
     model.setProperty("/itemsErrorVisible", false);
+    model.setProperty("/bulkItems", []);
     clearBulkItemSelection(model);
     logApprovalItemsLifecycle(model, "LOAD_START", {
       aprvlId: approvalId,
@@ -1182,6 +1195,133 @@ sap.ui.define([
       error && (error.message || error.statusText || error.responseText);
 
     return message ? String(message) : "Approval items could not be loaded.";
+  }
+
+  function getApprovalItemsErrorText(error) {
+    var message = ODataErrorHandler.extractBackendMessage(error) ||
+      error && (error.message || error.statusText || error.responseText);
+
+    return message ? String(message) : "Approval items could not be loaded.";
+  }
+
+  function requestApprovalItemsFromBinding(binding) {
+    if (!binding || !binding.requestContexts) {
+      return Promise.reject(new Error("Approval item binding is unavailable."));
+    }
+
+    return Promise.resolve().then(function () {
+      return binding.requestContexts(0, 1000);
+    }).then(function (contexts) {
+      return (contexts || []).map(function (itemContext) {
+        return itemContext && itemContext.getObject ? itemContext.getObject() : {};
+      });
+    }).finally(function () {
+      if (binding && binding.destroy) {
+        binding.destroy();
+      }
+    });
+  }
+
+  function requestApprovalItemsFromNavigation(context) {
+    var dataModel = context && context.getModel && context.getModel();
+    var binding;
+
+    if (!dataModel || !dataModel.bindList || !context) {
+      return Promise.reject(new Error("Approval item navigation is unavailable."));
+    }
+
+    try {
+      binding = dataModel.bindList("_Items", context, undefined, undefined, {
+        $select: "AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,OldData,NewData",
+        $orderby: "ItemNo"
+      });
+    } catch (error) {
+      return Promise.reject(error);
+    }
+
+    return requestApprovalItemsFromBinding(binding);
+  }
+
+  function requestApprovalItems(view, context, approvalId, sequence) {
+    var detailModel = ensureDetailModel(view);
+    var dataModel = context && context.getModel && context.getModel();
+    var binding;
+    var filters;
+
+    function applyLoadedItems(items) {
+      if (sequence !== detailModel.getProperty("/itemsLoadSequence") || !detailModel.getProperty("/bulkVisible")) {
+        return;
+      }
+
+      detailModel.setProperty("/bulkItems", items || []);
+      finishItemsLoading(detailModel, items || [], "", sequence, "DIRECT_LOAD");
+    }
+
+    function applyLoadError(error) {
+      if (sequence === detailModel.getProperty("/itemsLoadSequence") && detailModel.getProperty("/bulkVisible")) {
+        detailModel.setProperty("/bulkItems", []);
+        finishItemsLoading(detailModel, [], getApprovalItemsErrorText(error), sequence, "DIRECT_LOAD");
+      }
+    }
+
+    function useNavigationFallback(error) {
+      return requestApprovalItemsFromNavigation(context).then(function (items) {
+        applyLoadedItems(items);
+      }).catch(function () {
+        applyLoadError(error);
+      });
+    }
+
+    if (!detailModel) {
+      return;
+    }
+
+    // The object-page test doubles can omit the OData model. In the real
+    // object page a binding context always has the default service model.
+    if (!dataModel) {
+      return;
+    }
+
+    if (!dataModel.bindList || !approvalId) {
+      useNavigationFallback(new Error("ApprovalItem service is unavailable."));
+      return;
+    }
+
+    if (!Filter || !FilterOperator) {
+      useNavigationFallback(new Error("Approval item filter is unavailable."));
+      return;
+    }
+
+    filters = [new Filter("AprvlId", FilterOperator.EQ, approvalId)];
+
+    try {
+      binding = dataModel.bindList("/ApprovalItem", null, null, filters, {
+        $select: "AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,OldData,NewData",
+        $orderby: "ItemNo"
+      });
+    } catch (error) {
+      useNavigationFallback(error);
+      return;
+    }
+
+    if (!binding || !binding.requestContexts) {
+      useNavigationFallback(new Error("Approval item binding is unavailable."));
+      return;
+    }
+
+    requestApprovalItemsFromBinding(binding).then(function (items) {
+      if (!items.length) {
+        return requestApprovalItemsFromNavigation(context).catch(function () {
+          return [];
+        });
+      }
+
+      return items;
+    }).then(function (items) {
+      applyLoadedItems(items);
+    }).catch(function (error) {
+      useNavigationFallback(error);
+    });
   }
 
   function finishItemsLoading(model, items, errorText, sequence, eventName) {
@@ -1223,7 +1363,7 @@ sap.ui.define([
     model.setProperty("/bulkSummaryVisible", !errorText && count > 0);
 
     actionType = count === 1 && items[0] ?
-      getItemContextValue(items[0].getBindingContext && items[0].getBindingContext(), "ActionType") :
+      getItemContextValue(items[0], "ActionType") :
       model.getProperty("/rawActionType");
     recordKey = model.getProperty("/rawRecordKey");
     recordKeyText = model.getProperty("/rawRecordKeyText");
@@ -1293,6 +1433,7 @@ sap.ui.define([
     model.setProperty("/itemsEmptyVisible", false);
     model.setProperty("/itemsErrorText", "");
     model.setProperty("/itemsErrorVisible", false);
+    model.setProperty("/bulkItems", []);
     model.setProperty("/bulkSummaryText", "");
     model.setProperty("/bulkSummaryVisible", false);
     clearBulkItemSelection(model);
@@ -1314,7 +1455,7 @@ sap.ui.define([
     contextSequence = owner._approvalContextSequence;
 
     return requestContextValues(context).then(function (values) {
-      var bulkVisible = isBulkValues(values.RecordKey);
+      var bulkVisible = isBulkValues(values.RecordKey, values.RecordKeyText);
       var approvalId = values.AprvlId || "";
       var bindingPath = contextPath || approvalId;
       var previousBindingExists = !!owner._currentItemsBindingPath;
@@ -1355,6 +1496,7 @@ sap.ui.define([
       owner._currentItemsBindingPath = bindingPath;
       owner._itemsLoadSequence = (owner._itemsLoadSequence || 0) + 1;
       beginItemsLoading(model, approvalId, bindingPath, owner._itemsLoadSequence, previousBindingExists);
+      requestApprovalItems(view, context, approvalId, owner._itemsLoadSequence);
       logApprovalItemsLifecycle(model, "BINDING_CREATED", {
         aprvlId: approvalId,
         sequence: owner._itemsLoadSequence,
@@ -1474,6 +1616,36 @@ sap.ui.define([
     })).then(function () {
       return values;
     });
+  }
+
+  function applyNewestFirstSort(table) {
+    var binding = table && table.getBinding && table.getBinding("items");
+    var orderBy = "SubmittedAt desc";
+
+    if (!binding || !table || !table.data) {
+      return;
+    }
+
+    if (table.data("approvalNewestFirstSortBinding") === binding) {
+      return;
+    }
+
+    try {
+      if (binding.changeParameters) {
+        binding.changeParameters({
+          $orderby: orderBy
+        });
+      } else if (binding.sort && Sorter) {
+        binding.sort(new Sorter("SubmittedAt", true));
+      } else {
+        return;
+      }
+
+      table.data("approvalNewestFirstSortBinding", binding);
+    } catch (error) {
+      // Keep the backend/annotation sort if the table binding does not support
+      // client-side sorter replacement.
+    }
   }
 
   function getColumnHeaderText(column) {
@@ -1695,6 +1867,10 @@ sap.ui.define([
         syncStatusCellClass(cells[indexes.status], status);
       }
     });
+
+    if (indexes.operation !== undefined) {
+      applyNewestFirstSort(table);
+    }
   }
 
   function applyReadableListTables(view) {
@@ -1835,7 +2011,8 @@ sap.ui.define([
 
     onBulkItemPress: function (event) {
       var source = event && event.getSource && event.getSource();
-      var context = source && source.getBindingContext && source.getBindingContext();
+      var context = source && source.getBindingContext &&
+        (source.getBindingContext("approvalDetail") || source.getBindingContext());
       var view = this.base && this.base.getView && this.base.getView();
       var model = ensureDetailModel(view);
       var that = this;

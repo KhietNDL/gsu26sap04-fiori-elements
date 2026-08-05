@@ -2,8 +2,7 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
   <ObjectStatus
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
-    state="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'Success' : (${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'Information' : (${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'Error' : (${ActionType} === 'R' || ${ActionType} === 'ROLLBACK' ? 'Warning' : 'None')))}"
-    icon="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'sap-icon://add' : (${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'sap-icon://edit' : (${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'sap-icon://delete' : (${ActionType} === 'R' || ${ActionType} === 'ROLLBACK' ? 'sap-icon://undo' : '')))}"
-    class="auditOperationBadge"/>
+    text="{= ${RecordKey} === 'BULK' ? 'Bulk' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
+    state="{= ${RecordKey} === 'BULK' ? 'None' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"
+    class="auditOperationStatus"/>
 </core:FragmentDefinition>

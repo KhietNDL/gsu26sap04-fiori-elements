@@ -123,6 +123,9 @@ assert.strictEqual(api.formatActionState("BULK"), "None", "bulk uses neutral gra
 assert.strictEqual(api.formatOperationText("C", "ENTITY_ID=0001"), "Create", "operation hides normal record key");
 assert.strictEqual(api.formatOperationText("D", "{\"ENTITY_ID\":\"\"}"), "Delete", "operation hides JSON record key");
 assert.strictEqual(api.formatOperationText("U", "BULK"), "Bulk", "bulk operation remains compact");
+assert.strictEqual(api.formatOperationText("C,U", "ENTITY_ID=0001"), "Bulk", "multiple actions are bulk");
+assert.strictEqual(api.formatOperationText("C", "ENTITY_ID=0001", "", "Bulk audit: 2 items"), "Bulk", "bulk summary is compact");
+assert.strictEqual(api.formatOperationText("C", "ENTITY_ID=0001", "", "Description: 2 items"), "Create", "normal business text does not become bulk");
 assert.strictEqual(api.formatOperationState("C", "ENTITY_ID=0001"), "Success", "operation uses semantic state");
 
 assert.strictEqual(api.formatAuditValue(""), "—", "empty string becomes dash");
@@ -138,6 +141,7 @@ const longValue = "A".repeat(300);
 assert.strictEqual(api.formatAuditValue(longValue), longValue, "long values are preserved for wrapping by UI");
 
 assert.strictEqual(api.formatRecordKeyText("{\"SCHEDULE_ID\":\"SCH010\",\"ITEM_NO\":1}"), "Schedule Id: SCH010, Item No: 1", "valid JSON RecordKey becomes key/value text");
+assert.strictEqual(api.formatRecordKeyText("ENTITY_ID=ABC123 | ITEM_ID=ITEM9"), "Entity Id: ABC123, Item Id: ITEM9", "legacy equals RecordKey becomes key/value text");
 assertJsonEqual(api.getRecordKeyRows("{\"SCHEDULE_ID\":\"SCH010\"}"), [
   { key: "SCHEDULE_ID", field: "Schedule Id", value: "SCH010" }
 ], "valid JSON RecordKey produces parsed rows");
@@ -320,7 +324,13 @@ const annotationPath = path.join(__dirname, "..", "apps", "audit-log", "webapp",
 const annotationXml = fs.readFileSync(annotationPath, "utf8");
 const manifestPath = path.join(__dirname, "..", "apps", "audit-log", "webapp", "manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const filterConfiguration = manifest["sap.ui5"].routing.targets.AuditLogList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.SelectionFields"].filterFields;
 const columns = manifest["sap.ui5"].routing.targets.AuditLogList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.LineItem"].columns;
+assert.strictEqual(filterConfiguration.ActionType.template, "ztbl.audit.ui.ext.fragment.ActionTypeFilterField", "audit operation filter uses a readable dropdown");
+const actionTypeFilterFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "audit-log", "webapp", "ext", "fragment", "ActionTypeFilterField.fragment.xml"), "utf8");
+assert(actionTypeFilterFragment.includes('key="C" text="Create"'), "audit operation filter includes Create");
+assert(actionTypeFilterFragment.includes('key="U" text="Update"'), "audit operation filter includes Update");
+assert(actionTypeFilterFragment.includes('key="D" text="Delete"'), "audit operation filter includes Delete");
 assert(columns.OperationColumn, "List Report exposes Operation column");
 assert.strictEqual((annotationXml.match(/DataFieldForAction/g) || []).length, 0, "local annotation does not create duplicate Rollback action");
 assert.strictEqual((annotationXml.match(/rollback/g) || []).length, 0, "local annotation does not duplicate rollback button");
@@ -328,6 +338,8 @@ assert(columns.OperationColumn.properties.includes("ActionType"), "Operation col
 assert(annotationXml.includes("<Annotation Term=\"UI.PresentationVariant\">"), "Audit list declares a default presentation variant");
 assert(annotationXml.includes("<PropertyValue Property=\"Property\" PropertyPath=\"ChangedAt\"/>"), "Audit list sorts by ChangedAt");
 assert(annotationXml.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>"), "Audit list sorts newest first");
+assert(annotationXml.includes("<PropertyPath>ChangedAt</PropertyPath>"), "audit filters by changed time");
+assert(annotationXml.includes("<Annotation Term=\"Common.Label\" String=\"Operation\"/>"), "audit action filter has a readable label");
 
 const bulkDialogData = controllerApi.buildBulkDialogData({
   AuditId: "A8",
@@ -355,5 +367,28 @@ assert.strictEqual(bulkDialogData.title, "Bulk Audit Items — 2", "bulk dialog 
 assert.strictEqual(bulkDialogData.actionText, "Bulk", "mixed bulk dialog action is generic");
 assert.strictEqual(bulkDialogData.items[0].recordKeyText, "Id: 1", "bulk dialog hides technical JSON key fields");
 assert.strictEqual(bulkDialogData.items[1].recordKeyText, "Id: 2", "bulk dialog parses legacy record key text");
+
+const bulkDetail = controllerApi.buildAuditDetail({
+  AuditId: "A-BULK",
+  TableName: "ZTPC_HEADER",
+  RecordKey: "BULK",
+  OldValue: "",
+  NewValue: "Bulk audit: 2",
+  ActionType: "U"
+});
+assert.strictEqual(bulkDetail.actionText, "Bulk", "bulk detail header uses Bulk operation");
+assert.strictEqual(bulkDetail.actionState, "None", "bulk detail header uses neutral gray state");
+
+const parentAuditValues = {
+  AuditId: "A-PARENT",
+  TableName: "ZTPC_HEADER",
+  ChangedBy: "DEV-251",
+  ChangedAt: "2026-07-18T18:42:24Z"
+};
+assert.strictEqual(controllerApi.filterAuditChildRows([
+  { AuditId: "A-PARENT-1", TableName: "ZTPC_HEADER", ChangedBy: "DEV-251", ChangedAt: "2026-07-18T18:42:25Z", RecordKey: "{\"ID\":\"1\"}" },
+  { AuditId: "A-OTHER", TableName: "ZTPC_HEADER", ChangedBy: "DEV-251", ChangedAt: "2026-07-20T18:42:24Z", RecordKey: "{\"ID\":\"2\"}" },
+  { AuditId: "A-PARENT-BULK", TableName: "ZTPC_HEADER", ChangedBy: "DEV-251", ChangedAt: "2026-07-18T18:42:25Z", RecordKey: "BULK" }
+], parentAuditValues).length, 1, "audit child fallback rejects unrelated rows and parent bulk marker");
 
 console.log("audit-log tests passed");

@@ -49,9 +49,7 @@
       busy="{approvalDetail>/itemsLoading}"
       busyIndicatorDelay="0"
       noDataText="No approval items found."
-      updateStarted=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateStarted"
-      updateFinished=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsUpdateFinished"
-      items="{path: '_Items', events: {dataRequested: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataRequested', dataReceived: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsDataReceived'}, parameters: {$select: 'AprvlId,ItemNo,ActionType,TableName,RecordKey,Status,OldData,NewData'}}">
+      items="{path: 'approvalDetail>/bulkItems'}">
       <columns>
         <Column width="6rem">
           <Text text="ItemNo"/>
@@ -73,22 +71,23 @@
         <ColumnListItem>
           <cells>
             <Text
-              text="{ItemNo}"
+              text="{approvalDetail>ItemNo}"
               wrapping="true"/>
             <ObjectStatus
-              text="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Create' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' || ${ActionType} === '02' ? 'Update' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Delete' : ${ActionType} }"
-              state="{= ${ActionType} === 'C' || ${ActionType} === 'CREATE' || ${ActionType} === '01' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' || ${ActionType} === '03' ? 'Error' : 'Information' }"/>
+              text="{= ${approvalDetail>ActionType} === 'C' || ${approvalDetail>ActionType} === 'CREATE' || ${approvalDetail>ActionType} === '01' ? 'Create' : ${approvalDetail>ActionType} === 'U' || ${approvalDetail>ActionType} === 'UPDATE' || ${approvalDetail>ActionType} === '02' ? 'Update' : ${approvalDetail>ActionType} === 'D' || ${approvalDetail>ActionType} === 'DELETE' || ${approvalDetail>ActionType} === '03' ? 'Delete' : ${approvalDetail>ActionType} }"
+              state="{= ${approvalDetail>ActionType} === 'C' || ${approvalDetail>ActionType} === 'CREATE' || ${approvalDetail>ActionType} === '01' ? 'Success' : ${approvalDetail>ActionType} === 'D' || ${approvalDetail>ActionType} === 'DELETE' || ${approvalDetail>ActionType} === '03' ? 'Error' : 'Information' }"/>
             <Text
-              text="{path: 'RecordKey', formatter: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.formatBulkRecordKeyText'}"
+              text="{path: 'approvalDetail>RecordKey', formatter: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.formatBulkRecordKeyText'}"
               wrapping="true"/>
             <ObjectStatus
-              text="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Approved' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Pending' : ${Status} === 'R' || ${Status} === 'REJECTED' ? 'Rejected' : ${Status} }"
-              state="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Success' : ${Status} === 'R' || ${Status} === 'REJECTED' || ${Status} === 'E' || ${Status} === 'ERROR' ? 'Error' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Warning' : 'Information' }"/>
+              text="{= ${approvalDetail>Status} === 'A' || ${approvalDetail>Status} === 'APPROVED' ? 'Approved' : ${approvalDetail>Status} === 'P' || ${approvalDetail>Status} === 'PENDING' ? 'Pending' : ${approvalDetail>Status} === 'R' || ${approvalDetail>Status} === 'REJECTED' ? 'Rejected' : ${approvalDetail>Status} }"
+              state="{= ${approvalDetail>Status} === 'A' || ${approvalDetail>Status} === 'APPROVED' ? 'Success' : ${approvalDetail>Status} === 'R' || ${approvalDetail>Status} === 'REJECTED' || ${approvalDetail>Status} === 'E' || ${approvalDetail>Status} === 'ERROR' ? 'Error' : ${approvalDetail>Status} === 'P' || ${approvalDetail>Status} === 'PENDING' ? 'Warning' : 'Information' }"/>
             <Button
               text="View Changes"
               icon="sap-icon://display"
               type="Transparent"
               tooltip="View parsed item changes"
+              class="viewChangesButton"
               press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemPress"/>
           </cells>
         </ColumnListItem>

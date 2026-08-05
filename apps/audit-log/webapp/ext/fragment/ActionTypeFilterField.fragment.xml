@@ -1,0 +1,15 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <Select
+    width="100%"
+    selectedKey="{filterValues>/ActionType}"
+    forceSelection="false">
+    <items>
+      <core:Item key="" text="All operations"/>
+      <core:Item key="C" text="Create"/>
+      <core:Item key="U" text="Update"/>
+      <core:Item key="D" text="Delete"/>
+    </items>
+  </Select>
+</core:FragmentDefinition>

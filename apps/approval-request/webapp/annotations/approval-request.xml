@@ -41,6 +41,19 @@
     </Annotations>
 
     <Annotations Target="SAP.ApprovalRequestType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.PresentationVariant">
+        <Record Type="UI.PresentationVariantType">
+          <PropertyValue Property="SortOrder">
+            <Collection>
+              <Record Type="Common.SortOrderType">
+                <PropertyValue Property="Property" PropertyPath="SubmittedAt"/>
+                <PropertyValue Property="Descending" Bool="true"/>
+              </Record>
+            </Collection>
+          </PropertyValue>
+        </Record>
+      </Annotation>
+
       <Annotation Term="UI.HeaderInfo">
         <Record Type="UI.HeaderInfoType">
           <PropertyValue Property="TypeName" String="Approval Request"/>

@@ -49,6 +49,32 @@
   white-space: normal;
 }
 
+.auditListReportTable .auditListAuditIdCell,
+.auditListReportTable .auditListAuditIdCell .sapMText,
+.auditListReportTable .auditListAuditIdCell .sapMObjectIdentifierTitle,
+.auditListReportTable .auditListAuditIdCell .sapMObjectIdentifierText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auditListReportTable .auditListOperationCell,
+.auditListReportTable .auditListOperationCell .sapMObjStatusText {
+  white-space: nowrap;
+}
+
+.auditOperationStatus {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auditOperationStatus .sapMObjStatusText {
+  white-space: nowrap;
+}
+
 .auditBusinessChange {
   box-sizing: border-box;
 }
@@ -216,71 +242,13 @@
   overflow-wrap: anywhere;
 }
 
-/* --- Audit Log List Report Visual Enhancements --- */
-.auditOperationBadge .sapMObjStatusIcon {
-  font-size: 0.875rem;
+.viewChangesButton .sapMBtnContent,
+.viewChangesButton .sapMBtnIcon {
+  color: #b26a00;
 }
 
-.auditOperationBadge .sapMObjStatusText {
-  font-weight: 600;
-  font-size: 0.8125rem;
+.viewChangesButton.sapMBtn:hover .sapMBtnInner,
+.viewChangesButton.sapMBtn:focus .sapMBtnInner {
+  background-color: #fff3cd;
+  border-color: #d99a00;
 }
-
-.auditRecordKeySubtext {
-  color: #5b738b;
-  font-size: 0.75rem;
-  font-family: "72Mono", Consolas, "Courier New", monospace;
-  margin-top: 0.125rem;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.auditIdContainer {
-  align-items: center;
-}
-
-.auditIdIcon {
-  color: #0a6ed1;
-  font-size: 0.875rem;
-}
-
-.auditIdMonospace {
-  font-family: "72Mono", Consolas, "Courier New", monospace;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #1d2d3e;
-}
-
-.auditTableIcon {
-  color: #354a5f;
-  font-size: 0.875rem;
-}
-
-.auditTableNameText {
-  font-weight: 600;
-  color: #1d2d3e;
-}
-
-.auditUserAvatar {
-  background-color: #ebf3fa;
-  color: #0a6ed1;
-  border: 1px solid #d0e1f9;
-}
-
-.auditUserText {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.auditRecordKeySingleLine {
-  font-family: "72Mono", Consolas, "Courier New", monospace;
-  font-size: 0.8125rem;
-  color: #354a5f;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-

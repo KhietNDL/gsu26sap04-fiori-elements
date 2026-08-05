@@ -11,6 +11,10 @@ const statusFilterFragment = fs.readFileSync(path.join(__dirname, "..", "apps", 
 assert.ok(statusFilterFragment.includes('key="APPROVED" text="Approved"'), "status dropdown includes Approved");
 assert.ok(statusFilterFragment.includes('key="PENDING" text="Pending"'), "status dropdown includes Pending");
 assert.ok(statusFilterFragment.includes('key="REJECTED" text="Rejected"'), "status dropdown includes Rejected");
+const approvalAnnotation = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "annotations", "approval-request.xml"), "utf8");
+assert.ok(approvalAnnotation.includes("<Annotation Term=\"UI.PresentationVariant\">"), "approval list declares a default presentation variant");
+assert.ok(approvalAnnotation.includes("PropertyPath=\"SubmittedAt\""), "approval list sorts by SubmittedAt");
+assert.ok(approvalAnnotation.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>") , "approval list sorts newest first");
 const requestOverviewFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "RequestOverview.fragment.xml"), "utf8");
 assert.ok(requestOverviewFragment.includes('text="{approvalDetail>/comment}"'), "approval object page renders the approval comment");
 

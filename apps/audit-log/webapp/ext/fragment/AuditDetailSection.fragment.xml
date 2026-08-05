@@ -86,11 +86,19 @@
         showIcon="true"
         text="Review each audit item before performing a rollback."
         class="sapUiSmallMarginBottom"/>
+      <MessageStrip
+        type="Error"
+        showIcon="true"
+        text="{auditItems>/itemsErrorText}"
+        visible="{auditItems>/itemsErrorVisible}"
+        class="sapUiSmallMarginBottom"/>
       <Text text="{auditItems>/itemSummary}" class="auditItemsSummary sapUiTinyMarginBottom"/>
       <Table
         width="100%"
         class="auditChangeSapTable"
         fixedLayout="false"
+        busy="{auditItems>/itemsLoading}"
+        busyIndicatorDelay="0"
         growing="true"
         showNoData="true"
         noDataText="No audit items available"
@@ -112,6 +120,7 @@
                 icon="sap-icon://display"
                 type="Transparent"
                 tooltip="View parsed item changes"
+                class="viewChangesButton"
                 press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onAuditItemViewChangesPress"/>
             </cells>
           </ColumnListItem>

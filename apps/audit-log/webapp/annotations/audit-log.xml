@@ -43,11 +43,11 @@
 
       <Annotation Term="UI.SelectionFields">
         <Collection>
-          <PropertyPath>AuditId</PropertyPath>
+          <PropertyPath>ChangedAt</PropertyPath>
           <PropertyPath>TableName</PropertyPath>
-          <PropertyPath>FieldName</PropertyPath>
           <PropertyPath>ChangedBy</PropertyPath>
           <PropertyPath>ActionType</PropertyPath>
+          <PropertyPath>AuditId</PropertyPath>
         </Collection>
       </Annotation>
 
@@ -62,11 +62,6 @@
             <PropertyValue Property="Value" Path="TableName"/>
             <PropertyValue Property="Label" String="Table Name"/>
             <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="RecordKey"/>
-            <PropertyValue Property="Label" String="Record Key"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="FieldName"/>
@@ -96,6 +91,30 @@
         </Collection>
       </Annotation>
 
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/AuditId" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Audit ID"/>
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Table Name"/>
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/FieldName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Field Name"/>
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/ChangedBy" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Changed By"/>
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/ChangedAt" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Changed At"/>
+    </Annotations>
+
+    <Annotations Target="SAP.AuditLogType/ActionType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.Label" String="Operation"/>
     </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>
