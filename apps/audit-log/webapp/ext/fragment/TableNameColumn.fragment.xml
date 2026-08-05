@@ -1,0 +1,8 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <HBox alignItems="Center">
+    <core:Icon src="sap-icon://grid" class="auditTableIcon sapUiTinyMarginEnd"/>
+    <Text text="{TableName}" class="auditTableNameText"/>
+  </HBox>
+</core:FragmentDefinition>

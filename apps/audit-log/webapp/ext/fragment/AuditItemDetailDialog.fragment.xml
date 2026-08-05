@@ -21,11 +21,11 @@
             </VBox>
             <VBox class="auditItemHeaderCell">
               <Label text="Action Type"/>
-              <ObjectStatus text="{auditItemDetail>/actionText}" state="{auditItemDetail>/actionState}"/>
+              <ObjectStatus text="{auditItemDetail>/actionText}" state="{= ${auditItemDetail>/actionState} || 'None' }"/>
             </VBox>
             <VBox class="auditItemHeaderCell">
               <Label text="Status"/>
-              <ObjectStatus text="{auditItemDetail>/statusText}" state="{auditItemDetail>/statusState}"/>
+              <ObjectStatus text="{auditItemDetail>/statusText}" state="{= ${auditItemDetail>/statusState} || 'None' }"/>
             </VBox>
           </FlexBox>
           <VBox class="auditItemRecordKeySummary">

@@ -12,7 +12,7 @@
           <ColumnListItem>
             <cells>
               <ObjectIdentifier title="{auditDetail>label}" class="auditFieldName"/>
-              <ObjectStatus text="{auditDetail>value}" state="{auditDetail>state}"/>
+              <ObjectStatus text="{auditDetail>value}" state="{= ${auditDetail>state} || 'None' }"/>
             </cells>
           </ColumnListItem>
         </items>
