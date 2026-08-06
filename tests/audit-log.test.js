@@ -279,6 +279,7 @@ assert.strictEqual(normalAuditItems.itemRows.length, 1, "normal audit without ch
 assert.strictEqual(normalAuditItems.rows.length, 8, "normal audit item renders fields from NewValue snapshot");
 assert.strictEqual(normalAuditItems.rows[1].field, "Product Category", "normal audit item preserves snapshot field labels");
 assert.strictEqual(normalAuditItems.rows[1].newValue, "PC01", "normal audit item preserves snapshot values");
+assert.strictEqual(normalAuditItems.itemRows[0].sourceItem.AuditId, "A-NORMAL", "audit item row keeps its source data for local detail loading");
 
 const jsonValueDetail = controllerApi.buildAuditDetail({
   AuditId: "A6",
