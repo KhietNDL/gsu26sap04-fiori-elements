@@ -604,6 +604,7 @@ sap.ui.define([
         newColumnHeader: itemView.newColumnHeader,
         statusText: AuditFormatter.isRollbackAvailable(operationControl) ? "Rollback available" : "Review required",
         statusState: AuditFormatter.isRollbackAvailable(operationControl) ? "Success" : "Information",
+        sourceItem: itemValues,
         message: "Changed by " + AuditFormatter.formatAuditValue(parentValues.ChangedBy) +
           " · " + AuditFormatter.formatTimestamp(parentValues.ChangedAt)
       });
@@ -1112,11 +1113,25 @@ sap.ui.define([
 
     onAuditItemViewChangesPress: function (event) {
       var source = event && event.getSource && event.getSource();
-      var itemNumber = source && source.getBindingContext && source.getBindingContext("auditItems") && source.getBindingContext("auditItems").getProperty("item");
+      var itemContext = source && source.getBindingContext && source.getBindingContext("auditItems");
+      var itemRow = itemContext && itemContext.getObject && itemContext.getObject();
+      var itemNumber = itemRow && itemRow.item;
       var view = this.base && this.base.getView && this.base.getView();
       var parentContext = getObjectPageContext(view);
       var tableName = getContextValue(parentContext, "TableName");
       var that = this;
+      var cachedItem = itemRow && itemRow.sourceItem;
+      var itemPath = itemContext && itemContext.getPath && itemContext.getPath();
+      var itemPathMatch = itemPath && itemPath.match(/\/(\d+)$/);
+      var cachedIndex = itemPathMatch ? Number(itemPathMatch[1]) : 0;
+
+      if (cachedItem) {
+        ensureAuditItemDialog(that, view).then(function (dialog) {
+          dialog.setModel(new JSONModel(buildAuditItemDetail(cachedItem, tableName, cachedIndex)), "auditItemDetail");
+          dialog.open();
+        });
+        return;
+      }
 
       requestAuditValues(parentContext).then(function (parentValues) {
         return requestBulkItems(parentContext, source, parentValues);
