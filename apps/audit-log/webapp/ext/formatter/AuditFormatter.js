@@ -373,23 +373,44 @@ sap.ui.define([], function () {
     return Object.keys(actions).length > 1;
   }
 
-  function hasBulkItemCount(oldValue, newValue) {
-    var text = [oldValue, newValue].map(function (value) {
+  function getBulkItemCount(oldValue, newValue) {
+    var text = [newValue, oldValue].map(function (value) {
       return value === null || value === undefined ? "" : String(value);
     }).join(" ");
     var match = text.match(/bulk\s+audit\s*:\s*(\d+)/i) || text.match(/bulk[^0-9]{0,20}\b(\d+)\s+items?/i);
 
-    return !!match && Number(match[1]) >= 2;
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  function hasBulkItemCount(oldValue, newValue) {
+    var count = getBulkItemCount(oldValue, newValue);
+    return count !== null && count >= 2;
   }
 
   function formatOperationText(actionType, recordKey, oldValue, newValue) {
     var rawAction = String(actionType || "").trim().toUpperCase();
     var action = rawAction.split(/\s+/)[0];
+    var count = getBulkItemCount(oldValue, newValue);
 
-    if (rawAction.indexOf("BULK") >= 0 ||
-      String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0 ||
-      hasMultipleActions(actionType) ||
-      hasBulkItemCount(oldValue, newValue)) {
+    // If bulk audit explicitly specifies 1 item, render actual action (Create, Update, Delete, Rollback) instead of Bulk
+    if (count === 1) {
+      return formatActionText(action);
+    }
+
+    // If bulk audit specifies 2 or more items, render Bulk
+    if (count !== null && count >= 2) {
+      return "Bulk";
+    }
+
+    if (hasMultipleActions(actionType)) {
+      return "Bulk";
+    }
+
+    if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
+      var baseActionText = formatActionText(action);
+      if (baseActionText && baseActionText !== "—" && baseActionText !== "Bulk") {
+        return baseActionText;
+      }
       return "Bulk";
     }
 
@@ -397,34 +418,30 @@ sap.ui.define([], function () {
   }
 
   function formatOperationState(actionType, recordKey, oldValue, newValue) {
-    var state = formatOperationText(actionType, recordKey, oldValue, newValue) === "Bulk"
-      ? "None"
-      : formatActionState(actionType);
-
-    return state || "None";
+    var text = formatOperationText(actionType, recordKey, oldValue, newValue);
+    return formatActionState(text);
   }
 
-  function formatOperationIcon(actionType, recordKey) {
-    var rawAction = String(actionType || "").trim().toUpperCase();
-    var action = rawAction.split(/\s+/)[0];
+  function formatOperationIcon(actionType, recordKey, oldValue, newValue) {
+    var text = formatOperationText(actionType, recordKey, oldValue, newValue);
 
-    if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
+    if (text === "Bulk") {
       return "sap-icon://group-2";
     }
 
-    if (action === "C" || action === "CREATE" || action === "01") {
+    if (text === "Create") {
       return "sap-icon://add";
     }
 
-    if (action === "U" || action === "UPDATE" || action === "02") {
+    if (text === "Update") {
       return "sap-icon://edit";
     }
 
-    if (action === "D" || action === "DELETE" || action === "03") {
+    if (text === "Delete") {
       return "sap-icon://delete";
     }
 
-    if (action === "R" || action === "ROLLBACK") {
+    if (text === "Rollback") {
       return "sap-icon://undo";
     }
 
