@@ -107,7 +107,56 @@
       </Annotation>
     </Annotations>
 
+    <Annotations Target="SAP.FieldConfig" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.LineItem">
+        <Collection>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="DisplayOrder"/>
+            <PropertyValue Property="Label" String="Display Order"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="FieldName"/>
+            <PropertyValue Property="Label" String="Field Name"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="LabelText"/>
+            <PropertyValue Property="Label" String="Label Text"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="IsKeyField"/>
+            <PropertyValue Property="Label" String="Key Field"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="MandatoryFlag"/>
+            <PropertyValue Property="Label" String="Mandatory"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+          <Record Type="UI.DataField">
+            <PropertyValue Property="Value" Path="ReadonlyFlag"/>
+            <PropertyValue Property="Label" String="Read Only"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+          </Record>
+        </Collection>
+      </Annotation>
+    </Annotations>
+
     <Annotations Target="SAP.FieldConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="SAP.FieldConfig/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.FieldConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.FieldConfig/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
       <Annotation Term="UI.Hidden" Bool="true"/>
     </Annotations>
   </edmx:DataServices>
