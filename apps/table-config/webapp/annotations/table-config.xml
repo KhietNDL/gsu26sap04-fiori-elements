@@ -5,123 +5,148 @@
   <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
     <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
   </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="Common"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Core.xml">
+    <edmx:Include Namespace="Org.OData.Core.V1" Alias="Core"/>
+  </edmx:Reference>
 
   <edmx:DataServices>
-    <Annotations Target="SAP.TableConfigType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
-      <Annotation Term="UI.HeaderInfo">
-        <Record Type="UI.HeaderInfoType">
-          <PropertyValue Property="TypeName" String="Table Configuration"/>
-          <PropertyValue Property="TypeNamePlural" String="Table Configurations"/>
-          <PropertyValue Property="Title">
-            <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="TableName"/>
-            </Record>
-          </PropertyValue>
-          <PropertyValue Property="Description">
-            <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="Description"/>
-            </Record>
-          </PropertyValue>
-        </Record>
-      </Annotation>
-
-      <Annotation Term="UI.SelectionFields">
-        <Collection>
-          <PropertyPath>TableName</PropertyPath>
-          <PropertyPath>ActiveFlag</PropertyPath>
-        </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.LineItem">
-        <Collection>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="TableName"/>
-            <PropertyValue Property="Label" String="Table Name"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="Description"/>
-            <PropertyValue Property="Label" String="Description"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ApprovalRequired"/>
-            <PropertyValue Property="Label" String="Approval Required"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActiveFlag"/>
-            <PropertyValue Property="Label" String="Active"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
-          </Record>
-        </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.HeaderFacets">
-        <Collection>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#HeaderInfo"/>
-            <PropertyValue Property="Label" String="Overview"/>
-          </Record>
-        </Collection>
-      </Annotation>
-
-      <Annotation Term="UI.FieldGroup" Qualifier="HeaderInfo">
-        <Record Type="UI.FieldGroupType">
-          <PropertyValue Property="Data">
-            <Collection>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="ztbl.config.ui.annotations.table">
+      <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.TableConfigType">
+        <Annotation Term="UI.HeaderInfo">
+          <Record Type="UI.HeaderInfoType">
+            <PropertyValue Property="TypeName" String="Table Configuration"/>
+            <PropertyValue Property="TypeNamePlural" String="Table Configurations"/>
+            <PropertyValue Property="Title">
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="TableName"/>
+              </Record>
+            </PropertyValue>
+            <PropertyValue Property="Description">
               <Record Type="UI.DataField">
                 <PropertyValue Property="Value" Path="Description"/>
-                <PropertyValue Property="Label" String="Description"/>
               </Record>
-              <Record Type="UI.DataField">
-                <PropertyValue Property="Value" Path="ApprovalRequired"/>
-                <PropertyValue Property="Label" String="Approval Required"/>
-              </Record>
-              <Record Type="UI.DataField">
-                <PropertyValue Property="Value" Path="ActiveFlag"/>
-                <PropertyValue Property="Label" String="Active"/>
-              </Record>
-            </Collection>
-          </PropertyValue>
-        </Record>
-      </Annotation>
+            </PropertyValue>
+          </Record>
+        </Annotation>
 
-      <Annotation Term="UI.Facets">
-        <Collection>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="GeneralInfo"/>
-            <PropertyValue Property="Label" String="General Information"/>
-            <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
-          </Record>
-          <Record Type="UI.ReferenceFacet">
-            <PropertyValue Property="ID" String="FieldConfigSection"/>
-            <PropertyValue Property="Label" String="Field Configuration"/>
-            <PropertyValue Property="Target" AnnotationPath="_FieldConfig/@UI.LineItem"/>
-          </Record>
-        </Collection>
-      </Annotation>
+        <Annotation Term="UI.SelectionFields">
+          <Collection>
+            <PropertyPath>TableName</PropertyPath>
+            <PropertyPath>ActiveFlag</PropertyPath>
+          </Collection>
+        </Annotation>
 
-      <Annotation Term="UI.Identification">
-        <Collection>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="TableName"/>
-            <PropertyValue Property="Label" String="Table Name"/>
+        <Annotation Term="UI.LineItem">
+          <Collection>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="TableName"/>
+              <PropertyValue Property="Label" String="Table Name"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="Description"/>
+              <PropertyValue Property="Label" String="Description"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="ApprovalRequired"/>
+              <PropertyValue Property="Label" String="Approval Required"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="ActiveFlag"/>
+              <PropertyValue Property="Label" String="Active"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+          </Collection>
+        </Annotation>
+
+        <Annotation Term="UI.HeaderFacets">
+          <Collection>
+            <Record Type="UI.ReferenceFacet">
+              <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#HeaderInfo"/>
+              <PropertyValue Property="Label" String="Overview"/>
+            </Record>
+          </Collection>
+        </Annotation>
+
+        <Annotation Term="UI.FieldGroup" Qualifier="HeaderInfo">
+          <Record Type="UI.FieldGroupType">
+            <PropertyValue Property="Data">
+              <Collection>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="Description"/>
+                  <PropertyValue Property="Label" String="Description"/>
+                  <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="ApprovalRequired"/>
+                  <PropertyValue Property="Label" String="Approval Required"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="ActiveFlag"/>
+                  <PropertyValue Property="Label" String="Active"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
           </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="Description"/>
-            <PropertyValue Property="Label" String="Description"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ApprovalRequired"/>
-            <PropertyValue Property="Label" String="Approval Required"/>
-          </Record>
-          <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ActiveFlag"/>
-            <PropertyValue Property="Label" String="Active"/>
-          </Record>
-        </Collection>
-      </Annotation>
-    </Annotations>
+        </Annotation>
+
+        <Annotation Term="UI.Facets">
+          <Collection>
+            <Record Type="UI.ReferenceFacet">
+              <PropertyValue Property="ID" String="GeneralInfo"/>
+              <PropertyValue Property="Label" String="General Information"/>
+              <PropertyValue Property="Target" AnnotationPath="@UI.Identification"/>
+            </Record>
+            <Record Type="UI.ReferenceFacet">
+              <PropertyValue Property="ID" String="FieldConfigSection"/>
+              <PropertyValue Property="Label" String="Field Configuration"/>
+              <PropertyValue Property="Target" AnnotationPath="_FieldConfig/@UI.LineItem"/>
+            </Record>
+          </Collection>
+        </Annotation>
+
+        <Annotation Term="UI.Identification">
+          <Collection>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="TableName"/>
+              <PropertyValue Property="Label" String="Table Name"/>
+              <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="Description"/>
+              <PropertyValue Property="Label" String="Description"/>
+              <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="ApprovalRequired"/>
+              <PropertyValue Property="Label" String="Approval Required"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="ActiveFlag"/>
+              <PropertyValue Property="Label" String="Active"/>
+            </Record>
+          </Collection>
+        </Annotation>
+      </Annotations>
+
+      <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.TableConfigType/Description">
+        <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
+        <Annotation Term="Common.FieldControl" Int="1"/>
+        <Annotation Term="Common.Updatable" Bool="false"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+
+      <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.TableConfig/Description">
+        <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
+        <Annotation Term="Common.FieldControl" Int="1"/>
+        <Annotation Term="Common.Updatable" Bool="false"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+    </Schema>
   </edmx:DataServices>
 </edmx:Edmx>
