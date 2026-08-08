@@ -64,37 +64,6 @@
           </Collection>
         </Annotation>
 
-        <Annotation Term="UI.HeaderFacets">
-          <Collection>
-            <Record Type="UI.ReferenceFacet">
-              <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#HeaderInfo"/>
-              <PropertyValue Property="Label" String="Overview"/>
-            </Record>
-          </Collection>
-        </Annotation>
-
-        <Annotation Term="UI.FieldGroup" Qualifier="HeaderInfo">
-          <Record Type="UI.FieldGroupType">
-            <PropertyValue Property="Data">
-              <Collection>
-                <Record Type="UI.DataField">
-                  <PropertyValue Property="Value" Path="Description"/>
-                  <PropertyValue Property="Label" String="Description"/>
-                  <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
-                </Record>
-                <Record Type="UI.DataField">
-                  <PropertyValue Property="Value" Path="ApprovalRequired"/>
-                  <PropertyValue Property="Label" String="Approval Required"/>
-                </Record>
-                <Record Type="UI.DataField">
-                  <PropertyValue Property="Value" Path="ActiveFlag"/>
-                  <PropertyValue Property="Label" String="Active"/>
-                </Record>
-              </Collection>
-            </PropertyValue>
-          </Record>
-        </Annotation>
-
         <Annotation Term="UI.Facets">
           <Collection>
             <Record Type="UI.ReferenceFacet">
