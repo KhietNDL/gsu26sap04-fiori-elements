@@ -129,18 +129,6 @@
             "settings": {
               "contextPath": "/TableConfig",
               "editableHeaderContent": false,
-              "controlConfiguration": {
-                "_FieldConfig/@com.sap.vocabularies.UI.v1.LineItem": {
-                  "columns": {
-                    "DataField::TableName": {
-                      "availability": "Hidden"
-                    },
-                    "TableName": {
-                      "availability": "Hidden"
-                    }
-                  }
-                }
-              },
               "content": {
                 "body": {
                   "sections": {}
