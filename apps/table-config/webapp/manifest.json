@@ -129,6 +129,28 @@
             "settings": {
               "contextPath": "/TableConfig",
               "editableHeaderContent": false,
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.Identification": {
+                  "fields": {
+                    "DataField::Description": {
+                      "template": "ztbl.config.ui.ext.fragment.ReadOnlyDescription"
+                    },
+                    "Description": {
+                      "template": "ztbl.config.ui.ext.fragment.ReadOnlyDescription"
+                    }
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.FieldGroup#HeaderInfo": {
+                  "fields": {
+                    "DataField::Description": {
+                      "template": "ztbl.config.ui.ext.fragment.ReadOnlyDescription"
+                    },
+                    "Description": {
+                      "template": "ztbl.config.ui.ext.fragment.ReadOnlyDescription"
+                    }
+                  }
+                }
+              },
               "content": {
                 "body": {
                   "sections": {}
