@@ -106,5 +106,9 @@
         </Collection>
       </Annotation>
     </Annotations>
+
+    <Annotations Target="SAP.FieldConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>
