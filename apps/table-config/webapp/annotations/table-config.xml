@@ -5,12 +5,6 @@
   <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
     <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
   </edmx:Reference>
-  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
-    <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="Common"/>
-  </edmx:Reference>
-  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Core.xml">
-    <edmx:Include Namespace="Org.OData.Core.V1" Alias="Core"/>
-  </edmx:Reference>
 
   <edmx:DataServices>
     <Annotations Target="SAP.TableConfigType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
@@ -79,7 +73,6 @@
               <Record Type="UI.DataField">
                 <PropertyValue Property="Value" Path="Description"/>
                 <PropertyValue Property="Label" String="Description"/>
-                <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
               </Record>
               <Record Type="UI.DataField">
                 <PropertyValue Property="Value" Path="ApprovalRequired"/>
@@ -114,12 +107,10 @@
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="TableName"/>
             <PropertyValue Property="Label" String="Table Name"/>
-            <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="Description"/>
             <PropertyValue Property="Label" String="Description"/>
-            <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="ApprovalRequired"/>
@@ -132,19 +123,8 @@
         </Collection>
       </Annotation>
     </Annotations>
-
-    <Annotations Target="SAP.TableConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
-      <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
-      <Annotation Term="Common.Updatable" Bool="false"/>
-      <Annotation Term="Core.Computed" Bool="true"/>
-      <Annotation Term="Core.Immutable" Bool="true"/>
-    </Annotations>
-
-    <Annotations Target="SAP.TableConfigType/Description" xmlns="http://docs.oasis-open.org/odata/ns/edm">
-      <Annotation Term="Common.FieldControl" EnumMember="Common.FieldControlType/ReadOnly"/>
-      <Annotation Term="Common.FieldControl" Int="1"/>
-      <Annotation Term="Common.Updatable" Bool="false"/>
-      <Annotation Term="Core.Computed" Bool="true"/>
+  </edmx:DataServices>
+</edmx:Edmx>
     </Annotations>
 
     <Annotations Target="SAP.TableConfig/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">

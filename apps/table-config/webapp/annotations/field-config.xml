@@ -106,5 +106,20 @@
         </Collection>
       </Annotation>
     </Annotations>
+    <Annotations Target="SAP.FieldConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="SAP.FieldConfig/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.FieldConfigType/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
+
+    <Annotations Target="com.sap.gateway.srvd.zsd_tbl_config.v0001.FieldConfig/TableName" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="UI.Hidden" Bool="true"/>
+    </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>
