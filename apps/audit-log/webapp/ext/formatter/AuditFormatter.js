@@ -64,6 +64,10 @@ sap.ui.define([], function () {
       return map;
     }
 
+    function isLegacyFieldKey(key) {
+      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(String(key || "").trim());
+    }
+
     text.split("|").forEach(function (part) {
       var colonIndex = part.indexOf(":");
       var equalsIndex = part.indexOf("=");
@@ -80,7 +84,7 @@ sap.ui.define([], function () {
 
       key = part.slice(0, index).trim();
 
-      if (key) {
+      if (key && isLegacyFieldKey(key)) {
         map[key] = part.slice(index + 1).trim();
       }
     });
@@ -259,9 +263,13 @@ sap.ui.define([], function () {
       return "—";
     }
 
+    if (rows.length === 1) {
+      return rows[0].value;
+    }
+
     return rows.map(function (row) {
       return row.field + ": " + row.value;
-    }).join(", ");
+    }).join("\n");
   }
 
   function formatCleanRecordKey(recordKey) {
@@ -280,6 +288,10 @@ sap.ui.define([], function () {
     flattenObject(parsed, "", rows);
 
     if (rows.length > 0) {
+      if (rows.length === 1) {
+        return rows[0].value;
+      }
+
       return rows.map(function (r) {
         return r.field + ": " + r.value;
       }).join(", ");
@@ -407,10 +419,6 @@ sap.ui.define([], function () {
     }
 
     if (rawAction.indexOf("BULK") >= 0 || String(recordKey || "").trim().toUpperCase().indexOf("BULK") === 0) {
-      var baseActionText = formatActionText(action);
-      if (baseActionText && baseActionText !== "—" && baseActionText !== "Bulk") {
-        return baseActionText;
-      }
       return "Bulk";
     }
 
@@ -678,6 +686,7 @@ sap.ui.define([], function () {
       formatAuditValue: formatAuditValue,
       formatTimestamp: formatTimestamp,
       formatRecordKeyText: formatRecordKeyText,
+      formatCleanRecordKey: formatCleanRecordKey,
       formatBulkRecordKeyText: formatBulkRecordKeyText,
       formatRowActionText: formatRowActionText,
       formatOperationText: formatOperationText,

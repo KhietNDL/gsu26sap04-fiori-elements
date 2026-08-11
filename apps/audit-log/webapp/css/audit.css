@@ -35,6 +35,11 @@
   font-weight: 600;
 }
 
+.auditInfoValue .sapMObjStatusText {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .auditFieldName .sapMObjectIdentifierTitle {
   color: #354a5f;
   font-size: 0.875rem;
@@ -61,6 +66,10 @@
 .auditListReportTable .auditListOperationCell,
 .auditListReportTable .auditListOperationCell .sapMObjStatusText {
   white-space: nowrap;
+}
+
+.auditListReportTable .sapMListTblCell {
+  vertical-align: middle;
 }
 
 .auditOperationStatus {
@@ -111,6 +120,242 @@
   padding: 0;
 }
 
+.auditExcelTable {
+  min-width: max-content;
+}
+
+.auditExcelTable .sapMListTbl {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.auditExcelTable .sapMListTblHeaderCell {
+  background: #f4f6f8;
+  border-right: 1px solid #d9e2ec;
+  border-bottom: 1px solid #b8c4cf;
+  color: #223548;
+  font-weight: 700;
+}
+
+.auditExcelTable .sapMListTblCell {
+  border-right: 1px solid #e5ebf0;
+  border-bottom: 1px solid #e5ebf0;
+  vertical-align: top;
+}
+
+.auditExcelTable .sapMText,
+.auditExcelTable .sapMObjStatusText {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.auditExcelHtmlScroller {
+  width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid #b8c4cf;
+}
+
+.auditExcelHtmlTable {
+  min-width: max-content;
+  width: auto;
+  border-collapse: collapse;
+  color: #0a263f;
+  font-size: 0.875rem;
+}
+
+.auditExcelHtmlTable th,
+.auditExcelHtmlTable td {
+  box-sizing: border-box;
+  min-width: 13rem;
+  max-width: 20rem;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid #e5ebf0;
+  border-bottom: 1px solid #e5ebf0;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.auditExcelHtmlTable th {
+  background: #f4f6f8;
+  border-bottom-color: #b8c4cf;
+  color: #223548;
+  font-weight: 700;
+}
+
+.auditExcelHtmlTable td:first-child,
+.auditExcelHtmlTable th:first-child {
+  min-width: 11rem;
+  font-weight: 700;
+}
+
+.auditBulkInlineChangeTable .sapMListTbl {
+  border: 1px solid #d9e2ec;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.auditBulkInlineChangeTable .sapMListTblHeaderCell {
+  background: #f4f6f8;
+  border-bottom: 1px solid #b8c4cf;
+}
+
+.auditBulkInlineChangeTable .sapMListTblCell {
+  border-bottom: 1px solid #e5ebf0;
+}
+
+.auditBulkInlineChangeTable .sapMListTblRow:nth-child(even) .sapMListTblCell {
+  background: #fbfcfd;
+}
+
+.auditBulkCompactWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #d9e2ec;
+  border-radius: 0.375rem;
+  background: #fff;
+}
+
+.auditBulkCompactTable {
+  width: max-content;
+  min-width: 76rem;
+  border-collapse: collapse;
+  color: #0a263f;
+  font-size: 0.875rem;
+  table-layout: auto;
+}
+
+.auditBulkCompactTable th,
+.auditBulkCompactTable td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e5ebf0;
+  color: #0a263f;
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.auditBulkCompactTable th {
+  background: #f4f6f8;
+  color: #223548;
+  font-weight: 700;
+}
+
+.auditBulkCompactTable th:nth-child(1) {
+  width: 4rem;
+}
+
+.auditBulkCompactTable th:nth-child(2) {
+  width: 30rem;
+}
+
+.auditBulkCompactTable th:nth-child(3) {
+  width: 7rem;
+}
+
+.auditBulkCompactTable th:nth-child(4) {
+  width: 15rem;
+}
+
+.auditBulkCompactTable th:nth-child(5),
+.auditBulkCompactTable th:nth-child(6) {
+  width: 11rem;
+}
+
+.auditBulkItemStart td {
+  border-top: 2px solid #d9e2ec;
+}
+
+.auditBulkCompactItemCell {
+  width: 4rem;
+  color: #223548;
+  font-weight: 700;
+}
+
+.auditBulkCompactFieldCell {
+  width: 16rem;
+  color: #0a263f;
+  font-weight: 400;
+}
+
+.auditBulkCompactRecordCell {
+  color: #0a263f;
+}
+
+.auditBulkCompactActionCell {
+  color: #0a263f;
+  font-weight: 400;
+}
+
+.auditBulkCompactTable .auditBulkActionStateSuccess {
+  color: #107e3e;
+}
+
+.auditBulkCompactTable .auditBulkActionStateInformation {
+  color: #0057d2;
+}
+
+.auditBulkCompactTable .auditBulkActionStateError {
+  color: #bb0000;
+}
+
+.auditBulkCompactTable .auditBulkActionStateWarning {
+  color: #e76500;
+}
+
+.auditBulkCompactTable .auditBulkActionStateNone {
+  color: #223548;
+}
+
+.auditBulkCompactRecord {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.auditBulkCompactRecordPart {
+  display: grid;
+  grid-template-columns: 5rem max-content;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+  color: #223548;
+}
+
+.auditBulkCompactRecordPart span {
+  flex: 0 0 auto;
+  color: #5b738b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.auditBulkCompactRecordPart code {
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.auditBulkCompactTable .auditBulkValueBefore {
+  color: #0a263f;
+}
+
+.auditBulkCompactTable .auditBulkValueAfter {
+  color: #0a263f;
+  font-weight: 400;
+}
+
+.auditBulkItemEmptyCell {
+  color: #5b738b;
+  font-style: italic;
+}
+
 .auditApprovalTable .sapMListTblHeaderCell {
   background: #f7f9fb;
   color: #354a5f;
@@ -150,13 +395,6 @@
 .auditInlineItemCell .sapMLabel {
   color: #5b738b;
   font-weight: 600;
-}
-
-.auditRawJsonPanel .sapMTextAreaInner {
-  background: #f7f9fb;
-  color: #0a263f;
-  font-family: "72Mono", Consolas, "Courier New", monospace;
-  white-space: pre-wrap;
 }
 
 .auditItemDialogHeader {
@@ -210,15 +448,6 @@
 
 .auditBulkButton .sapMBtnIcon {
   font-size: 0.875rem;
-}
-
-.auditTechnicalPanel .sapMTextAreaInner {
-  background: #f7f9fb;
-  color: #0a263f;
-  font-family: "72Mono", Consolas, "Courier New", monospace;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
 }
 
 .auditBulkDialogContent {

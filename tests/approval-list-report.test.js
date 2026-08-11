@@ -16,7 +16,15 @@ assert.ok(approvalAnnotation.includes("<Annotation Term=\"UI.PresentationVariant
 assert.ok(approvalAnnotation.includes("PropertyPath=\"SubmittedAt\""), "approval list sorts by SubmittedAt");
 assert.ok(approvalAnnotation.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>") , "approval list sorts newest first");
 const requestOverviewFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "RequestOverview.fragment.xml"), "utf8");
+const approvalCss = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "css", "approval.css"), "utf8");
 assert.ok(requestOverviewFragment.includes('text="{approvalDetail>/comment}"'), "approval object page renders the approval comment");
+assert.ok(requestOverviewFragment.includes('items="{approvalDetail>/requestInfoRows}"'), "approval overview renders request information rows");
+assert.ok(requestOverviewFragment.includes('class="approvalInfoTable"'), "approval overview uses the shared Field/Value table style");
+const formattedRequestDetailFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "FormattedRequestDetail.fragment.xml"), "utf8");
+assert.ok(formattedRequestDetailFragment.includes('content="{approvalDetail>/changeTableHtml}"'), "approval detail renders changes through generated table HTML");
+assert.ok(!formattedRequestDetailFragment.includes('headerText="Record Key"'), "approval detail does not duplicate Record Key outside request information");
+assert.ok(!formattedRequestDetailFragment.includes('items="{approvalDetail>/changeRows}"'), "approval detail does not render the old row-based change table");
+assert.ok(!approvalCss.includes("approvalActionText--bulk"), "approval list leaves bulk operations with the default neutral color");
 
 function loadController() {
   const controllerPath = path.join(
@@ -240,6 +248,10 @@ const updateRows = api.buildApprovalDiff(
 assertJsonEqual(updateRows.map((row) => row.field), ["Name", "Extra"], "update shows changed and new-only fields only");
 assert.strictEqual(updateRows[0].oldValue, "Old", "update shows old value from OldData JSON");
 assert.strictEqual(updateRows[0].newValue, "New", "update shows new value from NewData JSON");
+const updateChangeHtml = api.buildApprovalChangeTableHtml(updateRows, "Update", "Old Value", "New Value");
+assert.ok(updateChangeHtml.includes("<th>Name</th>"), "approval change HTML uses changed fields as horizontal columns");
+assert.ok(updateChangeHtml.includes("<td>Old</td>"), "approval change HTML includes old values");
+assert.ok(updateChangeHtml.includes("<td>New</td>"), "approval change HTML includes new values");
 
 const headerUpdateRows = api.buildApprovalDiff(
   "U",

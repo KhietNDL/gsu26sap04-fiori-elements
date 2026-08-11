@@ -68,12 +68,6 @@ function loadAuditController(formatter) {
           };
 
           moduleResult = factory(ControllerExtension, {
-            registry: {
-              filter: function () {
-                return [];
-              }
-            }
-          }, {
             load: function () {
               return Promise.resolve({});
             }
@@ -87,6 +81,10 @@ function loadAuditController(formatter) {
             show: function () {}
           }, formatter, {
             attachGlobalHandlers: function () {}
+          }, function Filter() {
+            return {};
+          }, {
+            EQ: "EQ"
           });
         }
       }
@@ -126,6 +124,7 @@ assert.strictEqual(api.formatOperationText("U BULK", "BULK", "", "Bulk audit: 00
 assert.strictEqual(api.formatOperationText("C BULK", "BULK", "", "Bulk audit: 000001 item(s)"), "Create", "1-item bulk displays specific action Create");
 assert.strictEqual(api.formatOperationText("R BULK", "BULK", "", "Bulk audit: 000001 item(s)"), "Rollback", "1-item bulk displays specific action Rollback");
 assert.strictEqual(api.formatOperationText("R", "ENTITY_ID=0001"), "Rollback", "R ActionType displays Rollback");
+assert.strictEqual(api.formatOperationText("U BULK", "BULK"), "Bulk", "list bulk operation does not need raw OldValue/NewValue fields");
 assert.strictEqual(api.formatOperationText("U BULK", "BULK", "", "Bulk audit: 000005 item(s)"), "Bulk", "multi-item bulk operation displays Bulk");
 assert.strictEqual(api.formatOperationText("C,U", "ENTITY_ID=0001"), "Bulk", "multiple actions are bulk");
 assert.strictEqual(api.formatOperationText("C", "ENTITY_ID=0001", "", "Bulk audit: 2 items"), "Bulk", "bulk summary is compact");
@@ -144,8 +143,10 @@ assert.strictEqual(api.formatAuditValue({ A: 1 }), "{\"A\":1}", "nested object d
 const longValue = "A".repeat(300);
 assert.strictEqual(api.formatAuditValue(longValue), longValue, "long values are preserved for wrapping by UI");
 
-assert.strictEqual(api.formatRecordKeyText("{\"SCHEDULE_ID\":\"SCH010\",\"ITEM_NO\":1}"), "Schedule Id: SCH010, Item No: 1", "valid JSON RecordKey becomes key/value text");
-assert.strictEqual(api.formatRecordKeyText("ENTITY_ID=ABC123 | ITEM_ID=ITEM9"), "Entity Id: ABC123, Item Id: ITEM9", "legacy equals RecordKey becomes key/value text");
+assert.strictEqual(api.formatRecordKeyText("{\"SCHEDULE_ID\":\"SCH010\",\"ITEM_NO\":1}"), "Schedule Id: SCH010\nItem No: 1", "valid JSON RecordKey becomes multiline key/value text");
+assert.strictEqual(api.formatRecordKeyText("ENTITY_ID=ABC123 | ITEM_ID=ITEM9"), "Entity Id: ABC123\nItem Id: ITEM9", "legacy equals RecordKey becomes multiline key/value text");
+assert.strictEqual(api.formatRecordKeyText("ENTITY_ID=ABC123"), "ABC123", "single-field RecordKey displays only the value");
+assert.strictEqual(api.formatCleanRecordKey("ENTITY_ID=ABC123"), "ABC123", "single-field list RecordKey displays only the value");
 assertJsonEqual(api.getRecordKeyRows("{\"SCHEDULE_ID\":\"SCH010\"}"), [
   { key: "SCHEDULE_ID", field: "Schedule Id", value: "SCH010" }
 ], "valid JSON RecordKey produces parsed rows");
@@ -159,6 +160,17 @@ assertJsonEqual(api.getValueRows("ROOM: A101 | CLIENT: 324 | ROOM_TYPE: LAB"), [
   { key: "ROOM", field: "Room", value: "A101" },
   { key: "ROOM_TYPE", field: "Room Type", value: "LAB" }
 ], "legacy FIELD: value audit text is parsed and technical fields are ignored");
+assertJsonEqual(api.getValueRows("2026-08-11T09:10:00Z"), [], "ISO timestamp system values are not parsed as legacy key/value maps");
+assertJsonEqual(api.buildChangeRows({
+  FieldName: "CHANGED_AT",
+  OldValue: "2026-08-11T09:10:00Z",
+  NewValue: "2026-08-11T09:11:00Z",
+  ActionType: "U"
+}), [{
+  field: "Changed At",
+  oldValue: "2026-08-11T09:10:00Z",
+  newValue: "2026-08-11T09:11:00Z"
+}], "system audit timestamp fields render as plain values instead of JSON-like rows");
 assert.strictEqual(api.getBulkCountText("", "Bulk audit: 3"), "3 item(s)", "bulk count extracts Bulk audit count");
 assert.strictEqual(api.getBulkCountText("1 item(s)", ""), "1 item(s)", "bulk count extracts item count");
 assert.strictEqual(api.getBulkCountText("x", "y"), "Bulk CRUD Operation", "bulk count falls back safely");
@@ -184,6 +196,11 @@ assert.strictEqual(createDetail.changeTitle, "Created Value", "create audit uses
 assert.strictEqual(createDetail.showOldColumn, false, "create hides empty before column");
 assert.strictEqual(createDetail.showNewColumn, true, "create shows new value");
 assert.strictEqual(createDetail.changeRows[0].newValue, "B", "create shows NewValue");
+assert.strictEqual(createDetail.changeColumns[1].label, "Room", "create detail uses field names as horizontal columns");
+assert.strictEqual(createDetail.changeTableRows[0].cells[0].value, "New Value", "create detail uses one horizontal value row");
+assert.strictEqual(createDetail.changeTableRows[0].cells[1].value, "B", "create detail places NewValue in the field column");
+assert(createDetail.changeTableHtml.includes(">Room</th>"), "create detail HTML table includes field header");
+assert(createDetail.changeTableHtml.includes(">B</td>"), "create detail HTML table includes field value");
 assert.strictEqual(createDetail.rollbackText, "Rollback available", "rollback available is displayed");
 assert.strictEqual(createDetail.rollbackState, "Success", "rollback available state");
 
@@ -205,6 +222,9 @@ assert.strictEqual(updateDetail.showNewColumn, true, "update shows after");
 assert.strictEqual(updateDetail.changeRows[0].oldValue, "A", "update shows OldValue");
 assert.strictEqual(updateDetail.changeRows[0].newValue, "B", "update shows NewValue");
 assert.strictEqual(updateDetail.infoRows[6].value, "—", "missing ChangedAt stays usable");
+assert.strictEqual(updateDetail.changeTableRows.length, 2, "update detail renders before and after rows");
+assert.strictEqual(updateDetail.changeTableRows[0].cells[0].value, "Before", "update detail first row is Before");
+assert.strictEqual(updateDetail.changeTableRows[1].cells[0].value, "After", "update detail second row is After");
 assert.strictEqual(updateDetail.rollbackText, "Rollback not available", "rollback unavailable is displayed");
 
 const deleteDetail = controllerApi.buildAuditDetail({
@@ -284,6 +304,19 @@ assert.strictEqual(normalAuditItems.rows.length, 8, "normal audit item renders f
 assert.strictEqual(normalAuditItems.rows[1].field, "Product Category", "normal audit item preserves snapshot field labels");
 assert.strictEqual(normalAuditItems.rows[1].newValue, "PC01", "normal audit item preserves snapshot values");
 assert.strictEqual(normalAuditItems.itemRows[0].sourceItem.AuditId, "A-NORMAL", "audit item row keeps its source data for local detail loading");
+assert(normalAuditItems.bulkItemsHtml.includes("Product Category"), "audit item HTML includes field names");
+assert(normalAuditItems.bulkItemsHtml.includes("<th>Action</th>"), "audit item HTML includes per-item Action column");
+assert(normalAuditItems.bulkItemsHtml.includes("<th>Old Value</th>"), "audit item HTML includes Old Value column");
+assert(normalAuditItems.bulkItemsHtml.includes("<th>New Value</th>"), "audit item HTML includes New Value column");
+assert(!normalAuditItems.bulkItemsHtml.includes("<th>Before</th>"), "audit item HTML does not use Before wording");
+assert(!normalAuditItems.bulkItemsHtml.includes("<th>After</th>"), "audit item HTML does not use After wording");
+assert(normalAuditItems.bulkItemsHtml.includes("<th>Record Keys</th>"), "audit item HTML labels composite keys clearly");
+assert(normalAuditItems.bulkItemsHtml.includes("rowspan="), "audit item HTML spans item metadata across changed fields");
+assert(normalAuditItems.bulkItemsHtml.includes("Create"), "audit item HTML shows the item action");
+assert(normalAuditItems.bulkItemsHtml.includes("auditBulkActionStateSuccess"), "audit item HTML applies the semantic action color class");
+assert(normalAuditItems.bulkItemsHtml.includes("00000000000000000000000000000000"), "audit item HTML keeps full record key values");
+assert(normalAuditItems.bulkItemsHtml.includes("auditBulkCompactRecordPart"), "audit item HTML renders compact Record values");
+assert(!normalAuditItems.bulkItemsHtml.includes("auditBulkCopyButton"), "audit item HTML keeps record keys free of copy buttons");
 
 const jsonValueDetail = controllerApi.buildAuditDetail({
   AuditId: "A6",
@@ -329,22 +362,43 @@ const annotationPath = path.join(__dirname, "..", "apps", "audit-log", "webapp",
 const annotationXml = fs.readFileSync(annotationPath, "utf8");
 const manifestPath = path.join(__dirname, "..", "apps", "audit-log", "webapp", "manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const i18nText = fs.readFileSync(path.join(__dirname, "..", "apps", "audit-log", "webapp", "i18n", "i18n.properties"), "utf8");
+const auditListSettings = manifest["sap.ui5"].routing.targets.AuditLogList.options.settings;
+assert.strictEqual(auditListSettings.initialLoad, "Disabled", "audit list waits for the user to start filtering");
 const filterConfiguration = manifest["sap.ui5"].routing.targets.AuditLogList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.SelectionFields"].filterFields;
 const columns = manifest["sap.ui5"].routing.targets.AuditLogList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.LineItem"].columns;
-assert.strictEqual(filterConfiguration.ActionType.template, "ztbl.audit.ui.ext.fragment.ActionTypeFilterField", "audit operation filter uses a readable dropdown");
-const actionTypeFilterFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "audit-log", "webapp", "ext", "fragment", "ActionTypeFilterField.fragment.xml"), "utf8");
-assert(actionTypeFilterFragment.includes('key="C" text="Create"'), "audit operation filter includes Create");
-assert(actionTypeFilterFragment.includes('key="U" text="Update"'), "audit operation filter includes Update");
-assert(actionTypeFilterFragment.includes('key="D" text="Delete"'), "audit operation filter includes Delete");
+assert(!filterConfiguration.ActionType.template, "audit operation filter uses the standard Fiori Elements field");
 assert(columns.OperationColumn, "List Report exposes Operation column");
 assert.strictEqual((annotationXml.match(/DataFieldForAction/g) || []).length, 0, "local annotation does not create duplicate Rollback action");
-assert.strictEqual((annotationXml.match(/rollback/g) || []).length, 0, "local annotation does not duplicate rollback button");
+assert(!annotationXml.includes("<PropertyValue Property=\"Action\" String=\"com.sap.gateway.srvd.zsd_tbl_config.v0001.rollback\""), "local annotation does not duplicate rollback button");
 assert(columns.OperationColumn.properties.includes("ActionType"), "Operation column uses ActionType");
+assert(columns.OperationColumn.properties.includes("RecordKey"), "Operation column uses RecordKey to identify bulk rows");
+assert(!columns.OperationColumn.properties.includes("OldValue"), "audit list does not request raw OldValue data");
+assert(!columns.OperationColumn.properties.includes("NewValue"), "audit list does not request raw NewValue data");
+assert.strictEqual(columns["DataField::RecordKey"].availability, "Hidden", "audit list hides the raw Record Key column");
+assert(!annotationXml.includes('<PropertyValue Property="Value" Path="RecordKey"/>'), "audit list LineItem does not render raw Record Key");
 assert(annotationXml.includes("<Annotation Term=\"UI.PresentationVariant\">"), "Audit list declares a default presentation variant");
 assert(annotationXml.includes("<PropertyValue Property=\"Property\" PropertyPath=\"ChangedAt\"/>"), "Audit list sorts by ChangedAt");
 assert(annotationXml.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>"), "Audit list sorts newest first");
 assert(annotationXml.includes("<PropertyPath>ChangedAt</PropertyPath>"), "audit filters by changed time");
 assert(annotationXml.includes("<Annotation Term=\"Common.Label\" String=\"Operation\"/>"), "audit action filter has a readable label");
+assert(!annotationXml.includes("Common.IsActionCritical"), "rollback confirmation is handled only by the controller");
+assert(!i18nText.includes("SAPFE_ACTION_CONFIRM|rollback"), "rollback does not register a duplicate Fiori Elements confirmation");
+const auditDetailSectionFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "audit-log", "webapp", "ext", "fragment", "AuditDetailSection.fragment.xml"), "utf8");
+const auditCss = fs.readFileSync(path.join(__dirname, "..", "apps", "audit-log", "webapp", "css", "audit.css"), "utf8");
+assert.strictEqual(auditListSettings.navigation.AuditLog.detail.route, "AuditLogObjectPage", "audit rows navigate to the detail page");
+assert.strictEqual(columns.DetailColumn, undefined, "audit list does not add a separate detail popup column");
+assert(auditDetailSectionFragment.includes('items="{auditDetail>/infoRows}"'), "audit detail section keeps full audit information vertical");
+assert(!auditDetailSectionFragment.includes('columns="{auditDetail>/infoColumns}"'), "audit detail section does not render audit info as horizontal columns");
+assert(!auditDetailSectionFragment.includes('headerText="Record Key"'), "audit detail section does not duplicate Record Key below full information");
+assert(!auditDetailSectionFragment.includes('items="{auditDetail>/recordKeyTableRows}"'), "audit detail section does not render a separate Record Key table");
+assert(auditDetailSectionFragment.includes('content="{auditDetail>/changeTableHtml}"'), "audit detail section renders changed values through the generated horizontal table");
+assert(!auditDetailSectionFragment.includes('columns="{auditDetail>/changeColumns}"'), "audit detail section does not depend on dynamic table columns");
+assert(auditDetailSectionFragment.includes('content="{auditItems>/bulkItemsHtml}"'), "bulk audit detail renders compact item diff table inline");
+assert(!auditDetailSectionFragment.includes('items="{auditItems>/rows}"'), "bulk audit detail does not render one repeated row per field");
+assert(!auditDetailSectionFragment.includes("View Changes"), "bulk audit detail does not require opening item changes");
+assert(!auditDetailSectionFragment.includes("Review old and new values"), "bulk audit detail removes redundant instruction banner");
+assert(!auditCss.includes("auditListOperationBulk"), "audit list leaves bulk operations with the default neutral color");
 
 const bulkDialogData = controllerApi.buildBulkDialogData({
   AuditId: "A8",
@@ -370,8 +424,8 @@ const bulkDialogData = controllerApi.buildBulkDialogData({
 }]);
 assert.strictEqual(bulkDialogData.title, "Bulk Audit Items — 2", "bulk dialog title contains count");
 assert.strictEqual(bulkDialogData.actionText, "Bulk", "mixed bulk dialog action is generic");
-assert.strictEqual(bulkDialogData.items[0].recordKeyText, "Id: 1", "bulk dialog hides technical JSON key fields");
-assert.strictEqual(bulkDialogData.items[1].recordKeyText, "Id: 2", "bulk dialog parses legacy record key text");
+assert.strictEqual(bulkDialogData.items[0].recordKeyText, "1", "bulk dialog hides single-field RecordKey labels");
+assert.strictEqual(bulkDialogData.items[1].recordKeyText, "2", "bulk dialog parses legacy single-field RecordKey as value only");
 
 const bulkDetail = controllerApi.buildAuditDetail({
   AuditId: "A-BULK",
@@ -383,6 +437,18 @@ const bulkDetail = controllerApi.buildAuditDetail({
 });
 assert.strictEqual(bulkDetail.actionText, "Bulk", "bulk detail header uses Bulk operation");
 assert.strictEqual(bulkDetail.actionState, "None", "bulk detail header uses neutral gray state");
+assert.strictEqual(bulkDetail.infoRows[4].label, "Batch Action", "bulk detail labels the summary action as Batch Action");
+assert.strictEqual(bulkDetail.infoRows[4].value, "Bulk", "bulk detail shows Bulk in Full Audit Information");
+
+const pureBulkDetail = controllerApi.buildAuditDetail({
+  AuditId: "A-PURE-BULK",
+  TableName: "ZTST_ITEM",
+  RecordKey: "BULK",
+  ActionType: "BULK",
+  OldValue: "",
+  NewValue: "Bulk audit: 2 item(s)"
+});
+assert.strictEqual(pureBulkDetail.infoRows[4].value, "Bulk", "pure bulk detail shows Bulk in Full Audit Information");
 
 const parentAuditValues = {
   AuditId: "A-PARENT",

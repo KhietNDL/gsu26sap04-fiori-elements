@@ -530,15 +530,6 @@ sap.ui.define([], function () {
     }).join("") + "</div>";
   }
 
-  function renderTechnicalBlock(label, value) {
-    return [
-      "<div class=\"approvalTechnicalBlock\">",
-      "<div class=\"approvalTechnicalLabel\">", escapeHtml(label), "</div>",
-      "<pre class=\"approvalTechnicalPre\">", escapeHtml(value || "No data returned for this field"), "</pre>",
-      "</div>"
-    ].join("");
-  }
-
   return {
     formatActionText: function (presentationValue, rawValue) {
       if (arguments.length === 1) {
@@ -606,14 +597,6 @@ sap.ui.define([], function () {
 
     formatChangeDetailsAsHtml: renderChangeDetails,
 
-    formatReadableDetailAsHtml: renderReadableDetail,
-
-    formatTechnicalDetailsAsHtml: function (recordKey, oldData, newData) {
-      return [
-        renderTechnicalBlock("RecordKey JSON", recordKey),
-        renderTechnicalBlock("OldData JSON", oldData),
-        renderTechnicalBlock("NewData JSON", newData)
-      ].join("");
-    }
+    formatReadableDetailAsHtml: renderReadableDetail
   };
 });

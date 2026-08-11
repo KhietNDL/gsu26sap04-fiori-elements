@@ -12,8 +12,5 @@
     <core:Fragment
       fragmentName="ztbl.approval.ui.ext.fragment.BulkApprovalItems"
       type="XML"/>
-    <core:Fragment
-      fragmentName="ztbl.approval.ui.ext.fragment.TechnicalDetails"
-      type="XML"/>
   </VBox>
 </core:FragmentDefinition>

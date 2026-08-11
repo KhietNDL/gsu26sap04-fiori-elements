@@ -160,37 +160,5 @@
       </VBox>
     </Panel>
 
-    <Panel
-      expandable="true"
-      expanded="false"
-      headerText="Technical Data"
-      class="auditPanel auditTechnicalPanel">
-      <VBox width="100%">
-        <Label text="Raw RecordKey"/>
-        <TextArea
-          width="100%"
-          rows="3"
-          editable="false"
-          growing="true"
-          growingMaxLines="8"
-          value="{auditDetail>/rawRecordKey}"/>
-        <Label text="Raw OldValue" class="sapUiSmallMarginTop"/>
-        <TextArea
-          width="100%"
-          rows="3"
-          editable="false"
-          growing="true"
-          growingMaxLines="8"
-          value="{auditDetail>/rawOldValue}"/>
-        <Label text="Raw NewValue" class="sapUiSmallMarginTop"/>
-        <TextArea
-          width="100%"
-          rows="3"
-          editable="false"
-          growing="true"
-          growingMaxLines="8"
-          value="{auditDetail>/rawNewValue}"/>
-      </VBox>
-    </Panel>
   </VBox>
 </core:FragmentDefinition>

@@ -2,7 +2,7 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
   <ObjectStatus
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}, {path: 'OldValue'}, {path: 'NewValue'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
-    state="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}, {path: 'OldValue'}, {path: 'NewValue'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationState'}"
+    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
+    state="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationState'}"
     class="auditOperationBadge"/>
 </core:FragmentDefinition>
