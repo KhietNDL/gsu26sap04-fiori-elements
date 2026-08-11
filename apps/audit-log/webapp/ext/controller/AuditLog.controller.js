@@ -1,6 +1,5 @@
 sap.ui.define([
   "sap/ui/core/mvc/ControllerExtension",
-  "sap/ui/core/Element",
   "sap/ui/core/Fragment",
   "sap/ui/model/json/JSONModel",
   "sap/m/MessageBox",
@@ -8,9 +7,8 @@ sap.ui.define([
   "ztbl/audit/ui/ext/formatter/AuditFormatter",
   "ztbl/audit/ui/ext/util/ODataErrorHandler",
   "sap/ui/model/Filter",
-  "sap/ui/model/FilterOperator",
-  "sap/ui/model/Sorter"
-], function (ControllerExtension, Element, Fragment, JSONModel, MessageBox, MessageToast, AuditFormatter, ODataErrorHandler, Filter, FilterOperator, Sorter) {
+  "sap/ui/model/FilterOperator"
+], function (ControllerExtension, Fragment, JSONModel, MessageBox, MessageToast, AuditFormatter, ODataErrorHandler, Filter, FilterOperator) {
   "use strict";
 
   var AUDIT_PROPERTIES = [
@@ -88,6 +86,7 @@ sap.ui.define([
         rows: [],
         itemRows: [],
         itemSummary: "",
+        bulkItemsHtml: "",
         itemsLoading: false,
         itemsErrorVisible: false,
         itemsErrorText: ""
@@ -455,12 +454,25 @@ sap.ui.define([
   }
 
   function buildInfoRows(values) {
+    var isBulk = AuditFormatter.isBulkRecord(values);
+    var actionText = isBulk ? AuditFormatter.formatOperationText(
+      values.ActionType,
+      values.RecordKey,
+      values.OldValue,
+      values.NewValue
+    ) : AuditFormatter.formatActionText(values.ActionType);
+
     return [
       { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
       { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
       { label: "Record Key", value: AuditFormatter.formatRecordKeyText(values.RecordKey), state: "None" },
       { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName), state: "None" },
-      { label: "Action", value: AuditFormatter.formatActionText(values.ActionType), state: AuditFormatter.formatActionState(values.ActionType), isStatus: true },
+      {
+        label: isBulk ? "Batch Action" : "Action",
+        value: actionText,
+        state: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
+        isStatus: true
+      },
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
       { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" },
       { label: "Rollback Audit ID", value: AuditFormatter.formatAuditValue(values.RollbackAuditId), state: "None" }
@@ -484,6 +496,116 @@ sap.ui.define([
     ];
   }
 
+  function buildHorizontalColumns(rows, labelPropertyName) {
+    return (rows || []).map(function (row) {
+      return {
+        label: row && row[labelPropertyName] || "—"
+      };
+    });
+  }
+
+  function buildHorizontalSingleRow(rows, valuePropertyName) {
+    if (!rows || !rows.length) {
+      return [];
+    }
+
+    return [{
+      cells: rows.map(function (row) {
+        return {
+          value: row && row[valuePropertyName] || "—",
+          state: row && row.state || "None"
+        };
+      })
+    }];
+  }
+
+  function buildChangeColumns(changeRows) {
+    if (!changeRows || !changeRows.length) {
+      return [];
+    }
+
+    return [{ label: "Value Type" }].concat(changeRows.map(function (row) {
+      return {
+        label: row && row.field || "—"
+      };
+    }));
+  }
+
+  function buildChangeTableRows(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader) {
+    var rows = [];
+
+    if (!changeRows || !changeRows.length) {
+      return rows;
+    }
+
+    if (showOldColumn) {
+      rows.push({
+        cells: [{ value: oldColumnHeader || "Before", state: "None" }].concat(changeRows.map(function (row) {
+          return {
+            value: row && row.oldValue || "—",
+            state: "None"
+          };
+        }))
+      });
+    }
+
+    if (showNewColumn) {
+      rows.push({
+        cells: [{ value: newColumnHeader || "After", state: "None" }].concat(changeRows.map(function (row) {
+          return {
+            value: row && row.newValue || "—",
+            state: "None"
+          };
+        }))
+      });
+    }
+
+    return rows;
+  }
+
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function buildChangeTableHtml(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader) {
+    var rows = buildChangeTableRows(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader);
+    var scrollerStyle = "width:100%;overflow-x:auto;border:1px solid #d9e2ec;border-radius:6px;background:#fff;";
+    var tableStyle = "min-width:max-content;width:auto;border-collapse:separate;border-spacing:0;color:#0a263f;font-size:14px;";
+    var headerStyle = "box-sizing:border-box;min-width:13rem;max-width:20rem;padding:12px 16px;background:#f4f6f8;border-right:1px solid #d9e2ec;border-bottom:1px solid #b8c4cf;color:#223548;font-weight:700;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere;";
+    var firstHeaderStyle = headerStyle + "min-width:11rem;";
+    var cellStyle = "box-sizing:border-box;min-width:13rem;max-width:20rem;padding:12px 16px;border-right:1px solid #e5ebf0;border-bottom:1px solid #e5ebf0;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere;";
+    var firstCellStyle = cellStyle + "min-width:11rem;font-weight:700;background:#fbfcfd;color:#223548;";
+
+    if (!changeRows || !changeRows.length || !rows.length) {
+      return "";
+    }
+
+    return [
+      "<div class=\"auditExcelHtmlScroller\" style=\"" + scrollerStyle + "\">",
+      "<table class=\"auditExcelHtmlTable\" style=\"" + tableStyle + "\">",
+      "<thead><tr>",
+      "<th style=\"" + firstHeaderStyle + "\">Value Type</th>",
+      changeRows.map(function (row) {
+        return "<th style=\"" + headerStyle + "\">" + escapeHtml(row && row.field || "—") + "</th>";
+      }).join(""),
+      "</tr></thead>",
+      "<tbody>",
+      rows.map(function (row) {
+        return "<tr>" + (row.cells || []).map(function (cell, index) {
+          return "<td style=\"" + (index === 0 ? firstCellStyle : cellStyle) + "\">" + escapeHtml(cell && cell.value || "—") + "</td>";
+        }).join("") + "</tr>";
+      }).join(""),
+      "</tbody>",
+      "</table>",
+      "</div>"
+    ].join("");
+  }
+
   function buildAuditDetail(values) {
     var baseActionText = AuditFormatter.formatActionText(values.ActionType);
     var actionText = AuditFormatter.formatOperationText(
@@ -493,8 +615,14 @@ sap.ui.define([
       values.NewValue
     );
     var recordKeyRows = AuditFormatter.getRecordKeyRows(values.RecordKey);
+    var infoRows = buildInfoRows(values);
+    var changeRows = AuditFormatter.buildChangeRows(values);
     var title = AuditFormatter.formatAuditValue(values.TableName);
     var operationControl = values.__OperationControl || {};
+    var showOldColumn = baseActionText === "Update" || baseActionText === "Delete" || baseActionText === "Rollback";
+    var showNewColumn = baseActionText === "Create" || baseActionText === "Update" || baseActionText === "Rollback";
+    var oldColumnHeader = baseActionText === "Delete" ? "Previous Value" : "Before";
+    var newColumnHeader = baseActionText === "Create" ? "New Value" : "After";
 
     return {
       title: title + " · " + actionText,
@@ -504,15 +632,22 @@ sap.ui.define([
       rollbackMessageVisible: String(values.ActionType || "").trim().toUpperCase() === "R" || !!(values.RollbackAuditId && String(values.RollbackAuditId).trim()),
       rollbackMessage: "Rollback completed for this audit record.",
       overviewRows: buildOverviewRows(values),
-      infoRows: buildInfoRows(values),
+      infoRows: infoRows,
+      infoColumns: buildHorizontalColumns(infoRows, "label"),
+      infoTableRows: buildHorizontalSingleRow(infoRows, "value"),
       recordKeyRows: recordKeyRows,
+      recordKeyColumns: buildHorizontalColumns(recordKeyRows, "field"),
+      recordKeyTableRows: buildHorizontalSingleRow(recordKeyRows, "value"),
       recordKeyVisible: recordKeyRows.length > 0,
       changeTitle: AuditFormatter.getChangeTitle(baseActionText),
-      changeRows: AuditFormatter.buildChangeRows(values),
-      showOldColumn: baseActionText === "Update" || baseActionText === "Delete" || baseActionText === "Rollback",
-      showNewColumn: baseActionText === "Create" || baseActionText === "Update" || baseActionText === "Rollback",
-      oldColumnHeader: baseActionText === "Delete" ? "Previous Value" : "Before",
-      newColumnHeader: baseActionText === "Create" ? "New Value" : "After",
+      changeRows: changeRows,
+      changeColumns: buildChangeColumns(changeRows),
+      changeTableRows: buildChangeTableRows(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader),
+      changeTableHtml: buildChangeTableHtml(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader),
+      showOldColumn: showOldColumn,
+      showNewColumn: showNewColumn,
+      oldColumnHeader: oldColumnHeader,
+      newColumnHeader: newColumnHeader,
       rollbackText: AuditFormatter.formatRollbackText(operationControl),
       rollbackState: AuditFormatter.formatRollbackState(operationControl),
       rollbackAvailable: AuditFormatter.isRollbackAvailable(operationControl),
@@ -578,6 +713,98 @@ sap.ui.define([
     };
   }
 
+  function buildBulkItemsHtml(itemRows) {
+    if (!itemRows || !itemRows.length) {
+      return "";
+    }
+
+    function getActionStateClass(state) {
+      var normalized = String(state || "None").replace(/[^a-zA-Z0-9_-]/g, "");
+      return "auditBulkActionState" + (normalized || "None");
+    }
+
+    function renderRecordKey(recordKeyRows, fallbackText) {
+      if (recordKeyRows && recordKeyRows.length) {
+        return [
+          "<div class=\"auditBulkCompactRecord\">",
+          recordKeyRows.map(function (row) {
+            var value = AuditFormatter.formatAuditValue(row && row.value);
+
+            return [
+              "<div class=\"auditBulkCompactRecordPart\" title=\"", escapeHtml(value), "\">",
+              "<span>", escapeHtml(row.field), ":</span>",
+              "<code>", escapeHtml(value), "</code>",
+              "</div>"
+            ].join("");
+          }).join(""),
+          "</div>"
+        ].join("");
+      }
+
+      fallbackText = AuditFormatter.formatAuditValue(fallbackText);
+      return [
+        "<div class=\"auditBulkCompactRecord\">",
+        "<div class=\"auditBulkCompactRecordPart\" title=\"", escapeHtml(fallbackText), "\">",
+        "<span>Record Key:</span>",
+        "<code>", escapeHtml(fallbackText), "</code>",
+        "</div>",
+        "</div>"
+      ].join("");
+    }
+
+    return [
+      "<div class=\"auditBulkCompactWrap\">",
+      "<table class=\"auditBulkCompactTable\">",
+      "<thead><tr>",
+      "<th>Item</th>",
+      "<th>Record Keys</th>",
+      "<th>Action</th>",
+      "<th>Field</th>",
+      "<th>Old Value</th>",
+      "<th>New Value</th>",
+      "</tr></thead>",
+      "<tbody>",
+      itemRows.map(function (item) {
+        var changeRows = item.changeRows || [];
+        var recordCell = renderRecordKey(item.recordKeyRows, item.recordKey);
+        var rowSpan = Math.max(changeRows.length, 1);
+        var actionText = AuditFormatter.formatAuditValue(item.actionText);
+        var actionClass = "auditBulkCompactActionCell " + getActionStateClass(item.actionState);
+
+        if (!changeRows.length) {
+          return [
+            "<tr class=\"auditBulkItemStart\">",
+            "<td class=\"auditBulkCompactItemCell\">", escapeHtml(item.item), "</td>",
+            "<td class=\"auditBulkCompactRecordCell\">", recordCell, "</td>",
+            "<td class=\"", actionClass, "\">", escapeHtml(actionText), "</td>",
+            "<td colspan=\"3\" class=\"auditBulkItemEmptyCell\">No business field changes available</td>",
+            "</tr>"
+          ].join("");
+        }
+
+        return changeRows.map(function (change, changeIndex) {
+          var firstCells = changeIndex === 0 ? [
+            "<td class=\"auditBulkCompactItemCell\" rowspan=\"", rowSpan, "\">", escapeHtml(item.item), "</td>",
+            "<td class=\"auditBulkCompactRecordCell\" rowspan=\"", rowSpan, "\">", recordCell, "</td>",
+            "<td class=\"", actionClass, "\" rowspan=\"", rowSpan, "\">", escapeHtml(actionText), "</td>"
+          ].join("") : "";
+
+          return [
+            "<tr class=\"", changeIndex === 0 ? "auditBulkItemStart" : "auditBulkItemContinuation", "\">",
+            firstCells,
+            "<td class=\"auditBulkCompactFieldCell\">", escapeHtml(change.field), "</td>",
+            "<td class=\"auditBulkValueBefore\">", escapeHtml(change.oldValue), "</td>",
+            "<td class=\"auditBulkValueAfter\">", escapeHtml(change.newValue), "</td>",
+            "</tr>"
+          ].join("");
+        }).join("");
+      }).join(""),
+      "</tbody>",
+      "</table>",
+      "</div>"
+    ].join("");
+  }
+
   function buildAuditItemsData(parentValues, items) {
     var rows = [];
     var itemRows = [];
@@ -628,13 +855,14 @@ sap.ui.define([
       rows: rows,
       itemRows: itemRows,
       itemSummary: itemRows.length + " item(s)",
+      bulkItemsHtml: buildBulkItemsHtml(itemRows),
       itemsLoading: false,
       itemsErrorVisible: false,
       itemsErrorText: ""
     };
   }
 
-  function updateAuditModel(view, context) {
+  function loadAuditDetailModels(view, context, source) {
     var model = ensureAuditModel(view);
     var itemsModel = ensureAuditItemsModel(view);
     var loadSequence;
@@ -656,6 +884,7 @@ sap.ui.define([
           rows: [],
           itemRows: [],
           itemSummary: "Loading audit items...",
+          bulkItemsHtml: "",
           itemsLoading: true,
           itemsErrorVisible: false,
           itemsErrorText: ""
@@ -663,7 +892,7 @@ sap.ui.define([
       }
 
       if (AuditFormatter.isBulkRecord(values)) {
-        itemsPromise = requestBulkItems(context, null, values);
+        itemsPromise = requestBulkItems(context, source || null, values);
       } else {
         itemsPromise = requestNavigationItems(context).then(function (items) {
           if ((!items || !items.length) && values.AuditId) {
@@ -697,12 +926,17 @@ sap.ui.define([
           rows: [],
           itemRows: [],
           itemSummary: "",
+          bulkItemsHtml: "",
           itemsLoading: false,
           itemsErrorVisible: true,
           itemsErrorText: ODataErrorHandler.extractBackendMessage(error) || "Audit items could not be loaded."
         });
       });
     });
+  }
+
+  function updateAuditModel(view, context) {
+    return loadAuditDetailModels(view, context, null);
   }
 
   function hideGeneratedAuditSections(view) {
@@ -788,67 +1022,6 @@ sap.ui.define([
     return extension._auditItemDialogPromise;
   }
 
-  function findAuditFilterBar(view) {
-    var controls;
-    var viewId = view && view.getId && view.getId();
-
-    if (!view || !view.findAggregatedObjects) {
-      return null;
-    }
-
-    controls = view.findAggregatedObjects(true, function (control) {
-      var id = control && control.getId && control.getId();
-      var hasSearchApi = control && (control.triggerSearch || control.search);
-
-      return !!hasSearchApi && /FilterBar/i.test(id || "");
-    });
-
-    if (controls && controls[0]) {
-      return controls[0];
-    }
-
-    if (Element && Element.registry && Element.registry.filter) {
-      controls = Element.registry.filter(function (control) {
-        var id = control && control.getId && control.getId();
-        var hasSearchApi = control && (control.triggerSearch || control.search);
-
-        return !!hasSearchApi && /FilterBar/i.test(id || "") && (!viewId || id.indexOf(viewId) === 0);
-      });
-    }
-
-    return controls && controls[0] ? controls[0] : null;
-  }
-
-  function triggerInitialListLoad(extension, attemptsLeft) {
-    var view = extension.base && extension.base.getView && extension.base.getView();
-    var filterBar = findAuditFilterBar(view);
-
-    if (extension._auditInitialSearchTriggered) {
-      return;
-    }
-
-    if (filterBar) {
-      extension._auditInitialSearchTriggered = true;
-
-      if (filterBar.triggerSearch) {
-        filterBar.triggerSearch();
-        return;
-      }
-
-      if (filterBar.search) {
-        filterBar.search();
-      }
-
-      return;
-    }
-
-    if (attemptsLeft > 0) {
-      setTimeout(function () {
-        triggerInitialListLoad(extension, attemptsLeft - 1);
-      }, 250);
-    }
-  }
-
   function getColumnHeaderText(column) {
     var header = column && column.getHeader && column.getHeader();
 
@@ -880,38 +1053,6 @@ sap.ui.define([
     );
   }
 
-  function applyNewestFirstSort(table) {
-    var binding = table && table.getBinding && table.getBinding("items");
-    var orderBy = "ChangedAt desc";
-
-    if (!binding || !table || !table.data) {
-      return;
-    }
-
-    if (table.data("auditNewestFirstSortBinding") === binding) {
-      return;
-    }
-
-    try {
-      // For OData V4, updating $orderby is more reliable than replacing the
-      // client sorter after FE has created the list binding.
-      if (binding.changeParameters) {
-        binding.changeParameters({
-          $orderby: orderBy
-        });
-      } else if (binding.sort && Sorter) {
-        binding.sort(new Sorter("ChangedAt", true));
-      } else {
-        return;
-      }
-
-      table.data("auditNewestFirstSortBinding", binding);
-    } catch (error) {
-      // Keep the backend/annotation sort if the table binding does not support
-      // client-side sorter replacement.
-    }
-  }
-
   function enhanceAuditListTable(table) {
     var columns = table && table.getColumns ? table.getColumns() : [];
     var columnIndexes = {};
@@ -938,10 +1079,6 @@ sap.ui.define([
 
     if (columnIndexes.auditId === undefined && columnIndexes.operation === undefined) {
       return;
-    }
-
-    if (columnIndexes.operation !== undefined) {
-      applyNewestFirstSort(table);
     }
 
     if (table.addStyleClass) {
@@ -980,7 +1117,7 @@ sap.ui.define([
         operationText = getAuditListOperationText(row.values, auditIdCounts[auditId] || 0);
         operationCell.setText(operationText);
         if (operationCell.setState) {
-          operationCell.setState(operationText === "Bulk" ? "None" : AuditFormatter.formatActionState(row.values.ActionType));
+          operationCell.setState(String(operationText || "").toLowerCase().indexOf("bulk") >= 0 ? "None" : AuditFormatter.formatActionState(row.values.ActionType));
         }
         if (operationCell.addStyleClass) {
           operationCell.addStyleClass("auditListOperationCell");
@@ -1019,7 +1156,6 @@ sap.ui.define([
         if (view) {
           ensureAuditModel(view);
           ODataErrorHandler.attachGlobalHandlers("audit");
-          triggerInitialListLoad(this, 12);
 
           if (view.attachModelContextChange && !this._auditContextHandlerAttached) {
             this._auditContextHandlerAttached = true;
@@ -1118,7 +1254,9 @@ sap.ui.define([
       var itemNumber = itemRow && itemRow.item;
       var view = this.base && this.base.getView && this.base.getView();
       var parentContext = getObjectPageContext(view);
-      var tableName = getContextValue(parentContext, "TableName");
+      var auditDetailModel = view && view.getModel && view.getModel("auditDetail");
+      var tableName = getContextValue(parentContext, "TableName") ||
+        auditDetailModel && auditDetailModel.getProperty && auditDetailModel.getProperty("/title");
       var that = this;
       var cachedItem = itemRow && itemRow.sourceItem;
       var itemPath = itemContext && itemContext.getPath && itemContext.getPath();

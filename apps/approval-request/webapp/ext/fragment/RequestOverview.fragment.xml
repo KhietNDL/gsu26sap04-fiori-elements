@@ -7,20 +7,26 @@
       <ToolbarSpacer/>
     </Toolbar>
 
-    <List
+    <Table
       width="100%"
-      showSeparators="Inner"
       items="{approvalDetail>/requestInfoRows}"
-      class="approvalInfoList">
-      <CustomListItem>
-        <HBox
-          width="100%"
-          renderType="Bare"
-          class="approvalInfoRow">
-          <Label
-            width="10rem"
-            text="{approvalDetail>label}"
-            class="approvalInfoLabel"/>
+      fixedLayout="false"
+      showNoData="false"
+      class="approvalInfoTable">
+      <columns>
+        <Column width="16rem">
+          <Text text="Field"/>
+        </Column>
+        <Column>
+          <Text text="Value"/>
+        </Column>
+      </columns>
+      <items>
+        <ColumnListItem>
+          <cells>
+            <ObjectIdentifier
+              title="{approvalDetail>label}"
+              class="approvalFieldName"/>
           <ObjectStatus
             visible="{approvalDetail>isStatus}"
             text="{approvalDetail>value}"
@@ -29,9 +35,10 @@
             visible="{= !${approvalDetail>isStatus} }"
             text="{approvalDetail>value}"
             wrapping="true"/>
-        </HBox>
-      </CustomListItem>
-    </List>
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
 
     <Panel
       expandable="false"

@@ -111,6 +111,7 @@ sap.ui.define([
         changeRows: [],
         changeTitle: "Change Details",
         changeColumnCount: 3,
+        changeTableHtml: "",
         showOldColumn: false,
         showNewColumn: true,
         oldColumnHeader: "Old Value",
@@ -344,6 +345,15 @@ sap.ui.define([
     return map;
   }
 
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function normalizeCompareValue(value) {
     if (value === null || value === undefined) {
       return "";
@@ -414,6 +424,63 @@ sap.ui.define([
 
       return row.oldValue !== "—" || row.newValue !== "—";
     });
+  }
+
+  function buildApprovalChangeTableHtml(changeRows, actionText, oldColumnHeader, newColumnHeader) {
+    var showOldColumn = actionText === "Update" || actionText === "Delete";
+    var showNewColumn = actionText === "Create" || actionText === "Update";
+    var rows = [];
+
+    if (!changeRows || !changeRows.length) {
+      return "";
+    }
+
+    if (showOldColumn) {
+      rows.push({
+        label: oldColumnHeader || "Old Value",
+        values: changeRows.map(function (row) {
+          return row && row.oldValue || "—";
+        })
+      });
+    }
+
+    if (showNewColumn) {
+      rows.push({
+        label: newColumnHeader || "New Value",
+        values: changeRows.map(function (row) {
+          return row && row.newValue || "—";
+        })
+      });
+    }
+
+    if (!rows.length) {
+      return "";
+    }
+
+    return [
+      "<div class=\"approvalExcelHtmlScroller\">",
+      "<table class=\"approvalExcelHtmlTable\">",
+      "<thead><tr>",
+      "<th>Value Type</th>",
+      changeRows.map(function (row) {
+        return "<th>" + escapeHtml(row && row.field || "—") + "</th>";
+      }).join(""),
+      "</tr></thead>",
+      "<tbody>",
+      rows.map(function (row) {
+        return [
+          "<tr>",
+          "<td class=\"approvalExcelValueType\">", escapeHtml(row.label), "</td>",
+          row.values.map(function (value) {
+            return "<td>" + escapeHtml(value) + "</td>";
+          }).join(""),
+          "</tr>"
+        ].join("");
+      }).join(""),
+      "</tbody>",
+      "</table>",
+      "</div>"
+    ].join("");
   }
 
   function formatTechnicalJson(rawJson) {
@@ -947,6 +1014,8 @@ sap.ui.define([
       var changeRows = buildApprovalDiff(values.ActionType, values.OldData, values.NewData, values.RecordKey);
       var showOldColumn = changeActionText === "Update" || changeActionText === "Delete";
       var showNewColumn = changeActionText === "Create" || changeActionText === "Update";
+      var oldColumnHeader = changeActionText === "Delete" ? "Previous Value" : "Old Value";
+      var newColumnHeader = "New Value";
       var comment = getCommentValue(values) || "-";
       var commentEmpty = comment === "-";
       var bulkVisible = isBulkValues(values.RecordKey, values.RecordKeyText);
@@ -987,10 +1056,11 @@ sap.ui.define([
         changeRows: changeRows,
         changeTitle: getChangeTitle(changeActionText),
         changeColumnCount: changeActionText === "Update" ? 3 : 2,
+        changeTableHtml: buildApprovalChangeTableHtml(changeRows, changeActionText, oldColumnHeader, newColumnHeader),
         showOldColumn: showOldColumn,
         showNewColumn: showNewColumn,
-        oldColumnHeader: changeActionText === "Delete" ? "Previous Value" : "Old Value",
-        newColumnHeader: "New Value",
+        oldColumnHeader: oldColumnHeader,
+        newColumnHeader: newColumnHeader,
         changeMessage: getChangeMessage(changeActionText, values.TableName, changeRows.length, false),
         technicalRecordKey: formatTechnicalJson(values.RecordKey),
         technicalOldData: formatRawJson(values.OldData),
@@ -2123,6 +2193,7 @@ sap.ui.define([
     formatApprovalValue: formatApprovalValue,
     mapFieldLabel: mapFieldLabel,
     buildApprovalDiff: buildApprovalDiff,
+    buildApprovalChangeTableHtml: buildApprovalChangeTableHtml,
     isBulkRequest: isBulkRequest,
     isApprovalItemsSection: isApprovalItemsSection,
     syncApprovalItemsVisibility: syncApprovalItemsVisibility,

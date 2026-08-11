@@ -138,40 +138,6 @@
           </items>
         </Table>
 
-        <Panel
-          expandable="true"
-          expanded="false"
-          headerText="Technical JSON"
-          class="approvalTechnicalPanel approvalBulkItemJson sapUiSmallMarginTop">
-          <VBox width="100%">
-            <Label text="RecordKey JSON"/>
-            <TextArea
-              width="100%"
-              rows="4"
-              editable="false"
-              growing="true"
-              growingMaxLines="10"
-              value="{approvalDetail>/bulkItemRecordKeyJson}"/>
-
-            <Label text="OldData JSON" class="sapUiSmallMarginTop"/>
-            <TextArea
-              width="100%"
-              rows="6"
-              editable="false"
-              growing="true"
-              growingMaxLines="14"
-              value="{approvalDetail>/bulkItemOldDataJson}"/>
-
-            <Label text="NewData JSON" class="sapUiSmallMarginTop"/>
-            <TextArea
-              width="100%"
-              rows="6"
-              editable="false"
-              growing="true"
-              growingMaxLines="14"
-              value="{approvalDetail>/bulkItemNewDataJson}"/>
-          </VBox>
-        </Panel>
       </VBox>
     </content>
     <beginButton>

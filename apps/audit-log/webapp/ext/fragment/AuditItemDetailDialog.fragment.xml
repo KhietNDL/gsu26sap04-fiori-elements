@@ -69,16 +69,6 @@
           </items>
         </Table>
 
-        <Panel expandable="true" expanded="false" headerText="Technical JSON" class="auditRawJsonPanel sapUiSmallMarginTop">
-          <VBox>
-            <Label text="RecordKey JSON"/>
-            <TextArea value="{auditItemDetail>/rawRecordKey}" editable="false" rows="4" growing="true"/>
-            <Label text="OldValue JSON" class="sapUiSmallMarginTop"/>
-            <TextArea value="{auditItemDetail>/rawOldValue}" editable="false" rows="6" growing="true"/>
-            <Label text="NewValue JSON" class="sapUiSmallMarginTop"/>
-            <TextArea value="{auditItemDetail>/rawNewValue}" editable="false" rows="6" growing="true"/>
-          </VBox>
-        </Panel>
       </VBox>
     </content>
     <beginButton><Button text="Close" press=".onAuditItemDialogClose"/></beginButton>
