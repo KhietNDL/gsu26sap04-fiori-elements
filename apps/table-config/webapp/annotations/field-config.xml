@@ -53,6 +53,11 @@
               <PropertyValue Property="Label" String="Read Only"/>
               <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
             </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="HiddenFlag"/>
+              <PropertyValue Property="Label" String="Hidden"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
+            </Record>
           </Collection>
         </Annotation>
 
