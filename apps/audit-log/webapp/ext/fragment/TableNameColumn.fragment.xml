@@ -3,6 +3,6 @@
   xmlns:core="sap.ui.core">
   <HBox alignItems="Center">
     <core:Icon src="sap-icon://grid" class="auditTableIcon sapUiTinyMarginEnd"/>
-    <Text text="{TableName}" class="auditTableNameText"/>
+    <Text text="{TableName}" tooltip="{TableName}" wrapping="false" class="auditTableNameText"/>
   </HBox>
 </core:FragmentDefinition>

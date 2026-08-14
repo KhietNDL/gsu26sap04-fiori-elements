@@ -2,10 +2,17 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
   core:require="{formatter: 'ztbl/audit/ui/ext/formatter/AuditFormatter'}">
-  <Button
-    text="Rollback"
-    icon="sap-icon://undo"
-    type="Transparent"
-    tooltip="Rollback this audit record"
-    press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onRollbackPress"/>
+  <VBox>
+    <Button
+      text="Rollback"
+      icon="sap-icon://undo"
+      type="Transparent"
+      tooltip="Rollback this audit record"
+      visible="{parts: [{path: '__OperationControl'}, {path: 'RollbackAuditId'}, {path: 'ActionType'}], formatter: 'formatter.isRollbackAvailableForEntry'}"
+      press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onRollbackPress"/>
+    <ObjectStatus
+      text="{parts: [{path: '__OperationControl'}, {path: 'RollbackAuditId'}, {path: 'ActionType'}], formatter: 'formatter.formatRollbackColumnText'}"
+      state="{parts: [{path: '__OperationControl'}, {path: 'RollbackAuditId'}, {path: 'ActionType'}], formatter: 'formatter.formatRollbackColumnState'}"
+      visible="{parts: [{path: '__OperationControl'}, {path: 'RollbackAuditId'}, {path: 'ActionType'}], formatter: 'formatter.isRollbackUnavailableForEntry'}"/>
+  </VBox>
 </core:FragmentDefinition>

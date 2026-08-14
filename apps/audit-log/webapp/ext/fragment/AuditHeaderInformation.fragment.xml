@@ -1,0 +1,18 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+  <HBox wrap="Wrap" class="auditHeaderInformation">
+    <VBox class="sapUiMediumMarginEnd sapUiTinyMarginBottom">
+      <Label text="Table Name"/>
+      <Text text="{auditDetail>/tableName}" tooltip="{auditDetail>/tableName}" wrapping="true"/>
+    </VBox>
+    <VBox class="sapUiMediumMarginEnd sapUiTinyMarginBottom">
+      <Label text="Operation"/>
+      <ObjectStatus text="{auditDetail>/actionText}" state="{auditDetail>/actionState}"/>
+    </VBox>
+    <VBox class="sapUiTinyMarginBottom">
+      <Label text="Status"/>
+      <ObjectStatus text="{auditDetail>/statusText}" state="{auditDetail>/statusState}"/>
+    </VBox>
+  </HBox>
+</core:FragmentDefinition>

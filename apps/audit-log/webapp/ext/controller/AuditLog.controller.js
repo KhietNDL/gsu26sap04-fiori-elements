@@ -52,8 +52,20 @@ sap.ui.define([
       model = new JSONModel({
         title: "Audit Log",
         subtitle: "",
+        auditId: "—",
+        tableName: "—",
+        fieldName: "—",
+        recordKeyText: "—",
+        changedBy: "—",
+        changedAt: "—",
+        rollbackAuditId: "—",
         actionText: "—",
         actionState: "None",
+        statusText: "Completed",
+        statusState: "None",
+        rollbackBusy: false,
+        rollbackMessageVisible: false,
+        rollbackMessage: "",
         infoRows: [],
         recordKeyRows: [],
         recordKeyVisible: false,
@@ -85,8 +97,12 @@ sap.ui.define([
       model = new JSONModel({
         rows: [],
         itemRows: [],
+        columns: [],
+        tableRows: [],
+        tableWidth: "100%",
         itemSummary: "",
-        bulkItemsHtml: "",
+        messageVisible: false,
+        messageText: "",
         itemsLoading: false,
         itemsErrorVisible: false,
         itemsErrorText: ""
@@ -102,15 +118,20 @@ sap.ui.define([
 
     if (!model && view && view.setModel) {
       model = new JSONModel({
-        title: "Bulk Audit Items — 0",
+        title: "Audit details",
         auditId: "—",
         changedBy: "—",
         changedAt: "—",
+        detailsText: "0 records · 0 fields",
+        operationText: "Bulk Operation",
         actionText: "Bulk",
         actionState: "None",
         summaryText: "",
         emptyVisible: false,
         emptyText: "",
+        columns: [],
+        tableRows: [],
+        tableWidth: "100%",
         items: []
       });
       view.setModel(model, "auditBulk");
@@ -468,7 +489,7 @@ sap.ui.define([
       { label: "Record Key", value: AuditFormatter.formatRecordKeyText(values.RecordKey), state: "None" },
       { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName), state: "None" },
       {
-        label: isBulk ? "Batch Action" : "Action",
+        label: "Operation",
         value: actionText,
         state: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
         isStatus: true
@@ -563,49 +584,6 @@ sap.ui.define([
     return rows;
   }
 
-  function escapeHtml(value) {
-    return String(value === null || value === undefined ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-
-  function buildChangeTableHtml(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader) {
-    var rows = buildChangeTableRows(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader);
-    var scrollerStyle = "width:100%;overflow-x:auto;border:1px solid #d9e2ec;border-radius:6px;background:#fff;";
-    var tableStyle = "min-width:max-content;width:auto;border-collapse:separate;border-spacing:0;color:#0a263f;font-size:14px;";
-    var headerStyle = "box-sizing:border-box;min-width:13rem;max-width:20rem;padding:12px 16px;background:#f4f6f8;border-right:1px solid #d9e2ec;border-bottom:1px solid #b8c4cf;color:#223548;font-weight:700;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere;";
-    var firstHeaderStyle = headerStyle + "min-width:11rem;";
-    var cellStyle = "box-sizing:border-box;min-width:13rem;max-width:20rem;padding:12px 16px;border-right:1px solid #e5ebf0;border-bottom:1px solid #e5ebf0;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere;";
-    var firstCellStyle = cellStyle + "min-width:11rem;font-weight:700;background:#fbfcfd;color:#223548;";
-
-    if (!changeRows || !changeRows.length || !rows.length) {
-      return "";
-    }
-
-    return [
-      "<div class=\"auditExcelHtmlScroller\" style=\"" + scrollerStyle + "\">",
-      "<table class=\"auditExcelHtmlTable\" style=\"" + tableStyle + "\">",
-      "<thead><tr>",
-      "<th style=\"" + firstHeaderStyle + "\">Value Type</th>",
-      changeRows.map(function (row) {
-        return "<th style=\"" + headerStyle + "\">" + escapeHtml(row && row.field || "—") + "</th>";
-      }).join(""),
-      "</tr></thead>",
-      "<tbody>",
-      rows.map(function (row) {
-        return "<tr>" + (row.cells || []).map(function (cell, index) {
-          return "<td style=\"" + (index === 0 ? firstCellStyle : cellStyle) + "\">" + escapeHtml(cell && cell.value || "—") + "</td>";
-        }).join("") + "</tr>";
-      }).join(""),
-      "</tbody>",
-      "</table>",
-      "</div>"
-    ].join("");
-  }
-
   function buildAuditDetail(values) {
     var baseActionText = AuditFormatter.formatActionText(values.ActionType);
     var actionText = AuditFormatter.formatOperationText(
@@ -623,14 +601,34 @@ sap.ui.define([
     var showNewColumn = baseActionText === "Create" || baseActionText === "Update" || baseActionText === "Rollback";
     var oldColumnHeader = baseActionText === "Delete" ? "Previous Value" : "Before";
     var newColumnHeader = baseActionText === "Create" ? "New Value" : "After";
+    var rollbackAuditId = AuditFormatter.formatAuditValue(values.RollbackAuditId);
+    var rolledBack = baseActionText === "Rollback" || rollbackAuditId !== "—";
+    var rollbackAvailable = !rolledBack && AuditFormatter.isRollbackAvailable(operationControl);
+    var rollbackMessage = baseActionText === "Rollback" ?
+      "This audit entry was created by a rollback operation." :
+      "This audit has already been rolled back" +
+        (rollbackAuditId === "—" ? "." : ". Rollback Audit ID: " + rollbackAuditId + ".");
 
     return {
-      title: title + " · " + actionText,
-      subtitle: "Audit " + AuditFormatter.formatAuditValue(values.AuditId),
+      title: AuditFormatter.formatAuditValue(values.AuditId),
+      subtitle: title + " · " + actionText,
+      auditId: AuditFormatter.formatAuditValue(values.AuditId),
+      tableName: title,
+      fieldName: AuditFormatter.formatAuditValue(values.FieldName),
+      recordKeyText: AuditFormatter.formatRecordKeyText(values.RecordKey),
+      changedBy: AuditFormatter.formatAuditValue(values.ChangedBy),
+      changedAt: AuditFormatter.formatTimestamp(values.ChangedAt),
+      rollbackAuditId: rollbackAuditId,
+      affectedRecordsText: "Loading…",
+      changedFieldsText: "Loading…",
       actionText: actionText,
       actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
-      rollbackMessageVisible: String(values.ActionType || "").trim().toUpperCase() === "R" || !!(values.RollbackAuditId && String(values.RollbackAuditId).trim()),
-      rollbackMessage: "Rollback completed for this audit record.",
+      rolledBack: rolledBack,
+      statusText: rolledBack ? "Rolled back" : rollbackAvailable ? "Rollback available" : "Completed",
+      statusState: rolledBack ? "Success" : rollbackAvailable ? "Information" : "None",
+      rollbackBusy: false,
+      rollbackMessageVisible: rolledBack,
+      rollbackMessage: rollbackMessage,
       overviewRows: buildOverviewRows(values),
       infoRows: infoRows,
       infoColumns: buildHorizontalColumns(infoRows, "label"),
@@ -643,20 +641,56 @@ sap.ui.define([
       changeRows: changeRows,
       changeColumns: buildChangeColumns(changeRows),
       changeTableRows: buildChangeTableRows(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader),
-      changeTableHtml: buildChangeTableHtml(changeRows, showOldColumn, showNewColumn, oldColumnHeader, newColumnHeader),
       showOldColumn: showOldColumn,
       showNewColumn: showNewColumn,
       oldColumnHeader: oldColumnHeader,
       newColumnHeader: newColumnHeader,
-      rollbackText: AuditFormatter.formatRollbackText(operationControl),
-      rollbackState: AuditFormatter.formatRollbackState(operationControl),
-      rollbackAvailable: AuditFormatter.isRollbackAvailable(operationControl),
+      rollbackText: rolledBack ? "Already rolled back" : AuditFormatter.formatRollbackText(operationControl),
+      rollbackState: rolledBack ? "Success" : AuditFormatter.formatRollbackState(operationControl),
+      rollbackAvailable: rollbackAvailable,
       bulkVisible: AuditFormatter.isBulkRecord(values),
       bulkText: AuditFormatter.formatBulkRecordKeyText(values.RecordKey, values.OldValue, values.NewValue),
       rawRecordKey: AuditFormatter.formatAuditValue(values.RecordKey),
       rawOldValue: AuditFormatter.formatAuditValue(values.OldValue),
       rawNewValue: AuditFormatter.formatAuditValue(values.NewValue)
     };
+  }
+
+  function formatCount(count, singular) {
+    return count + " " + singular + (count === 1 ? "" : "s");
+  }
+
+  function formatBulkDialogTimestamp(value) {
+    var date = new Date(value);
+
+    if (value === null || value === undefined || value === "" || isNaN(date.getTime())) {
+      return AuditFormatter.formatTimestamp(value);
+    }
+
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+  }
+
+  function getBulkDialogActionLabel(actionText) {
+    if (actionText === "Create") {
+      return "Created";
+    }
+    if (actionText === "Update") {
+      return "Updated";
+    }
+    if (actionText === "Delete") {
+      return "Deleted";
+    }
+    if (actionText === "Rollback") {
+      return "Rolled back";
+    }
+    return actionText || "—";
   }
 
   function buildBulkDialogData(parentValues, rawItems) {
@@ -672,17 +706,24 @@ sap.ui.define([
       AuditFormatter.formatBulkRecordKeyText(parentValues.RecordKey, parentValues.OldValue, parentValues.NewValue) +
       ". Old Value: " + AuditFormatter.formatAuditValue(parentValues.OldValue) +
       ". New Value: " + AuditFormatter.formatAuditValue(parentValues.NewValue) + ".";
+    var itemData = buildAuditItemsData(parentValues, rawItems || []);
+    var fieldCount = itemData.changedFieldCount;
 
     return {
-      title: "Bulk Audit Items — " + items.length,
+      title: "Audit details",
       auditId: AuditFormatter.formatAuditValue(parentValues.AuditId),
       changedBy: AuditFormatter.formatAuditValue(parentValues.ChangedBy),
-      changedAt: AuditFormatter.formatTimestamp(parentValues.ChangedAt),
+      changedAt: formatBulkDialogTimestamp(parentValues.ChangedAt),
+      detailsText: formatCount(items.length, "record") + " · " + formatCount(fieldCount, "field"),
+      operationText: "Bulk Operation",
       actionText: actionText,
       actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(actionText),
       summaryText: countText,
       emptyVisible: items.length === 0,
       emptyText: emptyText,
+      columns: itemData.columns,
+      tableRows: itemData.tableRows,
+      tableWidth: itemData.tableWidth,
       items: items
     };
   }
@@ -713,118 +754,151 @@ sap.ui.define([
     };
   }
 
-  function buildBulkItemsHtml(itemRows) {
-    if (!itemRows || !itemRows.length) {
-      return "";
+  function rowsByKey(rows) {
+    var map = Object.create(null);
+
+    (rows || []).forEach(function (row) {
+      map[String(row.key)] = row;
+    });
+    return map;
+  }
+
+  function buildSpreadsheetChanges(values) {
+    var actionText = AuditFormatter.formatActionText(values.ActionType);
+    var rawOldValue = values.OldValue !== undefined ? values.OldValue : values.OldData;
+    var rawNewValue = values.NewValue !== undefined ? values.NewValue : values.NewData;
+    var oldRows = AuditFormatter.getValueRows(rawOldValue);
+    var newRows = AuditFormatter.getValueRows(rawNewValue);
+    var oldMap = rowsByKey(oldRows);
+    var newMap = rowsByKey(newRows);
+    var keys = [];
+    var seen = Object.create(null);
+
+    function addKey(row) {
+      var key = row && String(row.key);
+
+      if (key && !seen[key]) {
+        seen[key] = true;
+        keys.push(key);
+      }
     }
 
-    function getActionStateClass(state) {
-      var normalized = String(state || "None").replace(/[^a-zA-Z0-9_-]/g, "");
-      return "auditBulkActionState" + (normalized || "None");
-    }
-
-    function renderRecordKey(recordKeyRows, fallbackText) {
-      if (recordKeyRows && recordKeyRows.length) {
-        return [
-          "<div class=\"auditBulkCompactRecord\">",
-          recordKeyRows.map(function (row) {
-            var value = AuditFormatter.formatAuditValue(row && row.value);
-
-            return [
-              "<div class=\"auditBulkCompactRecordPart\" title=\"", escapeHtml(value), "\">",
-              "<span>", escapeHtml(row.field), ":</span>",
-              "<code>", escapeHtml(value), "</code>",
-              "</div>"
-            ].join("");
-          }).join(""),
-          "</div>"
-        ].join("");
+    if (oldRows.length || newRows.length) {
+      if (actionText !== "Create") {
+        oldRows.forEach(addKey);
+      }
+      if (actionText !== "Delete") {
+        newRows.forEach(addKey);
       }
 
-      fallbackText = AuditFormatter.formatAuditValue(fallbackText);
-      return [
-        "<div class=\"auditBulkCompactRecord\">",
-        "<div class=\"auditBulkCompactRecordPart\" title=\"", escapeHtml(fallbackText), "\">",
-        "<span>Record Key:</span>",
-        "<code>", escapeHtml(fallbackText), "</code>",
-        "</div>",
-        "</div>"
-      ].join("");
+      return keys.map(function (key) {
+        var oldRow = oldMap[key];
+        var newRow = newMap[key];
+        var oldValue = oldRow ? oldRow.value : "—";
+        var newValue = newRow ? newRow.value : "—";
+
+        return {
+          key: key,
+          label: key.toUpperCase(),
+          oldValue: oldValue,
+          newValue: newValue,
+          text: actionText === "Create" ? newValue :
+            actionText === "Delete" ? oldValue :
+              oldValue + " → " + newValue
+        };
+      }).filter(function (change) {
+        return actionText === "Create" || actionText === "Delete" || change.oldValue !== change.newValue;
+      });
     }
 
-    return [
-      "<div class=\"auditBulkCompactWrap\">",
-      "<table class=\"auditBulkCompactTable\">",
-      "<thead><tr>",
-      "<th>Item</th>",
-      "<th>Record Keys</th>",
-      "<th>Action</th>",
-      "<th>Field</th>",
-      "<th>Old Value</th>",
-      "<th>New Value</th>",
-      "</tr></thead>",
-      "<tbody>",
-      itemRows.map(function (item) {
-        var changeRows = item.changeRows || [];
-        var recordCell = renderRecordKey(item.recordKeyRows, item.recordKey);
-        var rowSpan = Math.max(changeRows.length, 1);
-        var actionText = AuditFormatter.formatAuditValue(item.actionText);
-        var actionClass = "auditBulkCompactActionCell " + getActionStateClass(item.actionState);
+    var oldValue = AuditFormatter.formatAuditValue(rawOldValue);
+    var newValue = AuditFormatter.formatAuditValue(rawNewValue);
+    var fieldKey = String(values.FieldName || "VALUE").trim() || "VALUE";
 
-        if (!changeRows.length) {
-          return [
-            "<tr class=\"auditBulkItemStart\">",
-            "<td class=\"auditBulkCompactItemCell\">", escapeHtml(item.item), "</td>",
-            "<td class=\"auditBulkCompactRecordCell\">", recordCell, "</td>",
-            "<td class=\"", actionClass, "\">", escapeHtml(actionText), "</td>",
-            "<td colspan=\"3\" class=\"auditBulkItemEmptyCell\">No business field changes available</td>",
-            "</tr>"
-          ].join("");
-        }
+    if (actionText === "Update" && oldValue === newValue) {
+      return [];
+    }
 
-        return changeRows.map(function (change, changeIndex) {
-          var firstCells = changeIndex === 0 ? [
-            "<td class=\"auditBulkCompactItemCell\" rowspan=\"", rowSpan, "\">", escapeHtml(item.item), "</td>",
-            "<td class=\"auditBulkCompactRecordCell\" rowspan=\"", rowSpan, "\">", recordCell, "</td>",
-            "<td class=\"", actionClass, "\" rowspan=\"", rowSpan, "\">", escapeHtml(actionText), "</td>"
-          ].join("") : "";
+    return [{
+      key: fieldKey,
+      label: fieldKey.toUpperCase(),
+      oldValue: oldValue,
+      newValue: newValue,
+      text: actionText === "Create" ? newValue :
+        actionText === "Delete" ? oldValue :
+          oldValue + " → " + newValue
+    }];
+  }
 
-          return [
-            "<tr class=\"", changeIndex === 0 ? "auditBulkItemStart" : "auditBulkItemContinuation", "\">",
-            firstCells,
-            "<td class=\"auditBulkCompactFieldCell\">", escapeHtml(change.field), "</td>",
-            "<td class=\"auditBulkValueBefore\">", escapeHtml(change.oldValue), "</td>",
-            "<td class=\"auditBulkValueAfter\">", escapeHtml(change.newValue), "</td>",
-            "</tr>"
-          ].join("");
-        }).join("");
-      }).join(""),
-      "</tbody>",
-      "</table>",
-      "</div>"
-    ].join("");
+  function formatSpreadsheetRecordKey(recordKeyRows, fallbackText) {
+    if (recordKeyRows && recordKeyRows.length) {
+      return recordKeyRows.map(function (row) {
+        return String(row.field || row.key || "Record Key").toUpperCase() + "=" +
+          String(row.value === null || row.value === undefined ? "" : row.value);
+      }).join(", ");
+    }
+    return fallbackText === null || fallbackText === undefined || fallbackText === "" ?
+      "—" : String(fallbackText);
+  }
+
+  function createSpreadsheetCell(text, kind, state) {
+    text = AuditFormatter.formatAuditValue(text);
+    return {
+      text: text,
+      value: text,
+      tooltip: text,
+      kind: kind || "text",
+      state: state || "None"
+    };
+  }
+
+  function getAuditMessage(parentValues, itemValuesList) {
+    var messages = [];
+
+    if (parentValues.Message) {
+      messages.push(parentValues.Message);
+    }
+    (itemValuesList || []).forEach(function (item) {
+      if (item.Message && messages.indexOf(item.Message) < 0) {
+        messages.push(item.Message);
+      }
+    });
+    return messages.join(" · ");
   }
 
   function buildAuditItemsData(parentValues, items) {
     var rows = [];
     var itemRows = [];
+    var sourceItems = items || [];
+    var fieldColumns = [];
+    var fieldKeys = Object.create(null);
     var operationControl = parentValues.__OperationControl;
 
-    if ((!items || !items.length) && !AuditFormatter.isBulkRecord(parentValues)) {
-      items = [parentValues];
+    if (!sourceItems.length && !AuditFormatter.isBulkRecord(parentValues)) {
+      sourceItems = [parentValues];
     }
 
-    (items || []).forEach(function (item, index) {
+    sourceItems.forEach(function (item, index) {
       var itemValues = valuesFromObject(item);
       var itemView = AuditFormatter.buildBulkItemViewModel(itemValues, index);
+      var changes = buildSpreadsheetChanges(itemValues);
+      var recordKey = formatSpreadsheetRecordKey(itemView.recordKeyRows, itemValues.RecordKey || itemView.recordKeyText);
+
+      changes.forEach(function (change) {
+        if (!fieldKeys[change.key]) {
+          fieldKeys[change.key] = true;
+          fieldColumns.push({ key: change.key, label: change.label, width: "14rem" });
+        }
+      });
 
       itemRows.push({
         item: itemView.itemNumber,
         actionText: itemView.actionText,
         actionState: itemView.actionState,
-        recordKey: itemView.recordKeyText,
+        recordKey: recordKey,
         recordKeyRows: itemView.recordKeyRows,
         changeRows: itemView.changeRows,
+        spreadsheetChanges: changes,
         showOldColumn: itemView.showOldColumn,
         showNewColumn: itemView.showNewColumn,
         oldColumnHeader: itemView.oldColumnHeader,
@@ -836,12 +910,12 @@ sap.ui.define([
           " · " + AuditFormatter.formatTimestamp(parentValues.ChangedAt)
       });
 
-      (itemView.changeRows || []).forEach(function (change) {
+      itemView.changeRows.forEach(function (change) {
         rows.push({
           item: itemView.itemNumber,
           actionText: itemView.actionText,
           actionState: itemView.actionState,
-          recordKey: itemView.recordKeyText,
+          recordKey: recordKey,
           field: change.field,
           oldValue: change.oldValue,
           newValue: change.newValue,
@@ -851,18 +925,171 @@ sap.ui.define([
       });
     });
 
+    var columns = [
+      { key: "__item", label: "Item", width: "5rem" },
+      { key: "__action", label: "Action", width: "9rem" },
+      { key: "__record", label: "Record Keys", width: "18rem" }
+    ].concat(fieldColumns);
+
+    var tableRows = itemRows.map(function (itemRow) {
+      var changeMap = Object.create(null);
+
+      itemRow.spreadsheetChanges.forEach(function (change) {
+        changeMap[change.key] = change;
+      });
+
+      return {
+        cells: [
+          createSpreadsheetCell("#" + itemRow.item),
+          createSpreadsheetCell(getBulkDialogActionLabel(itemRow.actionText), "status", itemRow.actionState),
+          createSpreadsheetCell(itemRow.recordKey)
+        ].concat(fieldColumns.map(function (column) {
+          var change = changeMap[column.key];
+          return createSpreadsheetCell(change ? change.text : "—");
+        }))
+      };
+    });
+    var messageText = getAuditMessage(parentValues, itemRows.map(function (row) { return row.sourceItem; }));
+
     return {
       rows: rows,
       itemRows: itemRows,
-      itemSummary: itemRows.length + " item(s)",
-      bulkItemsHtml: buildBulkItemsHtml(itemRows),
+      columns: columns,
+      tableRows: tableRows,
+      tableWidth: fieldColumns.length > 3 ? (32 + fieldColumns.length * 14) + "rem" : "100%",
+      itemSummary: formatCount(itemRows.length, "record") + " · " + formatCount(fieldColumns.length, "field"),
+      affectedRecordCount: itemRows.length,
+      changedFieldCount: fieldColumns.length,
+      messageVisible: !!messageText,
+      messageText: messageText,
       itemsLoading: false,
       itemsErrorVisible: false,
       itemsErrorText: ""
     };
   }
 
-  function loadAuditDetailModels(view, context, source) {
+  function mergeAuditValues(values, overrideValues) {
+    if (!overrideValues || typeof overrideValues !== "object") {
+      return values;
+    }
+
+    if (overrideValues.__rollbackResultOnly) {
+      if (overrideValues.RollbackAuditId) {
+        values.RollbackAuditId = overrideValues.RollbackAuditId;
+      }
+      return values;
+    }
+
+    AUDIT_PROPERTIES.forEach(function (propertyName) {
+      if (overrideValues[propertyName] !== undefined && overrideValues[propertyName] !== null && overrideValues[propertyName] !== "") {
+        values[propertyName] = overrideValues[propertyName];
+      }
+    });
+
+    return values;
+  }
+
+  function normalizeRollbackResult(result, originalAuditId) {
+    var actionType;
+    var rollbackAuditId;
+
+    if (typeof result === "string" && result.trim()) {
+      return {
+        __rollbackResultOnly: true,
+        RollbackAuditId: result
+      };
+    }
+
+    if (!result || typeof result !== "object") {
+      return null;
+    }
+
+    if (Array.isArray(result)) {
+      return normalizeRollbackResult(result[0], originalAuditId);
+    }
+
+    if (result.RollbackAuditId) {
+      return {
+        __rollbackResultOnly: true,
+        RollbackAuditId: result.RollbackAuditId
+      };
+    }
+
+    if (result.value && typeof result.value === "string") {
+      return {
+        __rollbackResultOnly: true,
+        RollbackAuditId: result.value
+      };
+    }
+
+    if (result.value && typeof result.value === "object") {
+      return normalizeRollbackResult(Array.isArray(result.value) ? result.value[0] : result.value, originalAuditId);
+    }
+
+    if (result.AuditId) {
+      actionType = String(result.ActionType || "").trim().toUpperCase();
+      if (String(result.AuditId) !== String(originalAuditId || "") || actionType === "R" || actionType === "ROLLBACK") {
+        return {
+          __rollbackResultOnly: true,
+          RollbackAuditId: result.AuditId
+        };
+      }
+    }
+
+    rollbackAuditId = result.rollbackAuditId || result.rollback_audit_id || result.RollbackId || result.rollbackId;
+
+    return rollbackAuditId ? {
+      __rollbackResultOnly: true,
+      RollbackAuditId: rollbackAuditId
+    } : null;
+  }
+
+  function getRollbackAuditIdFromResult(result) {
+    return result && result.RollbackAuditId || "";
+  }
+
+  function patchRollbackAuditId(view, rollbackAuditId) {
+    var model = view && view.getModel && view.getModel("auditDetail");
+    var infoRows;
+    var found = false;
+
+    if (!model || !rollbackAuditId) {
+      return;
+    }
+
+    infoRows = (model.getProperty && model.getProperty("/infoRows") || []).map(function (row) {
+      if (row && row.label === "Rollback Audit ID") {
+        found = true;
+        return {
+          label: row.label,
+          value: AuditFormatter.formatAuditValue(rollbackAuditId),
+          state: row.state || "None"
+        };
+      }
+      return row;
+    });
+
+    if (!found) {
+      infoRows.push({
+        label: "Rollback Audit ID",
+        value: AuditFormatter.formatAuditValue(rollbackAuditId),
+        state: "None"
+      });
+    }
+
+    model.setProperty("/infoRows", infoRows);
+    model.setProperty("/rollbackAuditId", AuditFormatter.formatAuditValue(rollbackAuditId));
+    model.setProperty("/rollbackAvailable", false);
+    model.setProperty("/rolledBack", true);
+    model.setProperty("/statusText", "Rolled back");
+    model.setProperty("/statusState", "Success");
+    model.setProperty("/rollbackText", "Already rolled back");
+    model.setProperty("/rollbackState", "Success");
+    model.setProperty("/rollbackMessageVisible", true);
+    model.setProperty("/rollbackMessage", "Rollback completed for this audit record.");
+  }
+
+  function loadAuditDetailModels(view, context, source, overrideValues) {
     var model = ensureAuditModel(view);
     var itemsModel = ensureAuditItemsModel(view);
     var loadSequence;
@@ -877,14 +1104,19 @@ sap.ui.define([
     return requestAuditValues(context).then(function (values) {
       var itemsPromise;
 
+      values = mergeAuditValues(values, overrideValues);
       model.setData(buildAuditDetail(values));
 
       if (itemsModel && AuditFormatter.isBulkRecord(values)) {
         itemsModel.setData({
           rows: [],
           itemRows: [],
+          columns: [],
+          tableRows: [],
+          tableWidth: "100%",
           itemSummary: "Loading audit items...",
-          bulkItemsHtml: "",
+          messageVisible: false,
+          messageText: "",
           itemsLoading: true,
           itemsErrorVisible: false,
           itemsErrorText: ""
@@ -917,6 +1149,8 @@ sap.ui.define([
         if (itemsModel) {
           itemsModel.setData(itemData);
         }
+        model.setProperty("/affectedRecordsText", formatCount(itemData.affectedRecordCount, "record"));
+        model.setProperty("/changedFieldsText", formatCount(itemData.changedFieldCount, "field"));
       }).catch(function (error) {
         if (loadSequence !== view.__auditDetailLoadSequence || !itemsModel) {
           return;
@@ -925,12 +1159,18 @@ sap.ui.define([
         itemsModel.setData({
           rows: [],
           itemRows: [],
+          columns: [],
+          tableRows: [],
+          tableWidth: "100%",
           itemSummary: "",
-          bulkItemsHtml: "",
+          messageVisible: false,
+          messageText: "",
           itemsLoading: false,
           itemsErrorVisible: true,
           itemsErrorText: ODataErrorHandler.extractBackendMessage(error) || "Audit items could not be loaded."
         });
+        model.setProperty("/affectedRecordsText", "—");
+        model.setProperty("/changedFieldsText", "—");
       });
     });
   }
@@ -960,17 +1200,75 @@ sap.ui.define([
   function refreshAuditData(context) {
     var model = context && context.getModel && context.getModel();
     var binding = context && context.getBinding && context.getBinding();
+    var promises = [];
 
     if (binding && binding.refresh) {
-      binding.refresh();
+      promises.push(Promise.resolve(binding.refresh()).catch(function () {
+        return null;
+      }));
+    }
+
+    if (context && context.refresh) {
+      promises.push(Promise.resolve(context.refresh()).catch(function () {
+        return null;
+      }));
     }
 
     if (model && model.refresh) {
-      model.refresh();
+      promises.push(Promise.resolve(model.refresh()).catch(function () {
+        return null;
+      }));
     }
+
+    if (context && context.requestObject) {
+      promises.push(Promise.resolve(context.requestObject()).catch(function () {
+        return null;
+      }));
+    }
+
+    return Promise.all(promises);
   }
 
-  function executeRollback(context) {
+  function getRollbackResultObject(actionBinding) {
+    var boundContext = actionBinding && actionBinding.getBoundContext && actionBinding.getBoundContext();
+
+    if (boundContext && boundContext.requestObject) {
+      return Promise.resolve(boundContext.requestObject()).catch(function () {
+        return null;
+      });
+    }
+
+    if (boundContext && boundContext.getObject) {
+      return Promise.resolve(boundContext.getObject()).catch(function () {
+        return null;
+      });
+    }
+
+    return Promise.resolve(null);
+  }
+
+  function updateDetailAfterRollback(view, context, actionBinding) {
+    var originalAuditId = getContextValue(context, "AuditId");
+
+    return getRollbackResultObject(actionBinding).then(function (result) {
+      var rollbackAuditId;
+
+      result = normalizeRollbackResult(result, originalAuditId);
+      rollbackAuditId = getRollbackAuditIdFromResult(result);
+
+      if (rollbackAuditId) {
+        patchRollbackAuditId(view, rollbackAuditId);
+        return refreshAuditData(context);
+      }
+
+      return refreshAuditData(context).then(function () {
+        rollbackAuditId = getContextValue(context, "RollbackAuditId");
+        patchRollbackAuditId(view, rollbackAuditId);
+      });
+    });
+  }
+
+  function executeRollback(context, view) {
     var model = context && context.getModel && context.getModel();
     var actionPath = context && context.getPath && context.getPath();
     var actionBinding;
@@ -981,7 +1279,7 @@ sap.ui.define([
 
     actionBinding = model.bindContext(actionPath + "/com.sap.gateway.srvd.zsd_tbl_config.v0001.rollback(...)");
     return actionBinding.execute().then(function () {
-      refreshAuditData(context);
+      return updateDetailAfterRollback(view, context, actionBinding);
     });
   }
 
@@ -1022,130 +1320,19 @@ sap.ui.define([
     return extension._auditItemDialogPromise;
   }
 
-  function getColumnHeaderText(column) {
-    var header = column && column.getHeader && column.getHeader();
+  function getI18nText(view, key, fallback) {
+    var bundle = view && view.getModel && view.getModel("i18n") &&
+      view.getModel("i18n").getResourceBundle && view.getModel("i18n").getResourceBundle();
 
-    return header && header.getText ? String(header.getText()).trim() : "";
+    return bundle && bundle.getText ? bundle.getText(key) : fallback;
   }
 
-  function getAuditListTableValues(table) {
-    return (table && table.getItems ? table.getItems() : []).map(function (item) {
-      var context = item && item.getBindingContext && item.getBindingContext();
-
-      return {
-        item: item,
-        context: context,
-        values: context && context.getObject ? context.getObject() || {} : {}
-      };
-    });
-  }
-
-  function getAuditListOperationText(values, sameAuditRowCount) {
-    if (sameAuditRowCount > 1) {
-      return "Bulk";
+  function copyTextToClipboard(text) {
+    if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
+      return window.navigator.clipboard.writeText(text);
     }
 
-    return AuditFormatter.formatOperationText(
-      values.ActionType,
-      values.RecordKey,
-      values.OldValue,
-      values.NewValue
-    );
-  }
-
-  function enhanceAuditListTable(table) {
-    var columns = table && table.getColumns ? table.getColumns() : [];
-    var columnIndexes = {};
-    var rows;
-    var auditIdCounts = {};
-
-    columns.forEach(function (column, index) {
-      var headerText = getColumnHeaderText(column).toLowerCase();
-
-      if (headerText === "audit id") {
-        columnIndexes.auditId = index;
-        if (column.setWidth) {
-          column.setWidth("20rem");
-        }
-      }
-
-      if (headerText === "operation") {
-        columnIndexes.operation = index;
-        if (column.setWidth) {
-          column.setWidth("9rem");
-        }
-      }
-    });
-
-    if (columnIndexes.auditId === undefined && columnIndexes.operation === undefined) {
-      return;
-    }
-
-    if (table.addStyleClass) {
-      table.addStyleClass("auditListReportTable");
-    }
-
-    rows = getAuditListTableValues(table);
-    rows.forEach(function (row) {
-      var auditId = String(row.values.AuditId || "");
-
-      if (auditId) {
-        auditIdCounts[auditId] = (auditIdCounts[auditId] || 0) + 1;
-      }
-    });
-
-    rows.forEach(function (row) {
-      var cells = row.item && row.item.getCells ? row.item.getCells() : [];
-      var auditIdCell = columnIndexes.auditId !== undefined && cells[columnIndexes.auditId];
-      var operationCell = columnIndexes.operation !== undefined && cells[columnIndexes.operation];
-      var auditId = String(row.values.AuditId || "");
-      var operationText;
-
-      if (auditIdCell) {
-        if (auditIdCell.setWrapping) {
-          auditIdCell.setWrapping(false);
-        }
-        if (auditIdCell.addStyleClass) {
-          auditIdCell.addStyleClass("auditListAuditIdCell");
-        }
-        if (auditIdCell.setTooltip && auditId) {
-          auditIdCell.setTooltip(auditId);
-        }
-      }
-
-      if (operationCell && operationCell.setText) {
-        operationText = getAuditListOperationText(row.values, auditIdCounts[auditId] || 0);
-        operationCell.setText(operationText);
-        if (operationCell.setState) {
-          operationCell.setState(String(operationText || "").toLowerCase().indexOf("bulk") >= 0 ? "None" : AuditFormatter.formatActionState(row.values.ActionType));
-        }
-        if (operationCell.addStyleClass) {
-          operationCell.addStyleClass("auditListOperationCell");
-        }
-      }
-    });
-  }
-
-  function enhanceAuditListTables(view) {
-    var tables;
-
-    if (!view || !view.findAggregatedObjects) {
-      return;
-    }
-
-    tables = view.findAggregatedObjects(true, function (control) {
-      return control && control.isA && control.isA("sap.m.Table");
-    }) || [];
-
-    tables.forEach(function (table) {
-      if (table.attachUpdateFinished && table.data && !table.data("auditListFormattingAttached")) {
-        table.data("auditListFormattingAttached", true);
-        table.attachUpdateFinished(function () {
-          enhanceAuditListTable(table);
-        });
-      }
-      enhanceAuditListTable(table);
-    });
+    return Promise.reject(new Error("Clipboard API is not available."));
   }
 
   var AuditLogExtension = ControllerExtension.extend("ztbl.audit.ui.ext.controller.AuditLog", {
@@ -1181,12 +1368,6 @@ sap.ui.define([
             }, 0);
           }
         }
-      },
-
-      onAfterRendering: function () {
-        var view = this.base && this.base.getView && this.base.getView();
-
-        enhanceAuditListTables(view);
       }
     },
 
@@ -1211,15 +1392,53 @@ sap.ui.define([
       openBulkAuditItems(this, getObjectPageContext(view), source);
     },
 
+    onAuditDetailsPress: function (event) {
+      var source = event && event.getSource && event.getSource();
+      var context = source && source.getBindingContext && source.getBindingContext();
+
+      if (context && this.base && this.base.routing && this.base.routing.navigate) {
+        this.base.routing.navigate(context);
+      }
+    },
+
+    onCopyAuditIdPress: function () {
+      var view = this.base && this.base.getView && this.base.getView();
+      var model = view && view.getModel && view.getModel("auditDetail");
+      var auditId = model && model.getProperty && model.getProperty("/auditId");
+
+      if (!auditId || auditId === "—") {
+        MessageToast.show(getI18nText(view, "auditInfoCopyAuditIdUnavailable", "No Audit ID to copy."));
+        return;
+      }
+
+      copyTextToClipboard(auditId).then(function () {
+        MessageToast.show(getI18nText(view, "auditInfoCopyAuditIdSuccess", "Audit ID copied."));
+      }).catch(function () {
+        MessageToast.show(getI18nText(view, "auditInfoCopyAuditIdError", "Audit ID could not be copied."));
+      });
+    },
+
     onRollbackPress: function (event) {
       var source = event && event.getSource && event.getSource();
+      var view = this.base && this.base.getView && this.base.getView();
       var context = source && source.getBindingContext && source.getBindingContext() ||
-        getObjectPageContext(this.base && this.base.getView && this.base.getView());
+        getObjectPageContext(view);
       var auditId = getContextValue(context, "AuditId");
       var tableName = getContextValue(context, "TableName");
+      var operationControl = getContextValue(context, "__OperationControl");
+      var rollbackAuditId = getContextValue(context, "RollbackAuditId");
+      var actionType = getContextValue(context, "ActionType");
+      var auditDetailModel = view && view.getModel && view.getModel("auditDetail");
 
       if (!context) {
         MessageBox.error("No audit record is selected for rollback.");
+        return;
+      }
+
+      if (!AuditFormatter.isRollbackAvailableForEntry(operationControl, rollbackAuditId, actionType)) {
+        MessageBox.information(AuditFormatter.isRolledBack(actionType, rollbackAuditId) ?
+          "This audit record has already been rolled back." :
+          "Rollback is not available for this audit record.");
         return;
       }
 
@@ -1232,10 +1451,26 @@ sap.ui.define([
             return;
           }
 
-          executeRollback(context).then(function () {
+          if (source && source.setBusy) {
+            source.setBusy(true);
+          }
+          if (auditDetailModel) {
+            auditDetailModel.setProperty("/rollbackBusy", true);
+            auditDetailModel.setProperty("/rollbackAvailable", false);
+          }
+          executeRollback(context, view).then(function () {
+            return loadAuditDetailModels(view, context, source);
+          }).then(function () {
             MessageToast.show("Rollback completed.");
           }).catch(function (error) {
             ODataErrorHandler.showBackendError(error, "Rollback failed.");
+          }).finally(function () {
+            if (source && source.setBusy) {
+              source.setBusy(false);
+            }
+            if (auditDetailModel) {
+              auditDetailModel.setProperty("/rollbackBusy", false);
+            }
           });
         }
       });
@@ -1392,6 +1627,7 @@ sap.ui.define([
     buildInfoRows: buildInfoRows,
     buildBulkDialogData: buildBulkDialogData,
     buildAuditItemsData: buildAuditItemsData,
+    buildSpreadsheetChanges: buildSpreadsheetChanges,
     valuesFromObject: valuesFromObject,
     collectLoadedAuditRows: collectLoadedAuditRows,
     filterAuditChildRows: filterAuditChildRows,
