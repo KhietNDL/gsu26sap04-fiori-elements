@@ -92,8 +92,43 @@ sap.ui.define([], function () {
     return map;
   }
 
+  function unescapeJsonString(value) {
+    try {
+      return JSON.parse("\"" + String(value || "").replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"");
+    } catch (error) {
+      return String(value || "");
+    }
+  }
+
+  function parseJsonLikeMap(value) {
+    var map = {};
+    var text = String(value || "").trim();
+    var pairPattern = /"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*("([^"\\]*(?:\\.[^"\\]*)*)"|[^,{}]+)/g;
+    var match;
+
+    if (!/^[\[{]/.test(text)) {
+      return map;
+    }
+
+    text = text.replace(/""/g, "\"");
+
+    while ((match = pairPattern.exec(text))) {
+      map[unescapeJsonString(match[1])] = match[3] !== undefined ?
+        unescapeJsonString(match[3]) :
+        String(match[2] || "").trim();
+    }
+
+    return map;
+  }
+
   function parseAuditMap(value) {
     var parsed = safeParseObject(value);
+
+    if (Object.keys(parsed).length) {
+      return parsed;
+    }
+
+    parsed = parseJsonLikeMap(value);
 
     if (Object.keys(parsed).length) {
       return parsed;
@@ -226,11 +261,55 @@ sap.ui.define([], function () {
     });
   }
 
+  function parseRecordKeyMap(recordKey) {
+    var parsed = safeParseObject(recordKey);
+    var rawValues;
+
+    if (Object.keys(parsed).length) {
+      if (typeof recordKey === "string") {
+        rawValues = parseJsonLikeMap(recordKey);
+        Object.keys(parsed).forEach(function (key) {
+          if (parsed[key] === null || typeof parsed[key] !== "object") {
+            if (Object.prototype.hasOwnProperty.call(rawValues, key)) {
+              parsed[key] = rawValues[key];
+            }
+          }
+        });
+      }
+      return parsed;
+    }
+
+    parsed = parseJsonLikeMap(recordKey);
+    return Object.keys(parsed).length ? parsed : parseLegacyMap(recordKey);
+  }
+
+  function flattenRecordKeyObject(object, prefix, rows) {
+    Object.keys(object || {}).forEach(function (key) {
+      var value = object[key];
+      var name = prefix ? prefix + "." + key : key;
+
+      if (isTechnicalField(name)) {
+        return;
+      }
+
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        flattenRecordKeyObject(value, name, rows);
+        return;
+      }
+
+      rows.push({
+        key: name,
+        field: mapFieldLabel(name),
+        value: value === null || value === undefined ? "" : String(value)
+      });
+    });
+  }
+
   function getRecordKeyRows(recordKey) {
-    var parsed = parseAuditMap(recordKey);
+    var parsed = parseRecordKeyMap(recordKey);
     var rows = [];
 
-    flattenObject(parsed, "", rows);
+    flattenRecordKeyObject(parsed, "", rows);
 
     if (rows.length) {
       return rows;
@@ -623,6 +702,9 @@ sap.ui.define([], function () {
 
     if (operationControl && typeof operationControl === "object") {
       value = operationControl.rollback;
+      if (value === undefined) {
+        value = operationControl.Rollback;
+      }
     }
 
     return value === true || value === "true" || value === "X" || value === 1;
@@ -646,6 +728,44 @@ sap.ui.define([], function () {
 
   function formatAuditListStatusState(actionType, rollbackAuditId) {
     return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back" ? "Success" : "Information";
+  }
+
+  function isRolledBack(actionType, rollbackAuditId) {
+    return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back";
+  }
+
+  function isRollbackAvailableForEntry(operationControl, rollbackAuditId, actionType) {
+    return !isRolledBack(actionType, rollbackAuditId) && isRollbackAvailable(operationControl);
+  }
+
+  function isRollbackUnavailableForEntry(operationControl, rollbackAuditId, actionType) {
+    return !isRollbackAvailableForEntry(operationControl, rollbackAuditId, actionType);
+  }
+
+  function formatRollbackColumnText(operationControl, rollbackAuditId, actionType) {
+    return isRolledBack(actionType, rollbackAuditId) ? "Rolled back" : "Not available";
+  }
+
+  function formatRollbackColumnState(operationControl, rollbackAuditId, actionType) {
+    return isRolledBack(actionType, rollbackAuditId) ? "Success" : "None";
+  }
+
+  function formatListSummary(actionType, recordKey, fieldName, oldValue, newValue) {
+    var operation = formatOperationText(actionType, recordKey, oldValue, newValue);
+    var bulkCount = getBulkItemCount(oldValue, newValue);
+    var changes;
+
+    if (operation === "Bulk") {
+      return bulkCount === null ? "Bulk operation" : bulkCount + " " + (bulkCount === 1 ? "record" : "records");
+    }
+
+    changes = buildChangeRows({
+      ActionType: actionType,
+      FieldName: fieldName,
+      OldValue: oldValue,
+      NewValue: newValue
+    });
+    return changes.length + " changed " + (changes.length === 1 ? "field" : "fields");
   }
 
   var AuditFormatter = {
@@ -678,6 +798,12 @@ sap.ui.define([], function () {
     formatRollbackState: formatRollbackState,
     formatAuditListStatusText: formatAuditListStatusText,
     formatAuditListStatusState: formatAuditListStatusState,
+    isRolledBack: isRolledBack,
+    isRollbackAvailableForEntry: isRollbackAvailableForEntry,
+    isRollbackUnavailableForEntry: isRollbackUnavailableForEntry,
+    formatRollbackColumnText: formatRollbackColumnText,
+    formatRollbackColumnState: formatRollbackColumnState,
+    formatListSummary: formatListSummary,
     _test: {
       safeParseObject: safeParseObject,
       parseAuditMap: parseAuditMap,
@@ -704,7 +830,10 @@ sap.ui.define([], function () {
       buildBulkItemViewModel: buildBulkItemViewModel,
       isRollbackAvailable: isRollbackAvailable,
       formatRollbackText: formatRollbackText,
-      formatRollbackState: formatRollbackState
+      formatRollbackState: formatRollbackState,
+      isRolledBack: isRolledBack,
+      isRollbackAvailableForEntry: isRollbackAvailableForEntry,
+      formatListSummary: formatListSummary
     }
   };
 

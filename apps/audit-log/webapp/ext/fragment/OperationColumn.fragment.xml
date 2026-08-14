@@ -4,5 +4,5 @@
   <ObjectStatus
     text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
     state="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationState'}"
-    class="auditOperationBadge"/>
+    class="auditListCellText auditOperationBadge"/>
 </core:FragmentDefinition>

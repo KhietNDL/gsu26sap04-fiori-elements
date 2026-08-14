@@ -54,8 +54,8 @@
       <Annotation Term="UI.LineItem">
         <Collection>
           <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="AuditId"/>
-            <PropertyValue Property="Label" String="Audit ID"/>
+            <PropertyValue Property="Value" Path="ChangedAt"/>
+            <PropertyValue Property="Label" String="Changed At"/>
             <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
           </Record>
           <Record Type="UI.DataField">
@@ -66,7 +66,7 @@
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="FieldName"/>
             <PropertyValue Property="Label" String="Field Name"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Low"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="ActionType"/>
@@ -76,12 +76,12 @@
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="ChangedBy"/>
             <PropertyValue Property="Label" String="Changed By"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Medium"/>
           </Record>
           <Record Type="UI.DataField">
-            <PropertyValue Property="Value" Path="ChangedAt"/>
-            <PropertyValue Property="Label" String="Changed At"/>
-            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            <PropertyValue Property="Value" Path="AuditId"/>
+            <PropertyValue Property="Label" String="Audit ID"/>
+            <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/Low"/>
           </Record>
           <Record Type="UI.DataField">
             <PropertyValue Property="Value" Path="RollbackAuditId"/>
