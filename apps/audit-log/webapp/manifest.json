@@ -134,6 +134,7 @@
                   "filterFields": {
                     "ActionType": {
                       "label": "Operation",
+                      "template": "ztbl.audit.ui.ext.fragment.ActionTypeFilterField",
                       "position": {
                         "placement": "After",
                         "anchor": "ChangedBy"
@@ -183,7 +184,9 @@
                       "width": "10rem",
                       "properties": [
                         "ActionType",
-                        "RecordKey"
+                        "RecordKey",
+                        "OldValue",
+                        "NewValue"
                       ]
                     }
                   },

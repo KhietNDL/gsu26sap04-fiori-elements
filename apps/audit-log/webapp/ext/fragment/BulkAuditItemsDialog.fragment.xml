@@ -45,9 +45,13 @@
           </VBox>
           <ObjectStatus
             text="{auditBulk>/operationText}"
-            icon="sap-icon://multi-select"
-            state="None"
-            class="auditBulkOperationBadge"/>
+            icon="{auditBulk>/operationIcon}"
+            state="{auditBulk>/operationState}"
+            class="auditBulkOperationBadge">
+            <customData>
+              <core:CustomData key="action" value="{auditBulk>/operationKey}" writeToDom="true"/>
+            </customData>
+          </ObjectStatus>
         </FlexBox>
 
         <MessageStrip
@@ -82,6 +86,9 @@
                 vAlign="Middle"
                 cells="{path: 'auditBulk>cells', templateShareable: false}"
                 class="auditItemsRow">
+                <customData>
+                  <core:CustomData key="action" value="{auditBulk>actionKey}" writeToDom="true"/>
+                </customData>
                 <cells>
                   <VBox renderType="Bare" class="auditSpreadsheetCell">
                     <ObjectStatus
@@ -93,7 +100,13 @@
                       text="{auditBulk>text}"
                       tooltip="{auditBulk>tooltip}"
                       wrapping="true"
-                      visible="{= ${auditBulk>kind} !== 'status' }"
+                      visible="{= ${auditBulk>kind} === 'key' }"
+                      class="auditSpreadsheetKey"/>
+                    <Text
+                      text="{auditBulk>text}"
+                      tooltip="{auditBulk>tooltip}"
+                      wrapping="true"
+                      visible="{= ${auditBulk>kind} !== 'status' &amp;&amp; ${auditBulk>kind} !== 'key' }"
                       class="auditSpreadsheetText"/>
                   </VBox>
                 </cells>

@@ -116,5 +116,8 @@
     <Annotations Target="SAP.AuditLogType/ActionType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
       <Annotation Term="Common.Label" String="Operation"/>
     </Annotations>
+    <Annotations Target="SAP.rollback(SAP.AuditLogType)" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Common.IsActionCritical" Bool="true"/>
+    </Annotations>
   </edmx:DataServices>
 </edmx:Edmx>

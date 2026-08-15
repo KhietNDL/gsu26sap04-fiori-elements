@@ -1,3 +1,163 @@
+.approvalDetailRoot {
+  box-sizing: border-box;
+  width: 100%;
+  gap: 1rem;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sapUxAPObjectPageSubSection:has(.approvalDetailRoot),
+.sapUxAPObjectPageSubSection:has(.approvalDetailRoot) .sapUxAPBlockContainer {
+  background: transparent;
+}
+
+.approvalStatusNoticeWrap {
+  margin: 0;
+}
+
+.approvalStatusNotice.sapMMsgStrip {
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+}
+
+.approvalCardPanel.sapMPanel {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--sapList_BorderColor);
+  border-bottom: 1px solid var(--sapList_BorderColor) !important;
+  border-radius: 0.75rem;
+  background: var(--sapGroup_ContentBackground);
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.approvalCardPanel.sapMPanel > .sapMPanelContent {
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: var(--sapGroup_ContentBackground);
+  overflow: hidden;
+}
+
+.approvalInfoSection,
+.approvalChangesSection,
+.approvalCommentSection {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1rem;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.approvalInfoHeader {
+  gap: 1rem;
+  min-height: 2.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sapList_BorderColor);
+}
+
+.approvalInfoMatrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2rem;
+  row-gap: 1rem;
+  padding-top: 1rem;
+}
+
+.approvalInfoField {
+  box-sizing: border-box;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.approvalInfoLabel.sapMLabel {
+  box-sizing: border-box;
+  flex: 0 0 8.5rem;
+  padding-top: 0.125rem;
+  color: var(--sapContent_LabelColor);
+}
+
+.approvalInfoValue,
+.approvalInfoValue .sapMObjStatusText {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.approvalInfoCode {
+  font-family: var(--sapFontFamily);
+}
+
+.approvalCommentSection {
+  gap: 0.5rem;
+}
+
+.approvalChangesToolbar.sapMTB {
+  min-height: 3rem;
+  height: auto;
+  margin-bottom: 0.875rem;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid var(--sapList_BorderColor);
+  background: transparent;
+}
+
+.approvalCardSubtitle {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.8125rem;
+}
+
+.approvalItemsScrollContainer {
+  width: 100%;
+}
+
+.approvalItemsSpreadsheet .sapMListTblHeaderCell {
+  background: var(--sapList_HeaderBackground);
+  color: var(--sapContent_LabelColor);
+  font-weight: 700;
+}
+
+.approvalItemsSpreadsheet .sapMListTblCell,
+.approvalItemsSpreadsheet .sapMListTblHeaderCell {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.approvalSpreadsheetCell {
+  min-width: 0;
+  width: 100%;
+}
+
+.approvalSpreadsheetCell .sapMText,
+.approvalSpreadsheetCell .sapMObjStatusText {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.approvalItemsSpreadsheet .approvalSpreadsheetText,
+.approvalItemsSpreadsheet .approvalSpreadsheetText .sapMText,
+.approvalItemsSpreadsheet .sapMText.approvalSpreadsheetText {
+  color: var(--sapTextColor) !important;
+}
+
+.approvalItemsSpreadsheet [data-approval-field="Status"],
+.approvalItemsSpreadsheet [data-approval-field="Status"] .sapMText,
+.approvalItemsSpreadsheet [data-approval-field="Status"] .sapMObjStatusText {
+  color: var(--sapTextColor) !important;
+}
+
+.approvalSpreadsheetKey,
+.approvalSpreadsheetAction .sapMObjStatusText {
+  font-weight: 600;
+}
+
 .approvalRequestDetail .approvalDetailBlock {
   box-sizing: border-box;
   padding: 0.75rem;
@@ -46,19 +206,19 @@
 .sapMListTblCell .approvalActionText--create,
 .sapMListTblCell .approvalActionText--create .sapMText,
 .sapMListTblCell .approvalActionText--create .sapMObjStatusText {
-  color: #107e3e;
+  color: var(--sapPositiveTextColor, var(--sapPositiveColor));
 }
 
 .sapMListTblCell .approvalActionText--update,
 .sapMListTblCell .approvalActionText--update .sapMText,
 .sapMListTblCell .approvalActionText--update .sapMObjStatusText {
-  color: #0a6ed1;
+  color: var(--sapCriticalTextColor, var(--sapCriticalColor));
 }
 
 .sapMListTblCell .approvalActionText--delete,
 .sapMListTblCell .approvalActionText--delete .sapMText,
 .sapMListTblCell .approvalActionText--delete .sapMObjStatusText {
-  color: #bb0000;
+  color: var(--sapNegativeTextColor, var(--sapNegativeColor));
 }
 
 .sapMListTblCell .approvalStatusText--approved,
@@ -546,8 +706,319 @@
   border-color: #d99a00;
 }
 
+@media (max-width: 48rem) {
+  .approvalDetailRoot {
+    gap: 0.75rem;
+  }
+
+  .approvalInfoSection,
+  .approvalChangesSection,
+  .approvalCommentSection {
+    padding: 0.75rem;
+  }
+
+  .approvalInfoMatrix {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.75rem;
+  }
+
+  .approvalInfoLabel.sapMLabel {
+    flex-basis: 7.5rem;
+  }
+}
+
 @media (max-width: 37.5rem) {
   .approvalChangeTable--cols3 {
     grid-template-columns: minmax(8rem, 34%) minmax(0, 1fr) minmax(0, 1fr);
   }
+}
+.approvalItemsScrollContainer {
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapElement_BorderCornerRadius);
+  background: var(--sapList_Background);
+}
+
+.approvalItemsScrollContainer > .sapMScrollContScroll {
+  overflow-y: hidden;
+}
+
+.approvalItemsSpreadsheet .sapMListTbl {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.approvalItemsSpreadsheet .sapMListTblHeaderCell {
+  background: var(--sapList_HeaderBackground);
+  border-bottom: 2px solid var(--sapList_BorderColor);
+}
+
+.approvalItemsSpreadsheet .sapMListTblCell {
+  border-bottom: 1px solid var(--sapList_BorderColor);
+}
+
+.approvalItemsSpreadsheet .sapMListTblCell,
+.approvalItemsSpreadsheet .sapMListTblHeaderCell {
+  min-width: 0;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  border-right: 1px solid var(--sapList_BorderColor);
+  vertical-align: middle;
+}
+
+.approvalItemsSpreadsheet .sapMListTblHeaderCell:last-child,
+.approvalItemsSpreadsheet .sapMListTblCell:last-child {
+  border-right: 0;
+}
+
+.approvalItemsSpreadsheet .sapMListTblRow:last-child > .sapMListTblCell {
+  border-bottom: 0;
+}
+
+.approvalItemsHeaderText {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.approvalItemsSpreadsheet .approvalSpreadsheetText,
+.approvalItemsSpreadsheet .approvalSpreadsheetText .sapMText,
+.approvalItemsSpreadsheet .sapMText.approvalSpreadsheetText {
+  color: var(--sapTextColor) !important;
+}
+
+.approvalItemsSpreadsheet [data-approval-field="Status"],
+.approvalItemsSpreadsheet [data-approval-field="Status"] .sapMText,
+.approvalItemsSpreadsheet [data-approval-field="Status"] .sapMObjStatusText {
+  color: var(--sapTextColor) !important;
+}
+
+.approvalItemsRow:hover .sapMListTblCell {
+  background: var(--sapList_Hover_Background);
+}
+
+.approvalItemsRow[data-action="C"] > .sapMListTblCell,
+.approvalItemsRow[data-action="CREATE"] > .sapMListTblCell {
+  background: var(--sapSuccessBackground);
+}
+
+.approvalItemsRow[data-action="U"] > .sapMListTblCell,
+.approvalItemsRow[data-action="UPDATE"] > .sapMListTblCell {
+  background: var(--sapWarningBackground);
+}
+
+.approvalItemsRow[data-action="D"] > .sapMListTblCell,
+.approvalItemsRow[data-action="DELETE"] > .sapMListTblCell {
+  background: var(--sapErrorBackground);
+}
+
+.approvalItemsRow[data-action="C"] > .sapMListTblCell:first-child,
+.approvalItemsRow[data-action="CREATE"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapPositiveColor);
+}
+
+.approvalItemsRow[data-action="U"] > .sapMListTblCell:first-child,
+.approvalItemsRow[data-action="UPDATE"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapCriticalColor);
+}
+
+.approvalItemsRow[data-action="D"] > .sapMListTblCell:first-child,
+.approvalItemsRow[data-action="DELETE"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapNegativeColor);
+}
+
+.approvalRequestDetail .approvalDetailBlock {
+  border-color: var(--sapList_BorderColor);
+  border-radius: var(--sapElement_BorderCornerRadius);
+  background: var(--sapGroup_ContentBackground);
+}
+
+.approvalJsonRow {
+  border-bottom-color: var(--sapList_BorderColor);
+}
+
+.approvalJsonLabel,
+.approvalCardSubtitle {
+  color: var(--sapContent_LabelColor);
+}
+
+/* Object Page chrome follows the same SAP semantic palette as Audit Log. */
+.sapUxAPObjectPageHeaderIdentifierTitle,
+.sapUxAPObjectPageHeaderIdentifierTitle .sapMTitle,
+.sapUxAPObjectPageHeaderIdentifierDescription {
+  color: var(--sapTitleColor);
+}
+
+.sapUxAPObjectPageHeaderIdentifierDescription {
+  display: none !important;
+}
+
+.sapFDynamicPageTitleMainContent,
+.sapFDynamicPageTitleMainContent .sapMText,
+.sapFDynamicPageTitleContent,
+.sapFDynamicPageTitleContent .sapMText,
+.sapUxAPObjectPageHeaderContent .sapMText {
+  display: none !important;
+}
+
+.sapUxAPObjectPageHeaderIdentifier .sapMBtnTransparent,
+.sapUxAPObjectPageHeaderIdentifier .sapMBtnTransparent .sapMBtnContent,
+.sapUxAPObjectPageHeaderIdentifier .sapMBtnTransparent .sapUiIcon {
+  color: var(--sapButton_TextColor);
+}
+
+.approvalInfoLabel.sapMLabel,
+.approvalChangesToolbar .sapMTitle,
+.approvalCommentSection .sapMTitle {
+  color: var(--sapContent_LabelColor);
+}
+
+/* Match Audit Log typography exactly in the request information card. */
+.approvalInfoSection,
+.approvalInfoSection .sapMLabel,
+.approvalInfoSection .sapMText,
+.approvalInfoSection .sapMObjStatusText {
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.approvalInfoHeader .sapMTitle,
+.approvalChangesToolbar .sapMTitle,
+.approvalCommentSection .sapMTitle {
+  font-family: var(--sapFontFamily);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.approvalInfoLabel.sapMLabel {
+  font-weight: 700;
+}
+
+/* Audit Log is the visual baseline for the complete Approval app. */
+.approvalDetailRoot,
+.approvalDetailRoot .sapMText,
+.approvalDetailRoot .sapMLabel,
+.approvalDetailRoot .sapMObjStatusText,
+.approvalListCellText,
+.approvalListCellText .sapMText,
+.approvalListCellText .sapMObjStatusText,
+.approvalBulkItemDialog,
+.approvalBulkItemDialog .sapMText,
+.approvalBulkItemDialog .sapMLabel,
+.approvalBulkItemDialog .sapMObjStatusText {
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  line-height: 1.4;
+}
+
+.approvalInfoHeader .sapMTitle,
+.approvalChangesToolbar .sapMTitle,
+.approvalCommentSection .sapMTitle {
+  color: var(--sapTitleColor);
+  font-family: var(--sapFontFamily);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.approvalCardSubtitle {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.approvalItemsSpreadsheet .sapMText,
+.approvalItemsSpreadsheet .sapMObjStatus,
+.approvalItemsSpreadsheet .sapMObjStatusText {
+  max-width: 100%;
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.approvalItemsHeaderText {
+  font-size: 0.75rem !important;
+  font-weight: 700;
+}
+
+.approvalSpreadsheetKey {
+  color: var(--sapTextColor);
+  font-family: var(--sapFontFamily);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.approvalSpreadsheetAction.sapMObjStatus,
+.approvalOperationBadge.sapMObjStatus {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  background: var(--sapList_HeaderBackground);
+}
+
+.approvalSpreadsheetAction .sapMObjStatusText,
+.approvalOperationBadge .sapMObjStatusText {
+  font-weight: 400;
+}
+
+.approvalSpreadsheetAction.sapMObjStatusSuccess,
+.approvalOperationBadge.sapMObjStatusSuccess {
+  border-color: var(--sapPositiveColor);
+  background: var(--sapSuccessBackground);
+}
+
+.approvalSpreadsheetAction.sapMObjStatusWarning,
+.approvalOperationBadge.sapMObjStatusWarning {
+  border-color: var(--sapCriticalColor);
+  background: var(--sapWarningBackground);
+}
+
+.approvalSpreadsheetAction.sapMObjStatusError,
+.approvalOperationBadge.sapMObjStatusError {
+  border-color: var(--sapNegativeColor);
+  background: var(--sapErrorBackground);
+}
+
+.approvalSpreadsheetAction.sapMObjStatusInformation,
+.approvalOperationBadge.sapMObjStatusInformation {
+  border-color: var(--sapInformativeColor);
+  background: var(--sapInformationBackground);
+}
+
+.approvalOperationBadge[data-action="B"] {
+  border-color: var(--sapIndicationColor_6);
+  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+}
+
+.approvalOperationBadge[data-action="B"] .sapMObjStatusText,
+.approvalOperationBadge[data-action="B"] .sapUiIcon {
+  color: var(--sapIndicationColor_6);
+}
+
+.approvalItemsSummaryBadge.sapMObjStatus {
+  box-sizing: border-box;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  background: var(--sapList_HeaderBackground);
+}
+
+.approvalCommentText,
+.approvalCommentText .sapMText,
+.approvalExcelHtmlTable,
+.approvalChangeCell,
+.approvalKeyValueValue,
+.approvalItemRecordKeyText {
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  line-height: 1.4;
 }

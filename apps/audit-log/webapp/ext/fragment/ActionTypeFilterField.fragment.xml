@@ -3,13 +3,16 @@
   xmlns:core="sap.ui.core">
   <Select
     width="100%"
-    selectedKey="{filterValues>/ActionType}"
+    core:require="{operationFilter: 'ztbl/audit/ui/ext/filter/OperationFilter'}"
+    selectedKey="{path: 'filterValues>', type: 'sap.fe.macros.filter.type.Value', formatOptions: {operator: 'ztbl.audit.ui.ext.filter.OperationFilter.getFilter'}}"
     forceSelection="false">
     <items>
       <core:Item key="" text="All operations"/>
       <core:Item key="C" text="Create"/>
       <core:Item key="U" text="Update"/>
       <core:Item key="D" text="Delete"/>
+      <core:Item key="R" text="Rollback"/>
+      <core:Item key="BULK" text="Bulk"/>
     </items>
   </Select>
 </core:FragmentDefinition>

@@ -57,7 +57,31 @@ sap.ui.define([], function () {
       return "Error";
     }
 
-    return "Information";
+    if (action === "Update") {
+      return "Warning";
+    }
+
+    return "None";
+  }
+
+  function formatActionKey(value) {
+    var action = normalizeAction(value);
+
+    if (action === "Create") {
+      return "C";
+    }
+    if (action === "Update") {
+      return "U";
+    }
+    if (action === "Delete") {
+      return "D";
+    }
+
+    return "";
+  }
+
+  function formatRequestActionKey(actionType, recordKey, recordKeyText) {
+    return isBulkRecordKey(recordKey, recordKeyText) ? "B" : formatActionKey(actionType);
   }
 
   function normalizeStatus(value) {
@@ -541,8 +565,10 @@ sap.ui.define([], function () {
 
     formatRequestActionText: formatRequestActionText,
 
+    formatRequestActionKey: formatRequestActionKey,
+
     formatRequestActionState: function (actionType, recordKey, recordKeyText) {
-      return isBulkRecordKey(recordKey, recordKeyText) ? "Information" : formatActionState(actionType);
+      return isBulkRecordKey(recordKey, recordKeyText) ? "None" : formatActionState(actionType);
     },
 
     formatActionState: function (value) {
