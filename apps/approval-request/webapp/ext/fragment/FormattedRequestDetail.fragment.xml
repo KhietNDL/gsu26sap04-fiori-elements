@@ -3,13 +3,8 @@
   xmlns:core="sap.ui.core">
   <VBox
     width="100%"
-    class="sapUiSmallMarginTop approvalRequestDetail approvalBusinessChange"
+    class="approvalRequestDetail approvalBusinessChange"
     visible="{= !${approvalDetail>/bulkVisible} }">
-    <Title
-      text="{approvalDetail>/changeTitle}"
-      level="H3"
-      class="sapUiTinyMarginBottom"/>
-
     <core:HTML
       content="{approvalDetail>/changeTableHtml}"
       sanitizeContent="false"

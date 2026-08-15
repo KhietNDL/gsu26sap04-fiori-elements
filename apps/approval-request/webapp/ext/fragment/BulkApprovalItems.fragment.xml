@@ -4,19 +4,8 @@
   core:require="{formatter: 'ztbl/approval/ui/ext/formatter/ApprovalFormatter'}">
   <VBox
     width="100%"
-    class="sapUiSmallMarginTop approvalBulkItems approvalBusinessChange"
+    class="approvalBulkItems approvalBusinessChange"
     visible="{approvalDetail>/bulkVisible}">
-    <Title
-      text="Approval Items"
-      level="H3"
-      class="sapUiTinyMarginBottom"/>
-
-    <MessageStrip
-      type="Information"
-      showIcon="true"
-      text="Approve and Reject remain request-level decisions. Review each item before processing the bulk request."
-      class="sapUiSmallMarginBottom"/>
-
     <Text
       text="Loading approval items..."
       visible="{approvalDetail>/itemsLoading}"
@@ -30,68 +19,70 @@
       class="sapUiSmallMarginBottom"/>
 
     <Text
-      text="{approvalDetail>/bulkSummaryText}"
-      visible="{approvalDetail>/bulkSummaryVisible}"
-      class="approvalBulkSummary sapUiTinyMarginBottom"/>
-
-    <Text
       text="No approval items found."
       visible="{approvalDetail>/itemsEmptyVisible}"
       class="approvalBulkSummary sapUiTinyMarginBottom"/>
 
-    <Table
-      id="approvalBulkItemsTable"
+    <ScrollContainer
       width="100%"
-      class="approvalBulkItemsTable"
-      fixedLayout="false"
-      growing="true"
-      growingScrollToLoad="true"
-      busy="{approvalDetail>/itemsLoading}"
-      busyIndicatorDelay="0"
-      noDataText="No approval items found."
-      items="{path: 'approvalDetail>/bulkItems'}">
+      horizontal="true"
+      vertical="false"
+      focusable="true"
+      class="approvalItemsScrollContainer">
+      <Table
+        id="approvalBulkItemsTable"
+        width="{approvalDetail>/bulkTableWidth}"
+        fixedLayout="true"
+        sticky="ColumnHeaders"
+        growing="true"
+        growingScrollToLoad="true"
+        busy="{approvalDetail>/itemsLoading}"
+        busyIndicatorDelay="0"
+        noDataText="No approval items found."
+        alternateRowColors="true"
+        columns="{path: 'approvalDetail>/bulkColumns', templateShareable: false}"
+        items="{path: 'approvalDetail>/bulkTableRows', templateShareable: false}"
+        class="approvalBulkItemsTable approvalItemsSpreadsheet">
       <columns>
-        <Column width="6rem">
-          <Text text="ItemNo"/>
-        </Column>
-        <Column width="8rem">
-          <Text text="ActionType"/>
-        </Column>
-        <Column minScreenWidth="Tablet" demandPopin="true">
-          <Text text="RecordKey"/>
-        </Column>
-        <Column width="8rem">
-          <Text text="Status"/>
-        </Column>
-        <Column width="9rem" hAlign="End">
-          <Text text="View Changes"/>
+        <Column width="{approvalDetail>width}">
+          <Text text="{approvalDetail>label}" tooltip="{approvalDetail>label}" class="approvalItemsHeaderText"/>
         </Column>
       </columns>
       <items>
-        <ColumnListItem>
+        <ColumnListItem
+          vAlign="Middle"
+          cells="{path: 'approvalDetail>cells', templateShareable: false}"
+          class="approvalItemsRow">
+          <customData>
+            <core:CustomData key="action" value="{approvalDetail>actionKey}" writeToDom="true"/>
+          </customData>
           <cells>
-            <Text
-              text="{approvalDetail>ItemNo}"
-              wrapping="true"/>
-            <ObjectStatus
-              text="{= ${approvalDetail>ActionType} === 'C' || ${approvalDetail>ActionType} === 'CREATE' || ${approvalDetail>ActionType} === '01' ? 'Create' : ${approvalDetail>ActionType} === 'U' || ${approvalDetail>ActionType} === 'UPDATE' || ${approvalDetail>ActionType} === '02' ? 'Update' : ${approvalDetail>ActionType} === 'D' || ${approvalDetail>ActionType} === 'DELETE' || ${approvalDetail>ActionType} === '03' ? 'Delete' : ${approvalDetail>ActionType} }"
-              state="{= ${approvalDetail>ActionType} === 'C' || ${approvalDetail>ActionType} === 'CREATE' || ${approvalDetail>ActionType} === '01' ? 'Success' : ${approvalDetail>ActionType} === 'D' || ${approvalDetail>ActionType} === 'DELETE' || ${approvalDetail>ActionType} === '03' ? 'Error' : 'Information' }"/>
-            <Text
-              text="{path: 'approvalDetail>RecordKey', formatter: '.extension.ztbl.approval.ui.ext.controller.ApprovalListReport.formatBulkRecordKeyText'}"
-              wrapping="true"/>
-            <ObjectStatus
-              text="{= ${approvalDetail>Status} === 'A' || ${approvalDetail>Status} === 'APPROVED' ? 'Approved' : ${approvalDetail>Status} === 'P' || ${approvalDetail>Status} === 'PENDING' ? 'Pending' : ${approvalDetail>Status} === 'R' || ${approvalDetail>Status} === 'REJECTED' ? 'Rejected' : ${approvalDetail>Status} }"
-              state="{= ${approvalDetail>Status} === 'A' || ${approvalDetail>Status} === 'APPROVED' ? 'Success' : ${approvalDetail>Status} === 'R' || ${approvalDetail>Status} === 'REJECTED' || ${approvalDetail>Status} === 'E' || ${approvalDetail>Status} === 'ERROR' ? 'Error' : ${approvalDetail>Status} === 'P' || ${approvalDetail>Status} === 'PENDING' ? 'Warning' : 'Information' }"/>
-            <Button
-              text="View Changes"
-              icon="sap-icon://display"
-              type="Transparent"
-              tooltip="View parsed item changes"
-              class="viewChangesButton"
-              press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemPress"/>
+            <VBox renderType="Bare" class="approvalSpreadsheetCell">
+              <customData>
+                <core:CustomData key="approvalField" value="{approvalDetail>field}" writeToDom="true"/>
+              </customData>
+              <ObjectStatus
+                text="{approvalDetail>text}"
+                state="{approvalDetail>state}"
+                visible="{= ${approvalDetail>kind} === 'status' }"
+                class="approvalSpreadsheetAction"/>
+              <Text
+                text="{approvalDetail>text}"
+                tooltip="{approvalDetail>tooltip}"
+                wrapping="true"
+                visible="{= ${approvalDetail>kind} === 'key' }"
+                class="approvalSpreadsheetKey"/>
+              <Text
+                text="{approvalDetail>text}"
+                tooltip="{approvalDetail>tooltip}"
+                wrapping="true"
+                visible="{= ${approvalDetail>kind} !== 'status' &amp;&amp; ${approvalDetail>kind} !== 'key' }"
+                class="approvalSpreadsheetText"/>
+            </VBox>
           </cells>
         </ColumnListItem>
       </items>
-    </Table>
+      </Table>
+    </ScrollContainer>
   </VBox>
 </core:FragmentDefinition>

@@ -2,35 +2,35 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
   <VBox width="100%" class="auditDetailRoot sapUiSmallMarginTop">
-    <VBox class="auditInfoSection sapUiSmallMarginBottom">
+    <HBox
+      width="100%"
+      renderType="Bare"
+      visible="{auditDetail>/rollbackMessageVisible}"
+      class="auditRollbackNoticeWrap">
+      <MessageStrip
+        type="Success"
+        showIcon="true"
+        showCloseButton="false"
+        text="{auditDetail>/rollbackMessage}"
+        class="auditRollbackNotice"/>
+    </HBox>
+
+    <Panel
+      width="100%"
+      backgroundDesign="Solid"
+      class="auditCardPanel auditInfoCardPanel">
+      <content>
+        <VBox width="100%" class="auditInfoSection">
       <HBox alignItems="Center" wrap="Wrap" renderType="Bare" class="auditInfoHeader">
         <VBox renderType="Bare" class="auditInfoHeading">
-          <Title text="{i18n>auditInfoTitle}" level="H2"/>
-          <Text text="{auditDetail>/auditId}" tooltip="{auditDetail>/auditId}" class="auditInfoHeadingId"/>
+          <Title id="auditInformationTitle" text="{i18n>auditInfoTitle}" level="H2"/>
         </VBox>
         <ToolbarSpacer/>
         <ObjectStatus
           text="{auditDetail>/statusText}"
           state="{auditDetail>/statusState}"
           class="auditInfoHeaderStatus"/>
-        <Button
-          text="{i18n>auditRollbackButton}"
-          icon="sap-icon://undo"
-          type="Emphasized"
-          tooltip="{i18n>auditRollbackTooltip}"
-          visible="{auditDetail>/rollbackAvailable}"
-          enabled="{= ${auditDetail>/rollbackAvailable} &amp;&amp; !${auditDetail>/rollbackBusy} }"
-          busy="{auditDetail>/rollbackBusy}"
-          press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onRollbackPress"/>
       </HBox>
-
-      <MessageStrip
-        type="Success"
-        showIcon="true"
-        showCloseButton="false"
-        text="{auditDetail>/rollbackMessage}"
-        visible="{auditDetail>/rollbackMessageVisible}"
-        class="auditRollbackNotice"/>
 
       <VBox renderType="Bare" class="auditInfoMatrix">
         <HBox alignItems="Start" renderType="Bare" class="auditInfoField auditInfoTableName">
@@ -59,11 +59,11 @@
           <Label text="{i18n>auditInfoChangedAt}" class="auditInfoLabel"/>
           <Text text="{auditDetail>/changedAt}" tooltip="{auditDetail>/changedAt}" wrapping="true" class="auditInfoValue"/>
         </HBox>
-        <HBox alignItems="Start" renderType="Bare" class="auditInfoField auditInfoFieldWide">
-          <Label text="{i18n>auditInfoRecordKey}" class="auditInfoLabel"/>
-          <Text text="{auditDetail>/recordKeyText}" tooltip="{auditDetail>/recordKeyText}" wrapping="true" class="auditInfoValue"/>
-        </HBox>
-        <HBox alignItems="Start" renderType="Bare" class="auditInfoField">
+        <HBox
+          alignItems="Start"
+          renderType="Bare"
+          visible="{auditDetail>/fieldNameVisible}"
+          class="auditInfoField">
           <Label text="{i18n>auditInfoFieldName}" class="auditInfoLabel"/>
           <Text text="{auditDetail>/fieldName}" tooltip="{auditDetail>/fieldName}" wrapping="true" class="auditInfoValue"/>
         </HBox>
@@ -76,12 +76,19 @@
           <Text text="{auditDetail>/rollbackAuditId}" tooltip="{auditDetail>/rollbackAuditId}" wrapping="true" class="auditInfoValue auditInfoCode"/>
         </HBox>
       </VBox>
-    </VBox>
+        </VBox>
+      </content>
+    </Panel>
 
-    <VBox class="auditItemsCard">
+    <Panel
+      width="100%"
+      backgroundDesign="Solid"
+      class="auditCardPanel auditItemsCardPanel">
+      <content>
+        <VBox width="100%" class="auditItemsCard">
       <Toolbar design="Transparent" class="auditItemsToolbar">
         <VBox renderType="Bare">
-          <Title text="{i18n>auditItemsTitle}" level="H3"/>
+          <Title id="auditItemsTitle" text="{i18n>auditItemsTitle}" level="H2"/>
           <Text text="{i18n>auditItemsDescription}" class="auditCardSubtitle"/>
         </VBox>
         <ToolbarSpacer/>
@@ -112,6 +119,7 @@
           sticky="ColumnHeaders"
           showNoData="false"
           alternateRowColors="true"
+          ariaLabelledBy="auditItemsTitle"
           columns="{path: 'auditItems>/columns', templateShareable: false}"
           items="{path: 'auditItems>/tableRows', templateShareable: false}"
           class="auditItemsSpreadsheet">
@@ -125,6 +133,9 @@
               vAlign="Middle"
               cells="{path: 'auditItems>cells', templateShareable: false}"
               class="auditItemsRow">
+              <customData>
+                <core:CustomData key="action" value="{auditItems>actionKey}" writeToDom="true"/>
+              </customData>
               <cells>
                 <VBox renderType="Bare" class="auditSpreadsheetCell">
                   <ObjectStatus
@@ -136,7 +147,13 @@
                     text="{auditItems>text}"
                     tooltip="{auditItems>tooltip}"
                     wrapping="true"
-                    visible="{= ${auditItems>kind} !== 'status' }"
+                    visible="{= ${auditItems>kind} === 'key' }"
+                    class="auditSpreadsheetKey"/>
+                  <Text
+                    text="{auditItems>text}"
+                    tooltip="{auditItems>tooltip}"
+                    wrapping="true"
+                    visible="{= ${auditItems>kind} !== 'status' &amp;&amp; ${auditItems>kind} !== 'key' }"
                     class="auditSpreadsheetText"/>
                 </VBox>
               </cells>
@@ -156,6 +173,8 @@
         text="{auditItems>/messageText}"
         visible="{auditItems>/messageVisible}"
         class="sapUiSmallMarginTop"/>
-    </VBox>
+        </VBox>
+      </content>
+    </Panel>
   </VBox>
 </core:FragmentDefinition>

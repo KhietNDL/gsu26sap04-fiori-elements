@@ -4,6 +4,76 @@
   width: 100%;
 }
 
+.auditDetailRoot {
+  gap: 1rem;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sapUxAPObjectPageSubSection:has(.auditDetailRoot),
+.sapUxAPObjectPageSubSection:has(.auditDetailRoot) .sapUxAPBlockContainer {
+  background: transparent;
+}
+
+/* Keep the technical sections in the Object Page layout so its anchor bar is
+   rendered, but hide their buttons/content. This places "Audit Details" in
+   the same upper navigation row as "Approval Details". */
+.auditGeneratedSectionHidden {
+  display: none !important;
+}
+
+.sapUxAPObjectPageSection:has(.auditDetailRoot) > .sapUxAPObjectPageSectionHeader {
+  display: none !important;
+}
+
+/* Audit has a single user-facing section. Present its anchor as a static
+   section label, matching Approval, instead of a clickable selected tab. */
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton {
+  pointer-events: none;
+  cursor: default;
+}
+
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton .sapMBtnInner,
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton.sapUxAPAnchorBarButtonSelected .sapMBtnInner {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton .sapMBtnContent,
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton.sapUxAPAnchorBarButtonSelected .sapMBtnContent {
+  color: var(--sapContent_LabelColor) !important;
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  font-weight: 700;
+}
+
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton::after,
+.sapUxAPAnchorBar .sapUxAPAnchorBarButton.sapUxAPAnchorBarButtonSelected::after {
+  display: none !important;
+  border: 0 !important;
+}
+
+.auditCardPanel.sapMPanel {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--sapList_BorderColor);
+  border-bottom: 1px solid var(--sapList_BorderColor) !important;
+  border-radius: 0.75rem;
+  background: var(--sapGroup_ContentBackground);
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.auditCardPanel.sapMPanel > .sapMPanelContent {
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: var(--sapGroup_ContentBackground);
+  overflow: hidden;
+}
+
 .auditHeaderInformation {
   gap: 1rem;
 }
@@ -18,25 +88,38 @@
   box-sizing: border-box;
   width: 100%;
   padding: 1rem;
-  border: 1px solid var(--sapList_BorderColor);
-  border-radius: var(--sapElement_BorderCornerRadius);
-  background: var(--sapGroup_ContentBackground);
-  box-shadow: var(--sapContent_Shadow0);
+  border-radius: inherit;
+  background: transparent;
 }
 
 .auditInfoSection {
   box-sizing: border-box;
   width: 100%;
   padding: 1rem;
-  border: 1px solid var(--sapList_BorderColor);
-  border-radius: var(--sapElement_BorderCornerRadius);
-  background: var(--sapGroup_ContentBackground);
+  border-radius: inherit;
+  background: transparent;
 }
 
 .auditInfoHeader {
   gap: 1rem;
-  padding-bottom: 0.75rem;
+  min-height: 2.75rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--sapList_BorderColor);
+}
+
+.auditInfoHeading {
+  min-width: 0;
+}
+
+.auditRollbackNoticeWrap {
+  margin: 0;
+}
+
+.auditRollbackNotice.sapMMsgStrip {
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  max-width: 100% !important;
 }
 
 .auditCardSubtitle {
@@ -53,32 +136,38 @@
 
 .auditInfoMatrix {
   display: grid;
-  grid-template-columns: minmax(18rem, 2fr) repeat(4, minmax(9rem, 1fr));
-  column-gap: 1.25rem;
-  row-gap: 0.75rem;
-  padding-top: 0.875rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2rem;
+  row-gap: 1rem;
+  padding-top: 1rem;
 }
 
 .auditInfoField {
   box-sizing: border-box;
   min-width: 0;
-  padding-right: 1rem;
-  border-right: 1px solid var(--sapList_BorderColor);
+  gap: 1rem;
 }
 
-.auditInfoField:last-child {
-  padding-right: 0;
-  border-right: 0;
+.auditInfoLabel.sapMLabel {
+  box-sizing: border-box;
+  flex: 0 0 8.5rem;
+  padding-top: 0.125rem;
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .auditInfoFieldWide {
   min-width: 0;
+  grid-column: 1 / -1;
 }
 
 .auditInfoValue,
 .auditInfoValue .sapMObjStatusText {
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 100%;
-  padding-top: 0.125rem;
   overflow-wrap: anywhere;
   white-space: normal;
   word-break: break-word;
@@ -104,9 +193,10 @@
 
 .auditItemsToolbar.sapMTB {
   min-height: 3rem;
-  padding-right: 0;
-  padding-left: 0;
+  margin-bottom: 0.875rem;
+  padding: 0 0 0.75rem 0;
   border: 0;
+  border-bottom: 1px solid var(--sapList_BorderColor);
   background: transparent;
 }
 
@@ -131,12 +221,14 @@
 }
 
 .auditItemsSpreadsheet .sapMListTbl {
+  border-spacing: 0;
+  border-collapse: separate;
   table-layout: fixed;
 }
 
 .auditItemsSpreadsheet .sapMListTblHeaderCell {
   background: var(--sapList_HeaderBackground);
-  border-bottom: 1px solid var(--sapList_BorderColor);
+  border-bottom: 2px solid var(--sapList_BorderColor);
 }
 
 .auditItemsSpreadsheet .sapMListTblCell {
@@ -148,7 +240,17 @@
   min-width: 0;
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
+  border-right: 1px solid var(--sapList_BorderColor);
   vertical-align: middle;
+}
+
+.auditItemsSpreadsheet .sapMListTblCell:last-child,
+.auditItemsSpreadsheet .sapMListTblHeaderCell:last-child {
+  border-right: 0;
+}
+
+.auditItemsSpreadsheet .sapMListTblRow:last-child > .sapMListTblCell {
+  border-bottom: 0;
 }
 
 .auditItemsHeaderText {
@@ -160,6 +262,46 @@
 
 .auditItemsRow:hover .sapMListTblCell {
   background: var(--sapList_Hover_Background);
+}
+
+.auditItemsRow[data-action="C"] > .sapMListTblCell {
+  background: var(--sapSuccessBackground);
+}
+
+.auditItemsRow[data-action="U"] > .sapMListTblCell {
+  background: var(--sapWarningBackground);
+}
+
+.auditItemsRow[data-action="D"] > .sapMListTblCell {
+  background: var(--sapErrorBackground);
+}
+
+.auditItemsRow[data-action="R"] > .sapMListTblCell {
+  background: var(--sapInformationBackground);
+}
+
+.auditItemsRow[data-action="B"] > .sapMListTblCell {
+  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+}
+
+.auditItemsRow[data-action="C"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapPositiveColor);
+}
+
+.auditItemsRow[data-action="U"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapCriticalColor);
+}
+
+.auditItemsRow[data-action="D"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapNegativeColor);
+}
+
+.auditItemsRow[data-action="R"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapInformativeColor);
+}
+
+.auditItemsRow[data-action="B"] > .sapMListTblCell:first-child {
+  box-shadow: inset 0.25rem 0 0 var(--sapIndicationColor_6);
 }
 
 .auditSpreadsheetCell {
@@ -179,6 +321,13 @@
   line-height: 1.35;
 }
 
+.auditSpreadsheetKey {
+  color: var(--sapTextColor);
+  font-family: var(--sapFontFamily);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .auditSpreadsheetAction.sapMObjStatus {
   display: inline-block;
   max-width: 100%;
@@ -186,6 +335,30 @@
   border: 1px solid var(--sapList_BorderColor);
   border-radius: var(--sapButton_BorderCornerRadius);
   background: var(--sapList_HeaderBackground);
+}
+
+.auditSpreadsheetAction.sapMObjStatusSuccess,
+.auditBulkOperationBadge.sapMObjStatusSuccess {
+  border-color: var(--sapPositiveColor);
+  background: var(--sapSuccessBackground);
+}
+
+.auditSpreadsheetAction.sapMObjStatusWarning,
+.auditBulkOperationBadge.sapMObjStatusWarning {
+  border-color: var(--sapCriticalColor);
+  background: var(--sapWarningBackground);
+}
+
+.auditSpreadsheetAction.sapMObjStatusError,
+.auditBulkOperationBadge.sapMObjStatusError {
+  border-color: var(--sapNegativeColor);
+  background: var(--sapErrorBackground);
+}
+
+.auditSpreadsheetAction.sapMObjStatusInformation,
+.auditBulkOperationBadge.sapMObjStatusInformation {
+  border-color: var(--sapInformativeColor);
+  background: var(--sapInformationBackground);
 }
 
 .auditListReportTable .sapUiTableCell .sapMText,
@@ -204,6 +377,44 @@
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
+}
+
+.auditOperationBadge.sapMObjStatus {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  background: var(--sapList_HeaderBackground);
+}
+
+.auditOperationBadge.sapMObjStatusSuccess {
+  border-color: var(--sapPositiveColor);
+  background: var(--sapSuccessBackground);
+}
+
+.auditOperationBadge.sapMObjStatusWarning {
+  border-color: var(--sapCriticalColor);
+  background: var(--sapWarningBackground);
+}
+
+.auditOperationBadge.sapMObjStatusError {
+  border-color: var(--sapNegativeColor);
+  background: var(--sapErrorBackground);
+}
+
+.auditOperationBadge.sapMObjStatusInformation {
+  border-color: var(--sapInformativeColor);
+  background: var(--sapInformationBackground);
+}
+
+.auditOperationBadge[data-action="B"] {
+  border-color: var(--sapIndicationColor_6);
+  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+}
+
+.auditOperationBadge[data-action="B"] .sapMObjStatusText,
+.auditOperationBadge[data-action="B"] .sapUiIcon {
+  color: var(--sapIndicationColor_6);
 }
 
 .auditIdMonospace {
@@ -246,7 +457,22 @@
   border-radius: var(--sapButton_BorderCornerRadius);
 }
 
+.auditBulkOperationBadge[data-action="B"] {
+  border-color: var(--sapIndicationColor_6);
+  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+}
+
+.auditBulkOperationBadge[data-action="B"] .sapMObjStatusText,
+.auditBulkOperationBadge[data-action="B"] .sapUiIcon {
+  color: var(--sapIndicationColor_6);
+}
+
 @media (max-width: 48rem) {
+  .auditDetailRoot {
+    gap: 0.75rem;
+    padding: 0;
+  }
+
   .auditItemsCard,
   .auditBulkDialogContent {
     padding: 0.75rem;
@@ -258,37 +484,23 @@
 
   .auditInfoMatrix {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.75rem;
   }
 
   .auditInfoField {
-    padding: 0.75rem 0 0 0;
-    border-top: 1px solid var(--sapList_BorderColor);
-    border-right: 0;
+    gap: 0.5rem;
   }
 
-  .auditInfoField:first-child {
-    padding-top: 0;
-    border-top: 0;
+  .auditInfoFieldWide {
+    grid-column: auto;
+  }
+
+  .auditInfoLabel.sapMLabel {
+    flex-basis: 7.25rem;
   }
 
   .auditBulkDialogSummaryCell,
   .auditBulkDialogSummaryCell.auditBulkDialogAuditId {
     flex: 1 1 45%;
-  }
-}
-
-@media (min-width: 48.0625rem) and (max-width: 75rem) {
-  .auditInfoMatrix {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .auditInfoField:nth-child(even) {
-    padding-right: 0;
-    border-right: 0;
-  }
-
-  .auditInfoField:nth-child(n+3) {
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--sapList_BorderColor);
   }
 }

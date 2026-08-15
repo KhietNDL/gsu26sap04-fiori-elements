@@ -55,6 +55,7 @@ sap.ui.define([
         auditId: "—",
         tableName: "—",
         fieldName: "—",
+        fieldNameVisible: false,
         recordKeyText: "—",
         changedBy: "—",
         changedAt: "—",
@@ -124,6 +125,9 @@ sap.ui.define([
         changedAt: "—",
         detailsText: "0 records · 0 fields",
         operationText: "Bulk Operation",
+        operationState: "None",
+        operationIcon: "sap-icon://multi-select",
+        operationKey: "B",
         actionText: "Bulk",
         actionState: "None",
         summaryText: "",
@@ -486,7 +490,6 @@ sap.ui.define([
     return [
       { label: "Audit ID", value: AuditFormatter.formatAuditValue(values.AuditId), state: "None" },
       { label: "Table Name", value: AuditFormatter.formatAuditValue(values.TableName), state: "None" },
-      { label: "Record Key", value: AuditFormatter.formatRecordKeyText(values.RecordKey), state: "None" },
       { label: "Field Name", value: AuditFormatter.formatAuditValue(values.FieldName), state: "None" },
       {
         label: "Operation",
@@ -602,6 +605,7 @@ sap.ui.define([
     var oldColumnHeader = baseActionText === "Delete" ? "Previous Value" : "Before";
     var newColumnHeader = baseActionText === "Create" ? "New Value" : "After";
     var rollbackAuditId = AuditFormatter.formatAuditValue(values.RollbackAuditId);
+    var fieldName = AuditFormatter.formatAuditValue(values.FieldName);
     var rolledBack = baseActionText === "Rollback" || rollbackAuditId !== "—";
     var rollbackAvailable = !rolledBack && AuditFormatter.isRollbackAvailable(operationControl);
     var rollbackMessage = baseActionText === "Rollback" ?
@@ -614,7 +618,8 @@ sap.ui.define([
       subtitle: title + " · " + actionText,
       auditId: AuditFormatter.formatAuditValue(values.AuditId),
       tableName: title,
-      fieldName: AuditFormatter.formatAuditValue(values.FieldName),
+      fieldName: fieldName,
+      fieldNameVisible: fieldName !== "—",
       recordKeyText: AuditFormatter.formatRecordKeyText(values.RecordKey),
       changedBy: AuditFormatter.formatAuditValue(values.ChangedBy),
       changedAt: AuditFormatter.formatTimestamp(values.ChangedAt),
@@ -678,19 +683,31 @@ sap.ui.define([
   }
 
   function getBulkDialogActionLabel(actionText) {
-    if (actionText === "Create") {
-      return "Created";
-    }
-    if (actionText === "Update") {
-      return "Updated";
-    }
-    if (actionText === "Delete") {
-      return "Deleted";
+    return AuditFormatter.formatExecutedActionText(actionText);
+  }
+
+  function getAuditActionKey(actionText) {
+    return AuditFormatter.formatActionKey(actionText) || "B";
+  }
+
+  function getBulkDialogOperationText(actionText) {
+    if (actionText === "Bulk") {
+      return "Bulk Operation";
     }
     if (actionText === "Rollback") {
-      return "Rolled back";
+      return "Rollback";
     }
-    return actionText || "—";
+    return getBulkDialogActionLabel(actionText);
+  }
+
+  function getBulkDialogOperationIcon(actionText) {
+    var actionKey = getAuditActionKey(actionText);
+
+    if (actionKey === "C") { return "sap-icon://add"; }
+    if (actionKey === "U") { return "sap-icon://edit"; }
+    if (actionKey === "D") { return "sap-icon://delete"; }
+    if (actionKey === "R") { return "sap-icon://undo"; }
+    return "sap-icon://group-2";
   }
 
   function buildBulkDialogData(parentValues, rawItems) {
@@ -700,7 +717,9 @@ sap.ui.define([
       viewModel.recordKeyVisible = viewModel.recordKeyRows.length > 0;
       return viewModel;
     });
-    var actionText = AuditFormatter.getBulkActionText(parentValues.ActionType, rawItems || []);
+    var parentActionText = AuditFormatter.formatActionText(parentValues.ActionType);
+    var actionText = parentActionText === "Rollback" ?
+      "Rollback" : AuditFormatter.getBulkActionText(parentValues.ActionType, rawItems || []);
     var countText = AuditFormatter.getBulkCountText(parentValues.OldValue, parentValues.NewValue);
     var emptyText = "No child audit items were found for this bulk summary. Summary: " +
       AuditFormatter.formatBulkRecordKeyText(parentValues.RecordKey, parentValues.OldValue, parentValues.NewValue) +
@@ -715,7 +734,10 @@ sap.ui.define([
       changedBy: AuditFormatter.formatAuditValue(parentValues.ChangedBy),
       changedAt: formatBulkDialogTimestamp(parentValues.ChangedAt),
       detailsText: formatCount(items.length, "record") + " · " + formatCount(fieldCount, "field"),
-      operationText: "Bulk Operation",
+      operationText: getBulkDialogOperationText(actionText),
+      operationState: AuditFormatter.formatActionState(actionText),
+      operationIcon: getBulkDialogOperationIcon(actionText),
+      operationKey: getAuditActionKey(actionText),
       actionText: actionText,
       actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(actionText),
       summaryText: countText,
@@ -813,7 +835,12 @@ sap.ui.define([
 
     var oldValue = AuditFormatter.formatAuditValue(rawOldValue);
     var newValue = AuditFormatter.formatAuditValue(rawNewValue);
-    var fieldKey = String(values.FieldName || "VALUE").trim() || "VALUE";
+    var fieldKey = String(values.FieldName || "").trim();
+
+    if (!fieldKey && oldValue === "—" && newValue === "—") {
+      return [];
+    }
+    fieldKey = fieldKey || "VALUE";
 
     if (actionText === "Update" && oldValue === newValue) {
       return [];
@@ -872,7 +899,19 @@ sap.ui.define([
     var sourceItems = items || [];
     var fieldColumns = [];
     var fieldKeys = Object.create(null);
+    var recordKeyColumns = [];
+    var recordKeyKeys = Object.create(null);
     var operationControl = parentValues.__OperationControl;
+
+    function normalizeColumnKey(value) {
+      return String(value || "RECORD_KEY").trim().toUpperCase();
+    }
+
+    function formatRecordKeyColumnLabel(value) {
+      var label = normalizeColumnKey(value);
+
+      return label === "RECORDKEY" ? "RECORD KEY" : label;
+    }
 
     if (!sourceItems.length && !AuditFormatter.isBulkRecord(parentValues)) {
       sourceItems = [parentValues];
@@ -884,10 +923,16 @@ sap.ui.define([
       var changes = buildSpreadsheetChanges(itemValues);
       var recordKey = formatSpreadsheetRecordKey(itemView.recordKeyRows, itemValues.RecordKey || itemView.recordKeyText);
 
-      changes.forEach(function (change) {
-        if (!fieldKeys[change.key]) {
-          fieldKeys[change.key] = true;
-          fieldColumns.push({ key: change.key, label: change.label, width: "14rem" });
+      itemView.recordKeyRows.forEach(function (recordKeyRow) {
+        var key = normalizeColumnKey(recordKeyRow.key || recordKeyRow.field);
+
+        if (!recordKeyKeys[key]) {
+          recordKeyKeys[key] = true;
+          recordKeyColumns.push({
+            key: key,
+            label: formatRecordKeyColumnLabel(recordKeyRow.key || recordKeyRow.field),
+            width: key === "ENTITY_ID" ? "22rem" : "14rem"
+          });
         }
       });
 
@@ -925,25 +970,40 @@ sap.ui.define([
       });
     });
 
+    itemRows.forEach(function (itemRow) {
+      itemRow.spreadsheetChanges.forEach(function (change) {
+        var normalizedKey = normalizeColumnKey(change.key);
+
+        if (!recordKeyKeys[normalizedKey] && !fieldKeys[normalizedKey]) {
+          fieldKeys[normalizedKey] = true;
+          fieldColumns.push({ key: normalizedKey, label: change.label, width: "14rem" });
+        }
+      });
+    });
+
     var columns = [
-      { key: "__item", label: "Item", width: "5rem" },
-      { key: "__action", label: "Action", width: "9rem" },
-      { key: "__record", label: "Record Keys", width: "18rem" }
-    ].concat(fieldColumns);
+      { key: "__action", label: "Action", width: "9rem" }
+    ].concat(recordKeyColumns, fieldColumns);
 
     var tableRows = itemRows.map(function (itemRow) {
       var changeMap = Object.create(null);
+      var recordKeyMap = Object.create(null);
 
       itemRow.spreadsheetChanges.forEach(function (change) {
-        changeMap[change.key] = change;
+        changeMap[normalizeColumnKey(change.key)] = change;
+      });
+      itemRow.recordKeyRows.forEach(function (recordKeyRow) {
+        recordKeyMap[normalizeColumnKey(recordKeyRow.key || recordKeyRow.field)] =
+          recordKeyRow.value === null || recordKeyRow.value === undefined ? "" : String(recordKeyRow.value);
       });
 
       return {
+        actionKey: getAuditActionKey(itemRow.actionText),
         cells: [
-          createSpreadsheetCell("#" + itemRow.item),
-          createSpreadsheetCell(getBulkDialogActionLabel(itemRow.actionText), "status", itemRow.actionState),
-          createSpreadsheetCell(itemRow.recordKey)
-        ].concat(fieldColumns.map(function (column) {
+          createSpreadsheetCell(getBulkDialogActionLabel(itemRow.actionText), "status", itemRow.actionState)
+        ].concat(recordKeyColumns.map(function (column) {
+          return createSpreadsheetCell(recordKeyMap[column.key] || "—", "key");
+        }), fieldColumns.map(function (column) {
           var change = changeMap[column.key];
           return createSpreadsheetCell(change ? change.text : "—");
         }))
@@ -956,7 +1016,10 @@ sap.ui.define([
       itemRows: itemRows,
       columns: columns,
       tableRows: tableRows,
-      tableWidth: fieldColumns.length > 3 ? (32 + fieldColumns.length * 14) + "rem" : "100%",
+      tableWidth: recordKeyColumns.length + fieldColumns.length > 4 ?
+        (9 + recordKeyColumns.reduce(function (total, column) {
+          return total + (column.key === "ENTITY_ID" ? 22 : 14);
+        }, 0) + fieldColumns.length * 14) + "rem" : "100%",
       itemSummary: formatCount(itemRows.length, "record") + " · " + formatCount(fieldColumns.length, "field"),
       affectedRecordCount: itemRows.length,
       changedFieldCount: fieldColumns.length,
@@ -1052,6 +1115,7 @@ sap.ui.define([
     var model = view && view.getModel && view.getModel("auditDetail");
     var infoRows;
     var found = false;
+    var formattedRollbackAuditId = AuditFormatter.formatAuditValue(rollbackAuditId);
 
     if (!model || !rollbackAuditId) {
       return;
@@ -1062,7 +1126,7 @@ sap.ui.define([
         found = true;
         return {
           label: row.label,
-          value: AuditFormatter.formatAuditValue(rollbackAuditId),
+          value: formattedRollbackAuditId,
           state: row.state || "None"
         };
       }
@@ -1072,13 +1136,13 @@ sap.ui.define([
     if (!found) {
       infoRows.push({
         label: "Rollback Audit ID",
-        value: AuditFormatter.formatAuditValue(rollbackAuditId),
+        value: formattedRollbackAuditId,
         state: "None"
       });
     }
 
     model.setProperty("/infoRows", infoRows);
-    model.setProperty("/rollbackAuditId", AuditFormatter.formatAuditValue(rollbackAuditId));
+    model.setProperty("/rollbackAuditId", formattedRollbackAuditId);
     model.setProperty("/rollbackAvailable", false);
     model.setProperty("/rolledBack", true);
     model.setProperty("/statusText", "Rolled back");
@@ -1086,7 +1150,8 @@ sap.ui.define([
     model.setProperty("/rollbackText", "Already rolled back");
     model.setProperty("/rollbackState", "Success");
     model.setProperty("/rollbackMessageVisible", true);
-    model.setProperty("/rollbackMessage", "Rollback completed for this audit record.");
+    model.setProperty("/rollbackMessage", "This audit has already been rolled back" +
+      (formattedRollbackAuditId === "—" ? "." : ". Rollback Audit ID: " + formattedRollbackAuditId + "."));
   }
 
   function loadAuditDetailModels(view, context, source, overrideValues) {
@@ -1185,11 +1250,12 @@ sap.ui.define([
     }
 
     view.findAggregatedObjects(true, function (control) {
-      var title = control && control.getTitle && control.getTitle();
+      var title = control && control.getTitle && control.getTitle() ||
+        control && control.getText && control.getText();
 
       if (title === "Audit Detail" || title === "Audit Items") {
-        if (control.setVisible) {
-          control.setVisible(false);
+        if (control.addStyleClass) {
+          control.addStyleClass("auditGeneratedSectionHidden");
         }
       }
 
@@ -1227,6 +1293,40 @@ sap.ui.define([
     }
 
     return Promise.all(promises);
+  }
+
+  function attachHeaderRollbackConfirmation(extension, view) {
+    if (!view || !view.findAggregatedObjects) {
+      return;
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      var domRef;
+
+      if (!control || !control.isA || !control.isA("sap.m.Button") ||
+          String(control.getText && control.getText() || "").trim() !== "Rollback" ||
+          control.data("auditRollbackConfirmAttached")) {
+        return false;
+      }
+
+      domRef = control.getDomRef && control.getDomRef();
+      if (!domRef || !domRef.addEventListener) {
+        return false;
+      }
+
+      control.data("auditRollbackConfirmAttached", true);
+      domRef.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        extension.onRollbackPress({
+          getSource: function () {
+            return control;
+          }
+        });
+      }, true);
+
+      return false;
+    });
   }
 
   function getRollbackResultObject(actionBinding) {
@@ -1353,7 +1453,11 @@ sap.ui.define([
 
           setTimeout(function () {
             hideGeneratedAuditSections(view);
-          }, 0);
+            attachHeaderRollbackConfirmation(this, view);
+            setTimeout(function () {
+              attachHeaderRollbackConfirmation(this, view);
+            }.bind(this), 250);
+          }.bind(this), 0);
         }
       },
 
@@ -1365,7 +1469,11 @@ sap.ui.define([
             updateAuditModel(view, context || getObjectPageContext(view));
             setTimeout(function () {
               hideGeneratedAuditSections(view);
-            }, 0);
+              attachHeaderRollbackConfirmation(this, view);
+              setTimeout(function () {
+                attachHeaderRollbackConfirmation(this, view);
+              }.bind(this), 250);
+            }.bind(this), 0);
           }
         }
       }

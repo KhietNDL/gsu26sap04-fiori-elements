@@ -161,28 +161,50 @@ sap.ui.define([], function () {
 
   function formatActionText(value) {
     var action = String(value || "").trim().toUpperCase();
+    var token = action.split(/\s+/)[0];
 
-    if (action === "C" || action === "CREATE" || action === "01") {
+    if (token === "C" || token === "CREATE" || token === "CREATED" || token === "01") {
       return "Create";
     }
 
-    if (action === "U" || action === "UPDATE" || action === "02") {
+    if (token === "U" || token === "UPDATE" || token === "UPDATED" || token === "02") {
       return "Update";
     }
 
-    if (action === "D" || action === "DELETE" || action === "03") {
+    if (token === "D" || token === "DELETE" || token === "DELETED" || token === "03") {
       return "Delete";
     }
 
-    if (action === "R" || action === "ROLLBACK") {
+    if (token === "R" || token === "ROLLBACK" || action === "ROLLED BACK") {
       return "Rollback";
     }
 
-    if (action === "BULK" || action === "BULK CRUD OPERATION") {
+    if (token === "B" || token === "BULK" || action === "BULK CRUD OPERATION" || action.indexOf(",") >= 0) {
       return "Bulk";
     }
 
     return value === null || value === undefined || value === "" ? "—" : String(value);
+  }
+
+  function formatExecutedActionText(value) {
+    var action = formatActionText(value);
+
+    if (action === "Create") { return "Created"; }
+    if (action === "Update") { return "Updated"; }
+    if (action === "Delete") { return "Deleted"; }
+    if (action === "Rollback") { return "Rolled back"; }
+    return action;
+  }
+
+  function formatActionKey(value) {
+    var action = formatActionText(value);
+
+    if (action === "Create") { return "C"; }
+    if (action === "Update") { return "U"; }
+    if (action === "Delete") { return "D"; }
+    if (action === "Rollback") { return "R"; }
+    if (action === "Bulk") { return "B"; }
+    return "";
   }
 
   function formatActionState(value) {
@@ -193,7 +215,7 @@ sap.ui.define([], function () {
     }
 
     if (action === "Update") {
-      return "Information";
+      return "Warning";
     }
 
     if (action === "Delete") {
@@ -201,7 +223,7 @@ sap.ui.define([], function () {
     }
 
     if (action === "Rollback") {
-      return "Warning";
+      return "Information";
     }
 
     if (action === "Bulk") {
@@ -481,6 +503,13 @@ sap.ui.define([], function () {
   function formatOperationText(actionType, recordKey, oldValue, newValue) {
     var rawAction = String(actionType || "").trim().toUpperCase();
     var action = rawAction.split(/\s+/)[0];
+
+    // Rollback is the parent operation even when its summary contains several
+    // AuditItems. "Bulk" describes the item count, not the operation semantics.
+    if (action === "R" || action === "ROLLBACK") {
+      return "Rollback";
+    }
+
     var count = getBulkItemCount(oldValue, newValue);
 
     // If bulk audit explicitly specifies 1 item, render actual action (Create, Update, Delete, Rollback) instead of Bulk
@@ -719,7 +748,7 @@ sap.ui.define([], function () {
   }
 
   function formatAuditListStatusText(actionType, rollbackAuditId) {
-    if (String(actionType || "").trim().toUpperCase() === "R") {
+    if (formatActionKey(actionType) === "R") {
       return "Rolled back";
     }
 
@@ -728,6 +757,10 @@ sap.ui.define([], function () {
 
   function formatAuditListStatusState(actionType, rollbackAuditId) {
     return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back" ? "Success" : "Information";
+  }
+
+  function formatOperationKey(actionType, recordKey, oldValue, newValue) {
+    return formatActionKey(formatOperationText(actionType, recordKey, oldValue, newValue));
   }
 
   function isRolledBack(actionType, rollbackAuditId) {
@@ -770,6 +803,8 @@ sap.ui.define([], function () {
 
   var AuditFormatter = {
     formatActionText: formatActionText,
+    formatExecutedActionText: formatExecutedActionText,
+    formatActionKey: formatActionKey,
     formatActionState: formatActionState,
     formatAuditValue: formatAuditValue,
     formatTimestamp: formatTimestamp,
@@ -779,6 +814,7 @@ sap.ui.define([], function () {
     formatRowActionText: formatRowActionText,
     formatOperationText: formatOperationText,
     formatOperationState: formatOperationState,
+    formatOperationKey: formatOperationKey,
     formatOperationIcon: formatOperationIcon,
     formatShortAuditId: formatShortAuditId,
     formatUserInitials: formatUserInitials,
@@ -808,6 +844,8 @@ sap.ui.define([], function () {
       safeParseObject: safeParseObject,
       parseAuditMap: parseAuditMap,
       formatActionText: formatActionText,
+      formatExecutedActionText: formatExecutedActionText,
+      formatActionKey: formatActionKey,
       formatActionState: formatActionState,
       formatAuditValue: formatAuditValue,
       formatTimestamp: formatTimestamp,
@@ -817,6 +855,7 @@ sap.ui.define([], function () {
       formatRowActionText: formatRowActionText,
       formatOperationText: formatOperationText,
       formatOperationState: formatOperationState,
+      formatOperationKey: formatOperationKey,
       formatRowActionState: formatRowActionState,
       isBulkVisible: isBulkVisible,
       getRecordKeyRows: getRecordKeyRows,
