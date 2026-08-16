@@ -104,13 +104,18 @@ sap.ui.define([
         operationState: "None",
         statusText: "-",
         statusState: "None",
+        statusNoticeVisible: false,
+        statusNoticeType: "Information",
+        statusNoticeText: "",
         tableName: "-",
         requestInfoRows: [],
+        recordKeyText: "-",
         recordKeyRows: [],
         recordKeyVisible: false,
         changeRows: [],
         changeTitle: "Change Details",
         changeColumnCount: 3,
+        changeTableHtml: "",
         showOldColumn: false,
         showNewColumn: true,
         oldColumnHeader: "Old Value",
@@ -126,6 +131,9 @@ sap.ui.define([
         commentDebugRows: [],
         bulkVisible: false,
         bulkItems: [],
+        bulkColumns: [],
+        bulkTableRows: [],
+        bulkTableWidth: "100%",
         bulkSummaryText: "",
         bulkSummaryVisible: false,
         currentApprovalId: "",
@@ -344,6 +352,15 @@ sap.ui.define([
     return map;
   }
 
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function normalizeCompareValue(value) {
     if (value === null || value === undefined) {
       return "";
@@ -414,6 +431,63 @@ sap.ui.define([
 
       return row.oldValue !== "—" || row.newValue !== "—";
     });
+  }
+
+  function buildApprovalChangeTableHtml(changeRows, actionText, oldColumnHeader, newColumnHeader) {
+    var showOldColumn = actionText === "Update" || actionText === "Delete";
+    var showNewColumn = actionText === "Create" || actionText === "Update";
+    var rows = [];
+
+    if (!changeRows || !changeRows.length) {
+      return "";
+    }
+
+    if (showOldColumn) {
+      rows.push({
+        label: oldColumnHeader || "Old Value",
+        values: changeRows.map(function (row) {
+          return row && row.oldValue || "—";
+        })
+      });
+    }
+
+    if (showNewColumn) {
+      rows.push({
+        label: newColumnHeader || "New Value",
+        values: changeRows.map(function (row) {
+          return row && row.newValue || "—";
+        })
+      });
+    }
+
+    if (!rows.length) {
+      return "";
+    }
+
+    return [
+      "<div class=\"approvalExcelHtmlScroller\">",
+      "<table class=\"approvalExcelHtmlTable\">",
+      "<thead><tr>",
+      "<th>Value Type</th>",
+      changeRows.map(function (row) {
+        return "<th>" + escapeHtml(row && row.field || "—") + "</th>";
+      }).join(""),
+      "</tr></thead>",
+      "<tbody>",
+      rows.map(function (row) {
+        return [
+          "<tr>",
+          "<td class=\"approvalExcelValueType\">", escapeHtml(row.label), "</td>",
+          row.values.map(function (value) {
+            return "<td>" + escapeHtml(value) + "</td>";
+          }).join(""),
+          "</tr>"
+        ].join("");
+      }).join(""),
+      "</tbody>",
+      "</table>",
+      "</div>"
+    ].join("");
   }
 
   function formatTechnicalJson(rawJson) {
@@ -765,6 +839,20 @@ sap.ui.define([
     return captured.remarks;
   }
 
+  function notifyApprovalActionCompleted(actionName) {
+    var handlers = typeof window !== "undefined" && window.__ztblApprovalActionRefreshHandlers;
+
+    if (!handlers || !handlers.length) {
+      return;
+    }
+
+    handlers.slice().forEach(function (handler) {
+      if (typeof handler === "function") {
+        handler(actionName);
+      }
+    });
+  }
+
   function patchApprovalActionPayloads() {
     var originalOpen;
     var originalSend;
@@ -786,12 +874,52 @@ sap.ui.define([
       var actionName = getApprovalActionFromRequest(this.__ztblApprovalActionUrl, body);
       var remarks = getCapturedRemarksForAction(actionName);
 
+      if (actionName && this.addEventListener) {
+        this.addEventListener("loadend", function () {
+          var status = Number(this.status || 0);
+
+          if (status >= 200 && status < 300) {
+            notifyApprovalActionCompleted(actionName);
+          }
+        });
+      }
+
       if (!actionName || remarks === null) {
         return originalSend.apply(this, arguments);
       }
 
       return originalSend.call(this, injectRemarksIntoRequestBody(body, actionName, remarks));
     };
+  }
+
+  function refreshApprovalAfterAction(owner) {
+    var view = owner && owner.base && owner.base.getView && owner.base.getView();
+    var dataModel = view && view.getModel && view.getModel();
+    var binding = view && view.getElementBinding && view.getElementBinding();
+    var context = getObjectPageContext(view);
+
+    if (!view) {
+      return;
+    }
+
+    if (binding && binding.refresh) {
+      binding.refresh();
+    } else if (context && context.refresh) {
+      context.refresh();
+    } else if (dataModel && dataModel.refresh) {
+      dataModel.refresh();
+    }
+
+    if (typeof setTimeout === "function") {
+      setTimeout(function () {
+        handleApprovalContextChanged(owner, view, getObjectPageContext(view));
+      }, 250);
+      setTimeout(function () {
+        handleApprovalContextChanged(owner, view, getObjectPageContext(view));
+      }, 1000);
+    } else {
+      handleApprovalContextChanged(owner, view, context);
+    }
   }
 
   function registerApprovalActionPayloadFix(owner) {
@@ -802,17 +930,36 @@ sap.ui.define([
     patchApprovalActionPayloads();
     owner._approvalActionPayloadFixAttached = true;
     owner._approvalActionPayloadCapture = captureApprovalActionRemarks;
+    owner._approvalActionRefreshHandler = function () {
+      refreshApprovalAfterAction(owner);
+    };
+    window.__ztblApprovalActionRefreshHandlers = window.__ztblApprovalActionRefreshHandlers || [];
+    window.__ztblApprovalActionRefreshHandlers.push(owner._approvalActionRefreshHandler);
     document.addEventListener("click", owner._approvalActionPayloadCapture, true);
   }
 
   function unregisterApprovalActionPayloadFix(owner) {
+    var handlers;
+    var index;
+
     if (!owner || typeof document === "undefined" || !owner._approvalActionPayloadFixAttached) {
       return;
     }
 
     document.removeEventListener("click", owner._approvalActionPayloadCapture, true);
+    handlers = typeof window !== "undefined" && window.__ztblApprovalActionRefreshHandlers;
+
+    if (handlers && owner._approvalActionRefreshHandler) {
+      index = handlers.indexOf(owner._approvalActionRefreshHandler);
+
+      if (index >= 0) {
+        handlers.splice(index, 1);
+      }
+    }
+
     owner._approvalActionPayloadFixAttached = false;
     owner._approvalActionPayloadCapture = null;
+    owner._approvalActionRefreshHandler = null;
   }
 
   function parseApprovalTimestamp(value) {
@@ -875,9 +1022,9 @@ sap.ui.define([
       { label: "Approval ID", value: values.AprvlId },
       { label: "Table Name", value: values.TableName },
       { label: "Operation", value: actionText, state: actionState, isBulkOperation: actionText === "BULK" },
-      { label: "Status", value: ApprovalFormatter.formatStatusText(values.Status), state: ApprovalFormatter.formatStatusState(values.Status) },
       { label: "Submitted By", value: values.SubmittedBy },
-      { label: "Submitted At", value: formatVietnamTimestamp(values.SubmittedAt) }
+      { label: "Submitted At", value: formatVietnamTimestamp(values.SubmittedAt) },
+      { label: "Status", value: ApprovalFormatter.formatStatusText(values.Status), state: ApprovalFormatter.formatStatusState(values.Status) }
     ];
 
     [
@@ -898,6 +1045,40 @@ sap.ui.define([
         isBulkOperation: !!row.isBulkOperation
       };
     });
+  }
+
+  function buildStatusNotice(status) {
+    var normalized = String(status || "").trim().toUpperCase();
+
+    if (normalized === "A" || normalized === "APPROVED") {
+      return {
+        visible: true,
+        type: "Success",
+        text: "This approval request has been approved."
+      };
+    }
+
+    if (normalized === "R" || normalized === "REJECTED") {
+      return {
+        visible: true,
+        type: "Error",
+        text: "This approval request has been rejected."
+      };
+    }
+
+    if (normalized === "E" || normalized === "ERROR") {
+      return {
+        visible: true,
+        type: "Error",
+        text: "This approval request could not be processed successfully."
+      };
+    }
+
+    return {
+      visible: false,
+      type: "Information",
+      text: ""
+    };
   }
 
   function getChangeTitle(actionText) {
@@ -947,6 +1128,8 @@ sap.ui.define([
       var changeRows = buildApprovalDiff(values.ActionType, values.OldData, values.NewData, values.RecordKey);
       var showOldColumn = changeActionText === "Update" || changeActionText === "Delete";
       var showNewColumn = changeActionText === "Create" || changeActionText === "Update";
+      var oldColumnHeader = changeActionText === "Delete" ? "Previous Value" : "Old Value";
+      var newColumnHeader = "New Value";
       var comment = getCommentValue(values) || "-";
       var commentEmpty = comment === "-";
       var bulkVisible = isBulkValues(values.RecordKey, values.RecordKeyText);
@@ -957,6 +1140,7 @@ sap.ui.define([
       var keepItemsState = bulkVisible && sameBindingPath;
       var itemCount = keepItemsState ? model.getProperty("/itemCount") : undefined;
       var actionText = getRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText, itemCount);
+      var statusNotice = buildStatusNotice(values.Status);
 
       if (initialContextPath && currentContextPath && initialContextPath !== currentContextPath) {
         return;
@@ -971,8 +1155,12 @@ sap.ui.define([
         operationState: getRequestActionState(values.ActionType, values.RecordKey, values.RecordKeyText, itemCount),
         statusText: ApprovalFormatter.formatStatusText(values.Status),
         statusState: ApprovalFormatter.formatStatusState(values.Status),
+        statusNoticeVisible: statusNotice.visible,
+        statusNoticeType: statusNotice.type,
+        statusNoticeText: statusNotice.text,
         tableName: values.TableName || "-",
         requestInfoRows: buildRequestInfoRows(Object.assign({}, values, { ItemCount: itemCount })),
+        recordKeyText: formatRecordKeySummary(values.RecordKey),
         recordKeyRows: recordKeyRows.length ? recordKeyRows : [],
         recordKeyVisible: recordKeyRows.length > 0,
         submittedBy: values.SubmittedBy || "-",
@@ -987,10 +1175,11 @@ sap.ui.define([
         changeRows: changeRows,
         changeTitle: getChangeTitle(changeActionText),
         changeColumnCount: changeActionText === "Update" ? 3 : 2,
+        changeTableHtml: buildApprovalChangeTableHtml(changeRows, changeActionText, oldColumnHeader, newColumnHeader),
         showOldColumn: showOldColumn,
         showNewColumn: showNewColumn,
-        oldColumnHeader: changeActionText === "Delete" ? "Previous Value" : "Old Value",
-        newColumnHeader: "New Value",
+        oldColumnHeader: oldColumnHeader,
+        newColumnHeader: newColumnHeader,
         changeMessage: getChangeMessage(changeActionText, values.TableName, changeRows.length, false),
         technicalRecordKey: formatTechnicalJson(values.RecordKey),
         technicalOldData: formatRawJson(values.OldData),
@@ -1006,6 +1195,9 @@ sap.ui.define([
         itemsLoaded: keepItemsState ? model.getProperty("/itemsLoaded") : false,
         itemCount: keepItemsState ? model.getProperty("/itemCount") : 0,
         bulkItems: keepItemsState ? model.getProperty("/bulkItems") || [] : [],
+        bulkColumns: keepItemsState ? model.getProperty("/bulkColumns") || [] : [],
+        bulkTableRows: keepItemsState ? model.getProperty("/bulkTableRows") || [] : [],
+        bulkTableWidth: keepItemsState ? model.getProperty("/bulkTableWidth") || "100%" : "100%",
         itemsEmptyVisible: keepItemsState ? model.getProperty("/itemsEmptyVisible") : false,
         itemsErrorText: keepItemsState ? model.getProperty("/itemsErrorText") : "",
         itemsErrorVisible: keepItemsState ? model.getProperty("/itemsErrorVisible") : false,
@@ -1133,6 +1325,125 @@ sap.ui.define([
     ].filter(Boolean).join(" • ");
   }
 
+  function createApprovalSpreadsheetCell(text, kind, state, field) {
+    var value = text === null || text === undefined || text === "" ? "—" : String(text);
+
+    return {
+      text: value,
+      tooltip: value,
+      kind: kind || "text",
+      state: state || "None",
+      field: field || ""
+    };
+  }
+
+  function buildApprovalItemsTableData(items) {
+    var itemRows = [];
+    var fieldColumns = [];
+    var fieldKeys = {};
+    var recordKeyColumns = [];
+    var recordKeyKeys = {};
+
+    (items || []).forEach(function (item, index) {
+      var context = item && item.getBindingContext ?
+        item.getBindingContext("approvalDetail") || item.getBindingContext() : item;
+      var actionType = getItemContextValue(context, "ActionType");
+      var actionText = ApprovalFormatter.formatActionText(actionType);
+      var actionState = ApprovalFormatter.formatActionState(actionType);
+      var recordKey = getItemContextValue(context, "RecordKey");
+      var recordKeyRows = getJsonRows(recordKey);
+      var changes = buildApprovalDiff(
+        actionType,
+        getItemContextValue(context, "OldData"),
+        getItemContextValue(context, "NewData"),
+        recordKey
+      );
+
+      recordKeyRows.forEach(function (row) {
+        var key = row.key || row.field;
+
+        if (!recordKeyKeys[key]) {
+          recordKeyKeys[key] = true;
+          recordKeyColumns.push({ key: key, label: row.field, width: "14rem" });
+        }
+      });
+
+      changes.forEach(function (change) {
+        var key = change.field;
+
+        if (!fieldKeys[key]) {
+          fieldKeys[key] = true;
+          fieldColumns.push({ key: key, label: change.field, width: "14rem" });
+        }
+      });
+
+      itemRows.push({
+        item: getItemContextValue(context, "ItemNo") || index + 1,
+        actionText: actionText || valueOrDash(actionType),
+        actionState: actionState,
+        actionKey: String(actionType || "").trim().toUpperCase(),
+        recordKeyRows: recordKeyRows,
+        recordKeyText: formatRecordKeySummary(recordKey),
+        changes: changes,
+        // Item status is intentionally omitted from the spreadsheet. The request
+        // status is already shown in the Request Information card.
+      });
+    });
+
+    fieldColumns = fieldColumns.filter(function (fieldColumn) {
+      return !recordKeyColumns.some(function (recordKeyColumn) {
+        return recordKeyColumn.label === fieldColumn.label;
+      });
+    });
+
+    var columns = [
+      { key: "__item", label: "Item", width: "5rem" },
+      { key: "__action", label: "Action", width: "9rem" }
+    ].concat(recordKeyColumns, fieldColumns);
+
+    var tableRows = itemRows.map(function (itemRow) {
+      var recordKeyMap = {};
+      var changeMap = {};
+
+      itemRow.recordKeyRows.forEach(function (row) {
+        recordKeyMap[row.key || row.field] = row.value;
+      });
+      itemRow.changes.forEach(function (change) {
+        var oldValue = change.oldValue || "—";
+        var newValue = change.newValue || "—";
+        var text = oldValue === "—" ? newValue : newValue === "—" ? oldValue : oldValue + " → " + newValue;
+
+        if (itemRow.actionText === "Create") {
+          text = newValue;
+        } else if (itemRow.actionText === "Delete") {
+          text = oldValue;
+        }
+
+        changeMap[change.field] = text;
+      });
+
+      return {
+        actionKey: itemRow.actionKey,
+        cells: [
+          createApprovalSpreadsheetCell("#" + itemRow.item, "text", "None", "__item"),
+          createApprovalSpreadsheetCell(itemRow.actionText, "status", itemRow.actionState, "__action")
+        ].concat(recordKeyColumns.map(function (column) {
+          return createApprovalSpreadsheetCell(recordKeyMap[column.key] || "—", "key", "None", column.label);
+        }), fieldColumns.map(function (column) {
+          return createApprovalSpreadsheetCell(changeMap[column.key] || "—", "text", "None", column.label);
+        }))
+      };
+    });
+
+    return {
+      columns: columns,
+      tableRows: tableRows,
+      // Let the table fill the card like Audit Items. The surrounding
+      // horizontal ScrollContainer still handles wide/dynamic column sets.
+      tableWidth: "100%"
+    };
+  }
+
   function clearBulkItemSelection(model) {
     if (!model) {
       return;
@@ -1178,6 +1489,9 @@ sap.ui.define([
     model.setProperty("/itemsErrorText", "");
     model.setProperty("/itemsErrorVisible", false);
     model.setProperty("/bulkItems", []);
+    model.setProperty("/bulkColumns", []);
+    model.setProperty("/bulkTableRows", []);
+    model.setProperty("/bulkTableWidth", "100%");
     clearBulkItemSelection(model);
     logApprovalItemsLifecycle(model, "LOAD_START", {
       aprvlId: approvalId,
@@ -1334,6 +1648,7 @@ sap.ui.define([
     var operationState;
     var requestInfoRows;
     var operationRow;
+    var tableData;
 
     if (!model) {
       return;
@@ -1356,11 +1671,15 @@ sap.ui.define([
     model.setProperty("/itemsLoaded", true);
     model.setProperty("/itemsLoadFinished", true);
     model.setProperty("/itemCount", count);
+    tableData = buildApprovalItemsTableData(items || []);
     model.setProperty("/itemsEmptyVisible", !errorText && count === 0);
     model.setProperty("/itemsErrorText", errorText || "");
     model.setProperty("/itemsErrorVisible", !!errorText);
     model.setProperty("/bulkSummaryText", errorText ? "" : buildBulkSummary(items || []));
     model.setProperty("/bulkSummaryVisible", !errorText && count > 0);
+    model.setProperty("/bulkColumns", errorText ? [] : tableData.columns);
+    model.setProperty("/bulkTableRows", errorText ? [] : tableData.tableRows);
+    model.setProperty("/bulkTableWidth", errorText ? "100%" : tableData.tableWidth);
 
     actionType = count === 1 && items[0] ?
       getItemContextValue(items[0], "ActionType") :
@@ -1434,6 +1753,9 @@ sap.ui.define([
     model.setProperty("/itemsErrorText", "");
     model.setProperty("/itemsErrorVisible", false);
     model.setProperty("/bulkItems", []);
+    model.setProperty("/bulkColumns", []);
+    model.setProperty("/bulkTableRows", []);
+    model.setProperty("/bulkTableWidth", "100%");
     model.setProperty("/bulkSummaryText", "");
     model.setProperty("/bulkSummaryVisible", false);
     clearBulkItemSelection(model);
@@ -1472,6 +1794,7 @@ sap.ui.define([
       });
 
       updateApprovalDetailModel(view, values, context);
+      scheduleApprovalObjectPageHeaderSync(view, values);
       syncApprovalItemsVisibility(view);
 
       if (!bulkVisible) {
@@ -1504,6 +1827,121 @@ sap.ui.define([
         previousBindingExists: previousBindingExists
       });
     });
+  }
+
+  function syncApprovalObjectPageHeader(view, values) {
+    var approvalId = valueOrDash(values && values.AprvlId);
+    var tableName = valueOrDash(values && values.TableName);
+    var actionType = valueOrDash(values && values.ActionType);
+    var statusText = ApprovalFormatter.formatStatusText(values && values.Status);
+    var viewRoot = view && view.getDomRef && view.getDomRef();
+    var doc = viewRoot && viewRoot.ownerDocument || typeof document !== "undefined" && document;
+    var headerRoots;
+    var titleNodes;
+    var descriptionNodes;
+    var textNodes;
+
+    if (!doc || approvalId === "—") {
+      return;
+    }
+
+    headerRoots = doc.querySelectorAll(
+      ".sapFDynamicPageTitle, " +
+      ".sapFDynamicPageTitleMain, " +
+      ".sapUxAPObjectPageHeaderIdentifier, " +
+      ".sapUxAPObjectPageHeaderTitle, " +
+      ".sapUxAPObjectPageHeader"
+    );
+
+    Array.prototype.forEach.call(headerRoots, function (headerRoot) {
+      if (!headerRoot || headerRoot.closest && headerRoot.closest(".approvalDetailRoot")) {
+        return;
+      }
+
+      titleNodes = headerRoot.querySelectorAll(
+        ".sapFDynamicPageTitleMainHeading .sapMTitle, " +
+        ".sapFDynamicPageTitleMainHeading [role='heading'], " +
+        ".sapMTitleStyleH1, " +
+        ".sapMTitle, " +
+        "h1, " +
+        "[role='heading']"
+      );
+      Array.prototype.forEach.call(titleNodes, function (node) {
+        var text = node && node.textContent && node.textContent.trim();
+
+        if (text === tableName || text === actionType || text === statusText) {
+          node.textContent = approvalId;
+        }
+      });
+
+      descriptionNodes = headerRoot.querySelectorAll(
+        ".sapFDynamicPageTitleMainContent .sapMText, " +
+        ".sapFDynamicPageTitleMainContent, " +
+        ".sapFDynamicPageTitleContent .sapMText, " +
+        ".sapFDynamicPageTitleContent, " +
+        ".sapUxAPObjectPageHeaderContent .sapMText, " +
+        ".sapUxAPObjectPageHeaderIdentifierDescription, " +
+        ".sapUxAPObjectPageHeaderIdentifierDescription .sapMText"
+      );
+      Array.prototype.forEach.call(descriptionNodes, function (node) {
+        var text = node && node.textContent && node.textContent.trim();
+
+        if (text === actionType || text === statusText) {
+          node.style.display = "none";
+        }
+      });
+
+      textNodes = headerRoot.querySelectorAll(".sapMText, span, div");
+      Array.prototype.forEach.call(textNodes, function (node) {
+        var text = node && node.textContent && node.textContent.trim();
+
+        if ((text === actionType || text === statusText) && node.style) {
+          node.style.display = "none";
+        }
+      });
+    });
+
+    titleNodes = doc.querySelectorAll(
+      ".sapFDynamicPageTitleMainHeading .sapMTitle, " +
+      ".sapFDynamicPageTitleMainHeading [role='heading'], " +
+      ".sapUxAPObjectPageHeaderIdentifierTitle, " +
+      ".sapUxAPObjectPageHeaderIdentifierTitle .sapMTitle"
+    );
+    Array.prototype.forEach.call(titleNodes, function (node) {
+      var text = node && node.textContent && node.textContent.trim();
+
+      if (text === tableName || text === actionType || text === statusText) {
+        node.textContent = approvalId;
+      }
+    });
+
+    descriptionNodes = doc.querySelectorAll(
+      ".sapFDynamicPageTitleMainContent .sapMText, " +
+      ".sapFDynamicPageTitleMainContent, " +
+      ".sapFDynamicPageTitleContent .sapMText, " +
+      ".sapFDynamicPageTitleContent, " +
+      ".sapUxAPObjectPageHeaderContent .sapMText, " +
+      ".sapUxAPObjectPageHeaderIdentifierDescription, " +
+      ".sapUxAPObjectPageHeaderIdentifierDescription .sapMText"
+    );
+    Array.prototype.forEach.call(descriptionNodes, function (node) {
+      if (node && node.style) {
+        node.style.display = "none";
+      }
+    });
+  }
+
+  function scheduleApprovalObjectPageHeaderSync(view, values) {
+    syncApprovalObjectPageHeader(view, values);
+
+    if (typeof setTimeout === "function") {
+      setTimeout(function () {
+        syncApprovalObjectPageHeader(view, values);
+      }, 0);
+      setTimeout(function () {
+        syncApprovalObjectPageHeader(view, values);
+      }, 250);
+    }
   }
 
   function findApprovalDetailModel(control) {
@@ -1819,6 +2257,10 @@ sap.ui.define([
     var items = table.getItems ? table.getItems() : [];
     var indexes = {};
 
+    if (table && table.hasStyleClass && table.hasStyleClass("approvalItemsSpreadsheet")) {
+      return;
+    }
+
     columns.forEach(function (column, index) {
       var headerText = getColumnHeaderText(column).trim();
 
@@ -1925,11 +2367,16 @@ sap.ui.define([
 
       onAfterRendering: function () {
         var view = this.base && this.base.getView && this.base.getView();
+        var model;
 
         if (!view) {
           return;
         }
 
+        model = ensureDetailModel(view);
+        scheduleApprovalObjectPageHeaderSync(view, {
+          AprvlId: model && model.getProperty("/approvalId")
+        });
         applyReadableListTables(view);
         syncApprovalItemsVisibility(view);
         registerApprovalActionPayloadFix(this);
@@ -2123,10 +2570,12 @@ sap.ui.define([
     formatApprovalValue: formatApprovalValue,
     mapFieldLabel: mapFieldLabel,
     buildApprovalDiff: buildApprovalDiff,
+    buildApprovalChangeTableHtml: buildApprovalChangeTableHtml,
     isBulkRequest: isBulkRequest,
     isApprovalItemsSection: isApprovalItemsSection,
     syncApprovalItemsVisibility: syncApprovalItemsVisibility,
     buildBulkSummary: buildBulkSummary,
+    buildApprovalItemsTableData: buildApprovalItemsTableData,
     buildBulkItemDetail: buildBulkItemDetail,
     beginItemsLoading: beginItemsLoading,
     finishItemsLoading: finishItemsLoading,
@@ -2137,6 +2586,7 @@ sap.ui.define([
     formatRawJson: formatRawJson,
     formatVietnamTimestamp: formatVietnamTimestamp,
     buildRequestInfoRows: buildRequestInfoRows,
+    buildStatusNotice: buildStatusNotice,
     getRequestActionText: getRequestActionText,
     getRequestActionState: getRequestActionState,
     getApprovalActionFromRequest: getApprovalActionFromRequest,

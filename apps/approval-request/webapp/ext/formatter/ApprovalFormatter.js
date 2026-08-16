@@ -57,7 +57,31 @@ sap.ui.define([], function () {
       return "Error";
     }
 
-    return "Information";
+    if (action === "Update") {
+      return "Warning";
+    }
+
+    return "None";
+  }
+
+  function formatActionKey(value) {
+    var action = normalizeAction(value);
+
+    if (action === "Create") {
+      return "C";
+    }
+    if (action === "Update") {
+      return "U";
+    }
+    if (action === "Delete") {
+      return "D";
+    }
+
+    return "";
+  }
+
+  function formatRequestActionKey(actionType, recordKey, recordKeyText) {
+    return isBulkRecordKey(recordKey, recordKeyText) ? "B" : formatActionKey(actionType);
   }
 
   function normalizeStatus(value) {
@@ -530,15 +554,6 @@ sap.ui.define([], function () {
     }).join("") + "</div>";
   }
 
-  function renderTechnicalBlock(label, value) {
-    return [
-      "<div class=\"approvalTechnicalBlock\">",
-      "<div class=\"approvalTechnicalLabel\">", escapeHtml(label), "</div>",
-      "<pre class=\"approvalTechnicalPre\">", escapeHtml(value || "No data returned for this field"), "</pre>",
-      "</div>"
-    ].join("");
-  }
-
   return {
     formatActionText: function (presentationValue, rawValue) {
       if (arguments.length === 1) {
@@ -550,8 +565,10 @@ sap.ui.define([], function () {
 
     formatRequestActionText: formatRequestActionText,
 
+    formatRequestActionKey: formatRequestActionKey,
+
     formatRequestActionState: function (actionType, recordKey, recordKeyText) {
-      return isBulkRecordKey(recordKey, recordKeyText) ? "Information" : formatActionState(actionType);
+      return isBulkRecordKey(recordKey, recordKeyText) ? "None" : formatActionState(actionType);
     },
 
     formatActionState: function (value) {
@@ -606,14 +623,6 @@ sap.ui.define([], function () {
 
     formatChangeDetailsAsHtml: renderChangeDetails,
 
-    formatReadableDetailAsHtml: renderReadableDetail,
-
-    formatTechnicalDetailsAsHtml: function (recordKey, oldData, newData) {
-      return [
-        renderTechnicalBlock("RecordKey JSON", recordKey),
-        renderTechnicalBlock("OldData JSON", oldData),
-        renderTechnicalBlock("NewData JSON", newData)
-      ].join("");
-    }
+    formatReadableDetailAsHtml: renderReadableDetail
   };
 });

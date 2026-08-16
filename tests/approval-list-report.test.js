@@ -6,7 +6,9 @@ const vm = require("vm");
 const manifestPath = path.join(__dirname, "..", "apps", "approval-request", "webapp", "manifest.json");
 const approvalManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const selectionFieldConfig = approvalManifest["sap.ui5"].routing.targets.ApprovalRequestList.options.settings.controlConfiguration["@com.sap.vocabularies.UI.v1.SelectionFields"];
+const customSectionConfig = approvalManifest["sap.ui5"].routing.targets.ApprovalRequestObjectPage.options.settings.content.body.sections.DiffViewCustomSection;
 assert.strictEqual(selectionFieldConfig.filterFields.Status.template, "ztbl.approval.ui.ext.fragment.StatusFilterField", "approval status uses custom dropdown filter");
+assert.strictEqual(customSectionConfig.title, "Approval Details", "approval uses the native Object Page section title like Audit Log");
 const statusFilterFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "StatusFilterField.fragment.xml"), "utf8");
 assert.ok(statusFilterFragment.includes('key="APPROVED" text="Approved"'), "status dropdown includes Approved");
 assert.ok(statusFilterFragment.includes('key="PENDING" text="Pending"'), "status dropdown includes Pending");
@@ -15,8 +17,39 @@ const approvalAnnotation = fs.readFileSync(path.join(__dirname, "..", "apps", "a
 assert.ok(approvalAnnotation.includes("<Annotation Term=\"UI.PresentationVariant\">"), "approval list declares a default presentation variant");
 assert.ok(approvalAnnotation.includes("PropertyPath=\"SubmittedAt\""), "approval list sorts by SubmittedAt");
 assert.ok(approvalAnnotation.includes("<PropertyValue Property=\"Descending\" Bool=\"true\"/>") , "approval list sorts newest first");
+assert.ok(approvalAnnotation.includes("<PropertyValue Property=\"Value\" Path=\"AprvlId\"/>"), "approval object page header shows approval id as the title");
+assert.ok(!approvalAnnotation.includes("<PropertyValue Property=\"Description\">"), "approval object page header omits the status/action description line");
 const requestOverviewFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "RequestOverview.fragment.xml"), "utf8");
-assert.ok(requestOverviewFragment.includes('text="{approvalDetail>/comment}"'), "approval object page renders the approval comment");
+const diffViewSectionFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "DiffViewSection.fragment.xml"), "utf8");
+const approvalCss = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "css", "approval.css"), "utf8");
+assert.ok(diffViewSectionFragment.includes('text="{approvalDetail>/comment}"'), "approval object page renders the approval comment in its own card");
+assert.ok(!diffViewSectionFragment.includes('text="Approval Details"'), "approval detail does not duplicate the native section title inside the content area");
+assert.ok(requestOverviewFragment.includes('items="{approvalDetail>/requestInfoRows}"'), "approval overview renders request information rows");
+assert.ok(requestOverviewFragment.includes('class="approvalInfoMatrix"'), "approval overview uses the same compact information matrix as Audit Log");
+assert.ok(!requestOverviewFragment.includes('approvalInfoHeaderStatus'), "approval information does not duplicate status in the card header");
+assert.ok(!requestOverviewFragment.includes('text="Record Key:"'), "approval information omits the technical record key");
+assert.strictEqual((diffViewSectionFragment.match(/class="approvalCardPanel /g) || []).length, 3, "approval detail has independent information, comment and items cards");
+assert.ok(diffViewSectionFragment.includes("approvalInfoCardPanel"), "request information has its own card");
+assert.ok(diffViewSectionFragment.includes("approvalCommentCardPanel"), "approval comment has its own card");
+assert.ok(diffViewSectionFragment.includes("approvalChangesCardPanel"), "requested changes have their own card");
+assert.ok(diffViewSectionFragment.indexOf("approvalStatusNoticeWrap") < diffViewSectionFragment.indexOf("approvalInfoCardPanel"), "processed-status notification is outside and above both cards");
+assert.ok(approvalCss.includes(".sapUxAPObjectPageSubSection:has(.approvalDetailRoot)"), "approval Object Page host is transparent instead of rendering a third white card");
+assert.ok(!approvalCss.includes(".sapUxAPObjectPageSection:has(.approvalDetailRoot) .sapUxAPObjectPageSectionHeader"), "approval keeps the native section header visible outside the content background");
+assert.ok(!approvalCss.includes(".approvalDetailSectionTitle.sapMTitle"), "approval relies on the native Audit-matching section title typography");
+assert.ok(approvalCss.includes(".approvalCardPanel.sapMPanel"), "approval cards share the Audit Log panel treatment");
+assert.ok(approvalCss.includes("border-radius: 0.75rem;"), "approval cards use the same rounded corners as Audit Log");
+const formattedRequestDetailFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "FormattedRequestDetail.fragment.xml"), "utf8");
+const bulkApprovalItemsFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "BulkApprovalItems.fragment.xml"), "utf8");
+const operationColumnFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "OperationColumn.fragment.xml"), "utf8");
+assert.ok(formattedRequestDetailFragment.includes('content="{approvalDetail>/changeTableHtml}"'), "approval detail renders changes through generated table HTML");
+assert.ok(!formattedRequestDetailFragment.includes('headerText="Record Key"'), "approval detail does not duplicate Record Key outside request information");
+assert.ok(!formattedRequestDetailFragment.includes('items="{approvalDetail>/changeRows}"'), "approval detail does not render the old row-based change table");
+assert.ok(bulkApprovalItemsFragment.includes('columns="{path: \'approvalDetail>/bulkColumns\''), "approval items use dynamic columns for changed fields");
+assert.ok(bulkApprovalItemsFragment.includes('items="{path: \'approvalDetail>/bulkTableRows\''), "approval items render flattened table rows");
+assert.ok(!bulkApprovalItemsFragment.includes("View Changes"), "approval items do not require a View Changes action");
+assert.ok(operationColumnFragment.includes("approvalOperationBadge"), "approval list operations use the same semantic badge treatment as Audit Log");
+assert.ok(operationColumnFragment.includes("formatRequestActionKey"), "approval list exposes stable action keys for Audit-matching colors");
+assert.ok(approvalCss.includes('.approvalOperationBadge[data-action="B"]'), "approval Bulk operations use the same indication color as Audit Log");
 
 function loadController() {
   const controllerPath = path.join(
@@ -240,6 +273,10 @@ const updateRows = api.buildApprovalDiff(
 assertJsonEqual(updateRows.map((row) => row.field), ["Name", "Extra"], "update shows changed and new-only fields only");
 assert.strictEqual(updateRows[0].oldValue, "Old", "update shows old value from OldData JSON");
 assert.strictEqual(updateRows[0].newValue, "New", "update shows new value from NewData JSON");
+const updateChangeHtml = api.buildApprovalChangeTableHtml(updateRows, "Update", "Old Value", "New Value");
+assert.ok(updateChangeHtml.includes("<th>Name</th>"), "approval change HTML uses changed fields as horizontal columns");
+assert.ok(updateChangeHtml.includes("<td>Old</td>"), "approval change HTML includes old values");
+assert.ok(updateChangeHtml.includes("<td>New</td>"), "approval change HTML includes new values");
 
 const headerUpdateRows = api.buildApprovalDiff(
   "U",
@@ -280,12 +317,24 @@ assertJsonEqual(infoRows.map((row) => row.label), [
   "Approval ID",
   "Table Name",
   "Operation",
-  "Status",
   "Submitted By",
-  "Submitted At"
+  "Submitted At",
+  "Status"
 ], "empty reviewed fields are hidden");
-assert.ok(/07:00:00/.test(infoRows[5].value), "submitted UTC time is converted to Vietnam time");
+assert.ok(/07:00:00/.test(infoRows[4].value), "submitted UTC time is converted to Vietnam time");
+assert.strictEqual(infoRows[5].value, "Pending", "request status is shown as a regular information row");
 assert.ok(/17:58:52/.test(api.formatVietnamTimestamp("2026-07-14T10:58:52.098366Z")), "microsecond UTC timestamp is converted to Vietnam time");
+assert.strictEqual(api.buildStatusNotice("PENDING").visible, false, "pending requests do not show a redundant status banner");
+assertPlainObject(api.buildStatusNotice("APPROVED"), {
+  visible: true,
+  type: "Success",
+  text: "This approval request has been approved."
+}, "approved requests show a success notification above both cards");
+assertPlainObject(api.buildStatusNotice("REJECTED"), {
+  visible: true,
+  type: "Error",
+  text: "This approval request has been rejected."
+}, "rejected requests show an error notification above both cards");
 
 const bulkInfoRows = api.buildRequestInfoRows({
   AprvlId: "REQ-BULK",
@@ -364,6 +413,27 @@ const bulkSummary = api.buildBulkSummary([
 ]);
 assert.strictEqual(bulkSummary, "3 items • 1 create • 1 update • 1 delete • 1 error/conflict", "bulk summary counts item operations and error states");
 assert.strictEqual(api.buildBulkSummary([]), "No approval items found.", "empty bulk item table is summarized");
+const approvalItemsTable = api.buildApprovalItemsTableData([
+  {
+    ItemNo: 1,
+    ActionType: "U",
+    Status: "PENDING",
+    RecordKey: "{\"COURSE_ID\":\"0010\"}",
+    OldData: "{\"COURSE_ID\":\"0010\",\"DURATION_DAYS\":2}",
+    NewData: "{\"COURSE_ID\":\"0010\",\"DURATION_DAYS\":3}"
+  }
+]);
+assertJsonEqual(approvalItemsTable.columns.map((column) => column.label), ["Item", "Action", "Course Id", "Duration Days"], "approval items table omits the redundant item Status column");
+assert.strictEqual(approvalItemsTable.tableRows[0].cells[3].text, "2 → 3", "approval item table displays before and after values inline");
+const approvalCreateTable = api.buildApprovalItemsTableData([{
+  ItemNo: 1,
+  ActionType: "C",
+  Status: "PENDING",
+  RecordKey: "{\"ID\":\"001\"}",
+  OldData: "",
+  NewData: "{\"ID\":\"001\",\"NAME\":\"New\"}"
+}]);
+assertJsonEqual(approvalCreateTable.columns.map((column) => column.label), ["Item", "Action", "Id", "Name"], "approval items do not duplicate entity key columns for create requests");
 
 const loadingModel = createModel({
   bulkItemSelected: true,

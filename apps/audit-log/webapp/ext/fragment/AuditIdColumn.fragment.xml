@@ -4,8 +4,9 @@
   <HBox alignItems="Center" class="auditIdContainer">
     <core:Icon src="sap-icon://key" class="auditIdIcon sapUiTinyMarginEnd"/>
     <Text
-      text="{path: 'AuditId', formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatShortAuditId'}"
+      text="{AuditId}"
       tooltip="{AuditId}"
+      wrapping="false"
       class="auditIdMonospace"/>
   </HBox>
 </core:FragmentDefinition>

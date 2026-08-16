@@ -1,49 +1,30 @@
 <core:FragmentDefinition
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
-  <VBox width="100%" class="sapUiSmallMarginTop approvalOverview">
-    <Toolbar design="Transparent">
-      <Title text="Request Information" level="H3"/>
-      <ToolbarSpacer/>
-    </Toolbar>
+  <VBox width="100%" class="approvalInfoSection">
+    <HBox alignItems="Center" wrap="Wrap" renderType="Bare" class="approvalInfoHeader">
+      <Title text="Request Information" level="H2"/>
+    </HBox>
 
-    <List
-      width="100%"
-      showSeparators="Inner"
+    <VBox
       items="{approvalDetail>/requestInfoRows}"
-      class="approvalInfoList">
-      <CustomListItem>
-        <HBox
-          width="100%"
-          renderType="Bare"
-          class="approvalInfoRow">
-          <Label
-            width="10rem"
-            text="{approvalDetail>label}"
-            class="approvalInfoLabel"/>
-          <ObjectStatus
-            visible="{approvalDetail>isStatus}"
-            text="{approvalDetail>value}"
-            state="{approvalDetail>state}"/>
-          <Text
-            visible="{= !${approvalDetail>isStatus} }"
-            text="{approvalDetail>value}"
-            wrapping="true"/>
-        </HBox>
-      </CustomListItem>
-    </List>
-
-    <Panel
-      expandable="false"
-      headerText="Approval Comment"
-      class="sapUiSmallMarginTop approvalCommentPanel">
-      <VBox class="approvalCommentContent">
+      renderType="Bare"
+      class="approvalInfoMatrix">
+      <HBox alignItems="Start" renderType="Bare" class="approvalInfoField">
+        <Label text="{= ${approvalDetail>label} + ':' }" class="approvalInfoLabel"/>
+        <ObjectStatus
+          visible="{approvalDetail>isStatus}"
+          text="{approvalDetail>value}"
+          state="{approvalDetail>state}"
+          class="approvalInfoValue"/>
         <Text
-          text="{approvalDetail>/comment}"
+          visible="{= !${approvalDetail>isStatus} }"
+          text="{approvalDetail>value}"
+          tooltip="{approvalDetail>value}"
           wrapping="true"
-          class="approvalCommentText"/>
-      </VBox>
-    </Panel>
+          class="approvalInfoValue"/>
+      </HBox>
+    </VBox>
 
     <Panel
       expandable="true"

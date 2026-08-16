@@ -2,164 +2,125 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core">
   <Dialog
-    title="{auditBulk>/title}"
-    contentWidth="72rem"
-    contentHeight="80%"
+    contentWidth="70rem"
+    contentHeight="17rem"
     stretchOnPhone="true"
     resizable="true"
     draggable="true"
+    horizontalScrolling="false"
     class="auditBulkDialog">
+    <customHeader>
+      <Toolbar class="auditBulkDialogToolbar">
+        <Title text="{auditBulk>/title}" level="H2"/>
+        <ToolbarSpacer/>
+        <Button
+          icon="sap-icon://decline"
+          type="Transparent"
+          tooltip="Close"
+          press=".onBulkAuditDialogClose"/>
+      </Toolbar>
+    </customHeader>
     <content>
-      <VBox
-        width="100%"
-        class="auditBulkDialogContent">
-        <VBox
+      <VBox width="100%" class="auditBulkDialogContent">
+        <FlexBox
           width="100%"
-          class="auditHeaderBlock sapUiSmallMarginBottom">
-          <FlexBox
-            width="100%"
-            wrap="Wrap"
-            class="auditBulkHeaderGrid">
-            <VBox class="auditBulkHeaderCell">
-              <Label text="Audit ID"/>
-              <Text
-                text="{auditBulk>/auditId}"
-                wrapping="true"/>
-            </VBox>
-            <VBox class="auditBulkHeaderCell">
-              <Label text="Changed By"/>
-              <Text
-                text="{auditBulk>/changedBy}"
-                wrapping="true"/>
-            </VBox>
-            <VBox class="auditBulkHeaderCell">
-              <Label text="Changed At"/>
-              <Text
-                text="{auditBulk>/changedAt}"
-                wrapping="true"/>
-            </VBox>
-            <VBox class="auditBulkHeaderCell">
-              <Label text="Action"/>
-              <ObjectStatus
-                text="{auditBulk>/actionText}"
-                state="{= ${auditBulk>/actionState} || 'None' }"/>
-            </VBox>
-          </FlexBox>
-          <Text
-            text="{auditBulk>/summaryText}"
-            wrapping="true"
-            class="auditMutedText sapUiTinyMarginTop"/>
-        </VBox>
+          wrap="Wrap"
+          alignItems="Center"
+          class="auditBulkDialogSummary sapUiSmallMarginBottom">
+          <VBox class="auditBulkDialogSummaryCell auditBulkDialogAuditId">
+            <Label text="Audit ID"/>
+            <Text text="{auditBulk>/auditId}" wrapping="false"/>
+          </VBox>
+          <VBox class="auditBulkDialogSummaryCell">
+            <Label text="Changed by"/>
+            <Text text="{auditBulk>/changedBy}" wrapping="false"/>
+          </VBox>
+          <VBox class="auditBulkDialogSummaryCell">
+            <Label text="Changed at"/>
+            <Text text="{auditBulk>/changedAt}" wrapping="false"/>
+          </VBox>
+          <VBox class="auditBulkDialogSummaryCell auditBulkDialogDetails">
+            <Label text="Details"/>
+            <Text text="{auditBulk>/detailsText}" wrapping="false"/>
+          </VBox>
+          <ObjectStatus
+            text="{auditBulk>/operationText}"
+            icon="{auditBulk>/operationIcon}"
+            state="{auditBulk>/operationState}"
+            class="auditBulkOperationBadge">
+            <customData>
+              <core:CustomData key="action" value="{auditBulk>/operationKey}" writeToDom="true"/>
+            </customData>
+          </ObjectStatus>
+        </FlexBox>
 
         <MessageStrip
           type="Information"
           showIcon="true"
           text="{auditBulk>/emptyText}"
-          visible="{auditBulk>/emptyVisible}"
-          class="sapUiSmallMarginBottom"/>
+          visible="{auditBulk>/emptyVisible}"/>
 
-        <Table
+        <ScrollContainer
           width="100%"
-          fixedLayout="false"
-          growing="true"
-          growingScrollToLoad="true"
-          showNoData="true"
-          noDataText="No bulk audit items found"
-          items="{auditBulk>/items}">
-          <columns>
-            <Column width="7rem">
-              <Text text="Item"/>
-            </Column>
-            <Column width="8rem">
-              <Text text="Action"/>
-            </Column>
-            <Column minScreenWidth="Tablet" demandPopin="true">
-              <Text text="Record Key"/>
-            </Column>
-            <Column minScreenWidth="Tablet" demandPopin="true">
-              <Text text="Changes"/>
-            </Column>
-          </columns>
-          <items>
-            <ColumnListItem>
-              <cells>
-                <ObjectIdentifier
-                  title="{auditBulk>itemNumber}"/>
-                <ObjectStatus
-                  text="{auditBulk>actionText}"
-                  state="{= ${auditBulk>actionState} || 'None' }"/>
-                <VBox>
-                  <Text
-                    text="{auditBulk>recordKeyText}"
-                    wrapping="true"
-                    class="auditLongText"/>
-                  <Table
-                    width="100%"
-                    fixedLayout="true"
-                    showNoData="false"
-                    visible="{auditBulk>recordKeyVisible}"
-                    items="{auditBulk>recordKeyRows}">
-                    <columns>
-                      <Column width="10rem">
-                        <Text text="Field"/>
-                      </Column>
-                      <Column>
-                        <Text text="Value"/>
-                      </Column>
-                    </columns>
-                    <items>
-                      <ColumnListItem>
-                        <cells>
-                          <Text text="{auditBulk>field}"/>
-                          <Text
-                            text="{auditBulk>value}"
-                            wrapping="true"/>
-                        </cells>
-                      </ColumnListItem>
-                    </items>
-                  </Table>
-                </VBox>
-                <Table
-                  width="100%"
-                  fixedLayout="true"
-                  showNoData="true"
-                  noDataText="No changed value available"
-                  items="{auditBulk>changeRows}">
-                  <columns>
-                    <Column width="10rem">
-                      <Text text="Field"/>
-                    </Column>
-                    <Column visible="{auditBulk>showOldColumn}">
-                      <Text text="{auditBulk>oldColumnHeader}"/>
-                    </Column>
-                    <Column visible="{auditBulk>showNewColumn}">
-                      <Text text="{auditBulk>newColumnHeader}"/>
-                    </Column>
-                  </columns>
-                  <items>
-                    <ColumnListItem>
-                      <cells>
-                        <Text text="{auditBulk>field}"/>
-                        <Text
-                          text="{auditBulk>oldValue}"
-                          wrapping="true"
-                          visible="{auditBulk>showOldColumn}"/>
-                        <Text
-                          text="{auditBulk>newValue}"
-                          wrapping="true"
-                          visible="{auditBulk>showNewColumn}"/>
-                      </cells>
-                    </ColumnListItem>
-                  </items>
-                </Table>
-              </cells>
-            </ColumnListItem>
-          </items>
-        </Table>
+          horizontal="true"
+          vertical="false"
+          focusable="true"
+          visible="{= !${auditBulk>/emptyVisible} &amp;&amp; ${auditBulk>/tableRows}.length > 0 }"
+          class="auditItemsScrollContainer">
+          <Table
+            width="{auditBulk>/tableWidth}"
+            fixedLayout="true"
+            sticky="ColumnHeaders"
+            showNoData="false"
+            alternateRowColors="true"
+            columns="{path: 'auditBulk>/columns', templateShareable: false}"
+            items="{path: 'auditBulk>/tableRows', templateShareable: false}"
+            class="auditItemsSpreadsheet">
+            <columns>
+              <Column width="{auditBulk>width}">
+                <Text text="{auditBulk>label}" tooltip="{auditBulk>label}" class="auditItemsHeaderText"/>
+              </Column>
+            </columns>
+            <items>
+              <ColumnListItem
+                vAlign="Middle"
+                cells="{path: 'auditBulk>cells', templateShareable: false}"
+                class="auditItemsRow">
+                <customData>
+                  <core:CustomData key="action" value="{auditBulk>actionKey}" writeToDom="true"/>
+                </customData>
+                <cells>
+                  <VBox renderType="Bare" class="auditSpreadsheetCell">
+                    <ObjectStatus
+                      text="{auditBulk>text}"
+                      state="{auditBulk>state}"
+                      visible="{= ${auditBulk>kind} === 'status' }"
+                      class="auditSpreadsheetAction"/>
+                    <Text
+                      text="{auditBulk>text}"
+                      tooltip="{auditBulk>tooltip}"
+                      wrapping="true"
+                      visible="{= ${auditBulk>kind} === 'key' }"
+                      class="auditSpreadsheetKey"/>
+                    <Text
+                      text="{auditBulk>text}"
+                      tooltip="{auditBulk>tooltip}"
+                      wrapping="true"
+                      visible="{= ${auditBulk>kind} !== 'status' &amp;&amp; ${auditBulk>kind} !== 'key' }"
+                      class="auditSpreadsheetText"/>
+                  </VBox>
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </ScrollContainer>
       </VBox>
     </content>
-    <beginButton>
-      <Button text="Close"/>
-    </beginButton>
+    <endButton>
+      <Button
+        text="Close"
+        type="Emphasized"
+        press=".onBulkAuditDialogClose"/>
+    </endButton>
   </Dialog>
 </core:FragmentDefinition>

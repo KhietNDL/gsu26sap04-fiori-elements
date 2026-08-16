@@ -4,5 +4,12 @@
   <ObjectStatus
     text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}, {path: 'OldValue'}, {path: 'NewValue'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationText'}"
     state="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}, {path: 'OldValue'}, {path: 'NewValue'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationState'}"
-    class="auditOperationBadge"/>
+    class="auditListCellText auditOperationBadge">
+    <customData>
+      <core:CustomData
+        key="action"
+        value="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}, {path: 'OldValue'}, {path: 'NewValue'}], formatter: 'ztbl.audit.ui.ext.formatter.AuditFormatter.formatOperationKey'}"
+        writeToDom="true"/>
+    </customData>
+  </ObjectStatus>
 </core:FragmentDefinition>

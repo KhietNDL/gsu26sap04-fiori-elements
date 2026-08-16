@@ -2,18 +2,74 @@
 <core:FragmentDefinition
   xmlns:core="sap.ui.core"
   xmlns="sap.m">
-  <VBox width="100%" class="sapUiSmallMarginTop approvalObjectPage">
-    <core:Fragment
-      fragmentName="ztbl.approval.ui.ext.fragment.RequestOverview"
-      type="XML"/>
-    <core:Fragment
-      fragmentName="ztbl.approval.ui.ext.fragment.FormattedRequestDetail"
-      type="XML"/>
-    <core:Fragment
-      fragmentName="ztbl.approval.ui.ext.fragment.BulkApprovalItems"
-      type="XML"/>
-    <core:Fragment
-      fragmentName="ztbl.approval.ui.ext.fragment.TechnicalDetails"
-      type="XML"/>
+  <VBox width="100%" class="sapUiSmallMarginTop approvalDetailRoot">
+    <HBox
+      width="100%"
+      renderType="Bare"
+      visible="{approvalDetail>/statusNoticeVisible}"
+      class="approvalStatusNoticeWrap">
+      <MessageStrip
+        type="{approvalDetail>/statusNoticeType}"
+        showIcon="true"
+        showCloseButton="false"
+        text="{approvalDetail>/statusNoticeText}"
+        class="approvalStatusNotice"/>
+    </HBox>
+
+    <Panel
+      width="100%"
+      backgroundDesign="Solid"
+      class="approvalCardPanel approvalInfoCardPanel">
+      <content>
+        <core:Fragment
+          fragmentName="ztbl.approval.ui.ext.fragment.RequestOverview"
+          type="XML"/>
+      </content>
+    </Panel>
+
+    <Panel
+      width="100%"
+      backgroundDesign="Solid"
+      class="approvalCardPanel approvalCommentCardPanel">
+      <content>
+        <VBox width="100%" class="approvalCommentSection">
+          <Title text="Approval Comment" level="H2"/>
+          <Text
+            text="{approvalDetail>/comment}"
+            wrapping="true"
+            class="approvalCommentText"/>
+        </VBox>
+      </content>
+    </Panel>
+
+    <Panel
+      width="100%"
+      backgroundDesign="Solid"
+      class="approvalCardPanel approvalChangesCardPanel">
+      <content>
+        <VBox width="100%" class="approvalChangesSection">
+          <Toolbar design="Transparent" class="approvalChangesToolbar">
+            <VBox renderType="Bare">
+              <Title text="{= ${approvalDetail>/bulkVisible} ? 'Approval Items' : 'Requested Changes' }" level="H2"/>
+              <Text
+                text="{= ${approvalDetail>/bulkVisible} ? 'Review every record before processing this bulk request' : ${approvalDetail>/changeTitle} }"
+                class="approvalCardSubtitle"/>
+            </VBox>
+            <ToolbarSpacer/>
+            <ObjectStatus
+              visible="{approvalDetail>/bulkSummaryVisible}"
+              text="{approvalDetail>/bulkSummaryText}"
+              state="Information"
+              class="approvalItemsSummaryBadge"/>
+          </Toolbar>
+          <core:Fragment
+            fragmentName="ztbl.approval.ui.ext.fragment.FormattedRequestDetail"
+            type="XML"/>
+          <core:Fragment
+            fragmentName="ztbl.approval.ui.ext.fragment.BulkApprovalItems"
+            type="XML"/>
+        </VBox>
+      </content>
+    </Panel>
   </VBox>
 </core:FragmentDefinition>

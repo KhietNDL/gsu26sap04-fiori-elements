@@ -88,7 +88,7 @@
           "synchronizationMode": "None",
           "operationMode": "Server",
           "autoExpandSelect": true,
-          "earlyRequests": true
+        "earlyRequests": false
         }
       },
       "i18n": {
@@ -145,7 +145,16 @@
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "columns": {
                     "DataField::AuditId": {
-                      "width": "20rem"
+                      "template": "ztbl.audit.ui.ext.fragment.AuditIdColumn",
+                      "width": "13rem"
+                    },
+                    "DataField::TableName": {
+                      "template": "ztbl.audit.ui.ext.fragment.TableNameColumn",
+                      "width": "14rem"
+                    },
+                    "DataField::ChangedBy": {
+                      "template": "ztbl.audit.ui.ext.fragment.ChangedByColumn",
+                      "width": "11rem"
                     },
                     "DataField::RecordKey": {
                       "availability": "Hidden"
@@ -175,7 +184,9 @@
                       "width": "10rem",
                       "properties": [
                         "ActionType",
-                        "RecordKey"
+                        "RecordKey",
+                        "OldValue",
+                        "NewValue"
                       ]
                     }
                   },

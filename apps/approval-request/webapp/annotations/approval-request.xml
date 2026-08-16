@@ -60,12 +60,7 @@
           <PropertyValue Property="TypeNamePlural" String="Approval Requests"/>
           <PropertyValue Property="Title">
             <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="TableName"/>
-            </Record>
-          </PropertyValue>
-          <PropertyValue Property="Description">
-            <Record Type="UI.DataField">
-              <PropertyValue Property="Value" Path="Status"/>
+              <PropertyValue Property="Value" Path="AprvlId"/>
             </Record>
           </PropertyValue>
         </Record>
