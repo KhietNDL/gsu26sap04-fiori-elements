@@ -517,6 +517,12 @@ sap.ui.define([], function () {
       return "Rollback";
     }
 
+    // A BULK parent remains Bulk even when it contains only one item. The
+    // operation filter and the visible row must use the same classification.
+    if (String(recordKey || "").trim().toUpperCase() === "BULK") {
+      return "Bulk";
+    }
+
     var count = getBulkItemCount(oldValue, newValue);
 
     // If bulk audit explicitly specifies 1 item, render actual action (Create, Update, Delete, Rollback) instead of Bulk

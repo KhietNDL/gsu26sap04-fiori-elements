@@ -73,16 +73,9 @@
         </HBox>
         <HBox alignItems="Start" renderType="Bare" class="auditInfoField auditInfoFieldWide">
           <Label text="{auditDetail>/linkedAuditLabel}" class="auditInfoLabel"/>
-          <Link
-            text="{auditDetail>/linkedAuditId}"
-            tooltip="{auditDetail>/linkedAuditId}"
-            visible="{= ${auditDetail>/linkedAuditId} !== '—' }"
-            press=".extension.ztbl.audit.ui.ext.controller.AuditLog.onAuditLinkedIdPress"
-            class="auditInfoValue auditInfoCode auditLinkedId"/>
           <Text
             text="{auditDetail>/linkedAuditId}"
             tooltip="{auditDetail>/linkedAuditId}"
-            visible="{= ${auditDetail>/linkedAuditId} === '—' }"
             wrapping="true"
             class="auditInfoValue auditInfoCode"/>
         </HBox>

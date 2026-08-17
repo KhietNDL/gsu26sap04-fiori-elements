@@ -1,15 +1,14 @@
 <core:FragmentDefinition
   xmlns="sap.m"
-  xmlns:core="sap.ui.core"
-  core:require="{formatter: 'ztbl/approval/ui/ext/formatter/ApprovalFormatter'}">
+  xmlns:core="sap.ui.core">
   <ObjectStatus
     class="approvalListCellText approvalOperationBadge"
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatRequestActionText'}"
-    state="None">
+    text="{= ${RecordKey} === 'BULK' ? 'Bulk' : (${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'Create' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'Delete' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'Update' : ${ActionType}) }"
+    state="{= ${RecordKey} === 'BULK' ? 'None' : (${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'Success' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'Error' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'Warning' : 'None') }">
     <customData>
       <core:CustomData
         key="action"
-        value="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatRequestActionKey'}"
+        value="{= ${RecordKey} === 'BULK' ? 'B' : ${ActionType} === 'C' || ${ActionType} === 'CREATE' ? 'C' : ${ActionType} === 'D' || ${ActionType} === 'DELETE' ? 'D' : ${ActionType} === 'U' || ${ActionType} === 'UPDATE' ? 'U' : '' }"
         writeToDom="true"/>
     </customData>
   </ObjectStatus>

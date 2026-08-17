@@ -19,25 +19,12 @@ sap.ui.define([
     });
   }
 
-  function orFilter(filters) {
-    return new Filter({
-      filters: filters,
-      and: false
-    });
-  }
-
   function activeAuditFilter() {
     return fieldFilter("RollbackAuditId", FilterOperator.EQ, "");
   }
 
   function bulkMarkerFilter() {
-    return orFilter([
-      fieldFilter("RecordKey", FilterOperator.EQ, "BULK"),
-      fieldFilter("OldValue", FilterOperator.Contains, "Bulk audit"),
-      fieldFilter("NewValue", FilterOperator.Contains, "Bulk audit"),
-      fieldFilter("OldValue", FilterOperator.Contains, "item(s)"),
-      fieldFilter("NewValue", FilterOperator.Contains, "item(s)")
-    ]);
+    return fieldFilter("RecordKey", FilterOperator.EQ, "BULK");
   }
 
   /**
@@ -49,7 +36,9 @@ sap.ui.define([
     var operation = String(value || "").trim().toUpperCase();
 
     if (!operation) {
-      return undefined;
+      // Keep the generated rollback audit as backend history, but present the
+      // original audit as the single user-facing record.
+      return fieldFilter("ActionType", FilterOperator.NE, "R");
     }
 
     if (operation === "B" || operation === "BULK") {
@@ -63,10 +52,7 @@ sap.ui.define([
     }
 
     if (operation === "R" || operation === "ROLLBACK") {
-      return orFilter([
-        fieldFilter("ActionType", FilterOperator.EQ, "R"),
-        fieldFilter("RollbackAuditId", FilterOperator.NE, "")
-      ]);
+      return fieldFilter("RollbackAuditId", FilterOperator.NE, "");
     }
 
     if (operation === "C" || operation === "U" || operation === "D") {

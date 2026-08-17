@@ -75,9 +75,23 @@
 
 .approvalInfoLabel.sapMLabel {
   box-sizing: border-box;
-  flex: 0 0 8.5rem;
+  flex: 0 0 12rem;
+  width: 12rem;
+  min-width: 12rem;
+  max-width: none;
   padding-top: 0.125rem;
   color: var(--sapContent_LabelColor);
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+
+.approvalInfoLabel.sapMLabel .sapMLabelTextWrapper,
+.approvalInfoLabel.sapMLabel .sapMLabelText {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
 .approvalInfoValue,
@@ -431,6 +445,23 @@
   font-weight: 600;
 }
 
+.approvalChangeAction {
+  font-weight: 700;
+  white-space: nowrap !important;
+}
+
+.approvalChangeAction--create {
+  color: var(--sapPositiveTextColor, var(--sapPositiveColor));
+}
+
+.approvalChangeAction--update {
+  color: var(--sapCriticalTextColor, var(--sapCriticalColor));
+}
+
+.approvalChangeAction--delete {
+  color: var(--sapNegativeTextColor, var(--sapNegativeColor));
+}
+
 .approvalBulkItems .sapMText,
 .approvalBulkItems .sapMObjStatusText {
   overflow-wrap: anywhere;
@@ -723,7 +754,9 @@
   }
 
   .approvalInfoLabel.sapMLabel {
-    flex-basis: 7.5rem;
+    flex-basis: 12rem;
+    width: 12rem;
+    min-width: 12rem;
   }
 }
 

@@ -5,6 +5,7 @@
     width="100%"
     core:require="{operationFilter: 'ztbl/audit/ui/ext/filter/OperationFilter'}"
     selectedKey="{path: 'filterValues>', type: 'sap.fe.macros.filter.type.Value', formatOptions: {operator: 'ztbl.audit.ui.ext.filter.OperationFilter.getFilter'}}"
+    change=".extension.ztbl.audit.ui.ext.controller.AuditLog.onOperationFilterChange"
     forceSelection="false">
     <items>
       <core:Item key="" text="All operations"/>
