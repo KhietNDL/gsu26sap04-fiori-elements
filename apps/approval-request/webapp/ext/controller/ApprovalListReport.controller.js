@@ -436,6 +436,8 @@ sap.ui.define([
   function buildApprovalChangeTableHtml(changeRows, actionText, oldColumnHeader, newColumnHeader) {
     var showOldColumn = actionText === "Update" || actionText === "Delete";
     var showNewColumn = actionText === "Create" || actionText === "Update";
+    var normalizedAction = String(actionText || "").trim().toLowerCase();
+    var actionLabel = actionText === "Create" ? "Created" : actionText === "Delete" ? "Deleted" : actionText === "Update" ? "Updated" : actionText;
     var rows = [];
 
     if (!changeRows || !changeRows.length) {
@@ -468,6 +470,7 @@ sap.ui.define([
       "<div class=\"approvalExcelHtmlScroller\">",
       "<table class=\"approvalExcelHtmlTable\">",
       "<thead><tr>",
+      "<th>Action</th>",
       "<th>Value Type</th>",
       changeRows.map(function (row) {
         return "<th>" + escapeHtml(row && row.field || "—") + "</th>";
@@ -477,6 +480,7 @@ sap.ui.define([
       rows.map(function (row) {
         return [
           "<tr>",
+          "<td class=\"approvalChangeAction approvalChangeAction--" + escapeHtml(normalizedAction) + "\">", escapeHtml(actionLabel), "</td>",
           "<td class=\"approvalExcelValueType\">", escapeHtml(row.label), "</td>",
           row.values.map(function (value) {
             return "<td>" + escapeHtml(value) + "</td>";
@@ -742,11 +746,11 @@ sap.ui.define([
   }
 
   function isApprovalActionUrl(url) {
-    return /\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$)/.test(String(url || ""));
+    return /\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\(\.\.\.\)|\?|$)/.test(String(url || ""));
   }
 
   function getApprovalActionFromUrl(url) {
-    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$|[\s"'])/);
+    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\(\.\.\.\)|\?|$|[\s"'])/);
 
     return match && match[1] || "";
   }
