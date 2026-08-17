@@ -186,7 +186,8 @@
                         "ActionType",
                         "RecordKey",
                         "OldValue",
-                        "NewValue"
+                        "NewValue",
+                        "RollbackAuditId"
                       ]
                     }
                   },

@@ -4,5 +4,5 @@
   <ObjectStatus
     class="approvalListCellText"
     text="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Approved' : ${Status} === 'P' || ${Status} === 'PENDING' ? 'Pending' : ${Status} === 'R' || ${Status} === 'REJECTED' ? 'Rejected' : ${Status} }"
-    state="{= ${Status} === 'A' || ${Status} === 'APPROVED' ? 'Success' : ${Status} === 'R' || ${Status} === 'REJECTED' || ${Status} === 'E' || ${Status} === 'ERROR' ? 'Error' : 'Warning' }"/>
+    state="None"/>
 </core:FragmentDefinition>
