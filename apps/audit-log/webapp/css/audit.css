@@ -150,12 +150,26 @@
 
 .auditInfoLabel.sapMLabel {
   box-sizing: border-box;
-  flex: 0 0 8.5rem;
+  flex: 0 0 12rem;
+  width: 12rem;
+  min-width: 12rem;
+  max-width: none;
   padding-top: 0.125rem;
   font-family: var(--sapFontFamily);
   font-size: var(--sapFontSize);
   font-weight: 700;
   line-height: 1.4;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+
+.auditInfoLabel.sapMLabel .sapMLabelTextWrapper,
+.auditInfoLabel.sapMLabel .sapMLabelText {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
 .auditInfoFieldWide {
@@ -211,12 +225,17 @@
 .auditItemsScrollContainer {
   box-sizing: border-box;
   max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--sapList_BorderColor);
   border-radius: var(--sapElement_BorderCornerRadius);
   background: var(--sapList_Background);
 }
 
 .auditItemsScrollContainer > .sapMScrollContScroll {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
   overflow-y: hidden;
 }
 
@@ -224,6 +243,7 @@
   border-spacing: 0;
   border-collapse: separate;
   table-layout: fixed;
+  max-width: none;
 }
 
 .auditItemsSpreadsheet .sapMListTblHeaderCell {
@@ -312,13 +332,21 @@
 .auditItemsSpreadsheet .sapMText,
 .auditItemsSpreadsheet .sapMObjStatus,
 .auditItemsSpreadsheet .sapMObjStatusText {
+  display: block;
   max-width: 100%;
+  overflow: visible;
   overflow-wrap: anywhere;
   white-space: normal;
+  word-break: break-word;
 }
 
 .auditSpreadsheetText {
   line-height: 1.35;
+  min-width: 0;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: break-word;
 }
 
 .auditSpreadsheetKey {
@@ -326,6 +354,11 @@
   font-family: var(--sapFontFamily);
   font-weight: 600;
   line-height: 1.35;
+  min-width: 0;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: break-all;
 }
 
 .auditSpreadsheetAction.sapMObjStatus {
@@ -496,7 +529,9 @@
   }
 
   .auditInfoLabel.sapMLabel {
-    flex-basis: 7.25rem;
+    flex-basis: 12rem;
+    width: 12rem;
+    min-width: 12rem;
   }
 
   .auditBulkDialogSummaryCell,

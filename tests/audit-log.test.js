@@ -53,7 +53,7 @@ function loadOperationFilter() {
     sap: {
       ui: {
         define: function (_dependencies, factory) {
-          moduleResult = factory(Filter, { EQ: "EQ", NE: "NE" });
+          moduleResult = factory(Filter, { EQ: "EQ", NE: "NE", Contains: "Contains" });
         }
       }
     }
@@ -145,25 +145,38 @@ assert(operationFilter && operationFilter._test, "operation filter exposes test 
 assert.strictEqual(operationFilter._test.getFilter(""), undefined, "All operations does not add a filter");
 assertJsonEqual(operationFilter._test.getFilter("BULK"), {
   filters: [
-    { path: "RecordKey", operator: "EQ", value1: "BULK" },
+    {
+      filters: [
+        { path: "RecordKey", operator: "EQ", value1: "BULK" },
+        { path: "OldValue", operator: "Contains", value1: "Bulk audit" },
+        { path: "NewValue", operator: "Contains", value1: "Bulk audit" },
+        { path: "OldValue", operator: "Contains", value1: "item(s)" },
+        { path: "NewValue", operator: "Contains", value1: "item(s)" }
+      ],
+      and: false
+    },
     { path: "ActionType", operator: "NE", value1: "R" },
     { path: "ActionType", operator: "NE", value1: "ROLLBACK" },
-    { path: "ActionType", operator: "NE", value1: "R BULK" }
+    { path: "ActionType", operator: "NE", value1: "R BULK" },
+    { path: "RollbackAuditId", operator: "EQ", value1: "" }
   ],
   and: true
 }, "Bulk filter targets the derived BULK record marker and excludes rollback summaries");
 assertJsonEqual(operationFilter._test.getFilter("U"), {
   filters: [
     { path: "ActionType", operator: "EQ", value1: "U" },
-    { path: "RecordKey", operator: "NE", value1: "BULK" }
+    { path: "RecordKey", operator: "NE", value1: "BULK" },
+    { path: "RollbackAuditId", operator: "EQ", value1: "" }
   ],
   and: true
 }, "Update filter excludes records displayed as Bulk");
 assertJsonEqual(operationFilter._test.getFilter("R"), {
-  path: "ActionType",
-  operator: "EQ",
-  value1: "R"
-}, "Rollback filter includes normal and bulk rollback summaries");
+  filters: [
+    { path: "ActionType", operator: "EQ", value1: "R" },
+    { path: "RollbackAuditId", operator: "NE", value1: "" }
+  ],
+  and: false
+}, "Rollback filter includes rollback records and rolled-back source audits");
 
 assert.strictEqual(api.formatActionText("C"), "Create", "C maps to Create");
 assert.strictEqual(api.formatActionText("U"), "Update", "U maps to Update");
@@ -193,6 +206,8 @@ assert.strictEqual(api.formatOperationKey("C", "BULK", "", "Bulk audit: 000001 i
 assert.strictEqual(api.formatOperationText("C", "BULK", "", "Bulk audit: 000005 item(s)"), "Bulk", "multi-record Create parent remains Bulk");
 assert.strictEqual(api.formatOperationText("R BULK", "BULK", "", "Bulk audit: 000001 item(s)"), "Rollback", "1-item bulk displays specific action Rollback");
 assert.strictEqual(api.formatOperationText("R", "ENTITY_ID=0001"), "Rollback", "R ActionType displays Rollback");
+assert.strictEqual(api.formatOperationText("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "Rollback", "rolled-back source displays Rollback operation");
+assert.strictEqual(api.formatOperationKey("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "R", "rolled-back source uses rollback semantic styling");
 assert.strictEqual(api.formatOperationKey("B", "BULK"), "B", "Bulk operation exposes its semantic styling key");
 assert.strictEqual(api.formatOperationText("R", "BULK", "", "Bulk audit: 000004 item(s)"), "Rollback", "multi-item rollback remains Rollback instead of Bulk");
 assert.strictEqual(api.formatOperationText("U BULK", "BULK"), "Bulk", "bulk marker remains a safe fallback when the item-count summary is unavailable");
@@ -344,6 +359,7 @@ const rollbackDetail = controllerApi.buildAuditDetail({
   ChangedBy: "DEV-253",
   ChangedAt: "2026-07-18T18:42:24Z",
   ActionType: "R",
+  SourceAuditId: "A-ORIGINAL",
   __OperationControl: { rollback: false }
 });
 assert.strictEqual(rollbackDetail.changeTitle, "Rollback Change", "rollback audit uses Rollback Change title when runtime data has R");
@@ -352,6 +368,7 @@ assert.strictEqual(rollbackDetail.showNewColumn, true, "rollback shows after");
 assert.strictEqual(rollbackDetail.statusState, "Success", "rolled-back status uses success semantics");
 assert.strictEqual(rollbackDetail.rollbackMessageVisible, true, "rollback audit shows a completed rollback notice");
 assert(rollbackDetail.rollbackMessage.includes("created by a rollback operation"), "rollback audit explains why the entry exists");
+assert.strictEqual(rollbackDetail.infoRows.find((row) => row.label === "Source Audit ID").value, "A-ORIGINAL", "rollback audit shows its source audit ID");
 
 const rolledBackSourceDetail = controllerApi.buildAuditDetail({
   AuditId: "A-ORIGINAL",
@@ -369,6 +386,10 @@ const rolledBackSourceDetail = controllerApi.buildAuditDetail({
 assert.strictEqual(rolledBackSourceDetail.rollbackAvailable, false, "already rolled-back source audit cannot be rolled back again");
 assert.strictEqual(rolledBackSourceDetail.rollbackMessageVisible, true, "already rolled-back source audit shows a notice");
 assert(rolledBackSourceDetail.rollbackMessage.includes("A-ROLLBACK"), "rolled-back notice identifies the rollback audit");
+assert(rolledBackSourceDetail.rollbackMessage.includes("Rollback Audit ID"), "rolled-back notice uses the metadata label for the rollback ID");
+assert.strictEqual(rolledBackSourceDetail.actionText, "Rollback", "rolled-back source detail displays Rollback operation");
+assert.strictEqual(rolledBackSourceDetail.infoRows.find((row) => row.label === "Operation").value, "Rollback", "rolled-back source metadata displays Rollback operation");
+assert.strictEqual(rolledBackSourceDetail.infoRows.find((row) => row.label === "Rollback Audit ID").value, "A-ROLLBACK", "source audit keeps its rollback audit ID");
 
 const plainStringDetail = controllerApi.buildAuditDetail({
   AuditId: "A5",
@@ -386,6 +407,19 @@ assertJsonEqual(plainStringDetail.changeRows, [{
   oldValue: "A101",
   newValue: "A102"
 }], "plain field-level values render directly");
+
+const rollbackDeleteResult = controllerApi.buildAuditItemsData({
+  AuditId: "A-ROLLBACK-DELETE",
+  RecordKey: "BULK",
+  ActionType: "R"
+}, [{
+  AuditId: "A-ROLLBACK-DELETE",
+  RecordKey: '{"ENTITY_ID":"ITEM-1"}',
+  OldValue: "",
+  NewValue: '{"NAME":"restored"}',
+  ActionType: "C"
+}]);
+assert.strictEqual(rollbackDeleteResult.tableRows[0].cells[0].value, "Created", "rollback of Delete displays the executed Create item action");
 
 const normalAuditItems = controllerApi.buildAuditItemsData({
   AuditId: "A-NORMAL",

@@ -1,14 +1,15 @@
 <core:FragmentDefinition
   xmlns="sap.m"
-  xmlns:core="sap.ui.core">
+  xmlns:core="sap.ui.core"
+  core:require="{formatter: 'ztbl/approval/ui/ext/formatter/ApprovalFormatter'}">
   <ObjectStatus
     class="approvalListCellText approvalOperationBadge"
-    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.approval.ui.ext.formatter.ApprovalFormatter.formatRequestActionText'}"
-    state="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.approval.ui.ext.formatter.ApprovalFormatter.formatRequestActionState'}">
+    text="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatRequestActionText'}"
+    state="None">
     <customData>
       <core:CustomData
         key="action"
-        value="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'ztbl.approval.ui.ext.formatter.ApprovalFormatter.formatRequestActionKey'}"
+        value="{parts: [{path: 'ActionType'}, {path: 'RecordKey'}], formatter: 'formatter.formatRequestActionKey'}"
         writeToDom="true"/>
     </customData>
   </ObjectStatus>
