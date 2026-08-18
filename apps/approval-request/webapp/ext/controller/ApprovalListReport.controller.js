@@ -130,6 +130,7 @@ sap.ui.define([
         commentDebugVisible: false,
         commentDebugRows: [],
         bulkVisible: false,
+        approvalItemsVisible: false,
         bulkItems: [],
         bulkColumns: [],
         bulkTableRows: [],
@@ -1194,6 +1195,8 @@ sap.ui.define([
       var itemCount = keepItemsState ? model.getProperty("/itemCount") : undefined;
       var actionText = getRequestActionText(values.ActionType, values.RecordKey, values.RecordKeyText, itemCount);
       var statusNotice = buildStatusNotice(values.Status);
+      var singleApprovalItem = buildSingleApprovalItem(values);
+      var singleTableData = buildApprovalItemsTableData([singleApprovalItem]);
 
       if (initialContextPath && currentContextPath && initialContextPath !== currentContextPath) {
         return;
@@ -1238,19 +1241,20 @@ sap.ui.define([
         technicalOldData: formatRawJson(values.OldData),
         technicalNewData: formatRawJson(values.NewData),
         bulkVisible: bulkVisible,
+        approvalItemsVisible: true,
         currentApprovalId: bulkVisible ? values.AprvlId || "" : "",
         currentItemsBindingPath: bulkVisible ? contextPath : "",
         itemsLoadSequence: keepItemsState ? model.getProperty("/itemsLoadSequence") : 0,
         itemsLoadFinished: keepItemsState ? model.getProperty("/itemsLoadFinished") : false,
-        bulkSummaryText: keepItemsState ? model.getProperty("/bulkSummaryText") : "",
-        bulkSummaryVisible: keepItemsState ? model.getProperty("/bulkSummaryVisible") : false,
+        bulkSummaryText: bulkVisible ? (keepItemsState ? model.getProperty("/bulkSummaryText") : "") : buildBulkSummary([singleApprovalItem]),
+        bulkSummaryVisible: bulkVisible ? (keepItemsState ? model.getProperty("/bulkSummaryVisible") : false) : true,
+        bulkColumns: bulkVisible ? (keepItemsState ? model.getProperty("/bulkColumns") || [] : []) : singleTableData.columns,
+        bulkTableRows: bulkVisible ? (keepItemsState ? model.getProperty("/bulkTableRows") || [] : []) : singleTableData.tableRows,
+        bulkTableWidth: bulkVisible ? (keepItemsState ? model.getProperty("/bulkTableWidth") || "100%" : "100%") : singleTableData.tableWidth,
         itemsLoading: keepItemsState ? model.getProperty("/itemsLoading") : false,
         itemsLoaded: keepItemsState ? model.getProperty("/itemsLoaded") : false,
         itemCount: keepItemsState ? model.getProperty("/itemCount") : 0,
         bulkItems: keepItemsState ? model.getProperty("/bulkItems") || [] : [],
-        bulkColumns: keepItemsState ? model.getProperty("/bulkColumns") || [] : [],
-        bulkTableRows: keepItemsState ? model.getProperty("/bulkTableRows") || [] : [],
-        bulkTableWidth: keepItemsState ? model.getProperty("/bulkTableWidth") || "100%" : "100%",
         itemsEmptyVisible: keepItemsState ? model.getProperty("/itemsEmptyVisible") : false,
         itemsErrorText: keepItemsState ? model.getProperty("/itemsErrorText") : "",
         itemsErrorVisible: keepItemsState ? model.getProperty("/itemsErrorVisible") : false,
@@ -1494,6 +1498,19 @@ sap.ui.define([
       // Let the table fill the card like Audit Items. The surrounding
       // horizontal ScrollContainer still handles wide/dynamic column sets.
       tableWidth: "100%"
+    };
+  }
+
+  function buildSingleApprovalItem(values) {
+    return {
+      AprvlId: values && values.AprvlId,
+      ItemNo: 1,
+      ActionType: values && values.ActionType,
+      TableName: values && values.TableName,
+      RecordKey: values && values.RecordKey,
+      Status: values && values.Status,
+      OldData: values && values.OldData,
+      NewData: values && values.NewData
     };
   }
 
@@ -1806,11 +1823,6 @@ sap.ui.define([
     model.setProperty("/itemsErrorText", "");
     model.setProperty("/itemsErrorVisible", false);
     model.setProperty("/bulkItems", []);
-    model.setProperty("/bulkColumns", []);
-    model.setProperty("/bulkTableRows", []);
-    model.setProperty("/bulkTableWidth", "100%");
-    model.setProperty("/bulkSummaryText", "");
-    model.setProperty("/bulkSummaryVisible", false);
     clearBulkItemSelection(model);
     logApprovalItemsLifecycle(model, "BINDING_DETACHED", {
       itemsLoadingBefore: itemsLoadingBefore

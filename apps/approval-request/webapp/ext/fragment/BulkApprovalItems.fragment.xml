@@ -5,7 +5,7 @@
   <VBox
     width="100%"
     class="approvalBulkItems approvalBusinessChange"
-    visible="{approvalDetail>/bulkVisible}">
+    visible="{approvalDetail>/approvalItemsVisible}">
     <Text
       text="Loading approval items..."
       visible="{approvalDetail>/itemsLoading}"

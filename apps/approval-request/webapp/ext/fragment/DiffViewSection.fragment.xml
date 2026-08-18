@@ -50,9 +50,9 @@
         <VBox width="100%" class="approvalChangesSection">
           <Toolbar design="Transparent" class="approvalChangesToolbar">
             <VBox renderType="Bare">
-              <Title text="{= ${approvalDetail>/bulkVisible} ? 'Approval Items' : 'Requested Changes' }" level="H2"/>
+              <Title text="Approval Items" level="H2"/>
               <Text
-                text="{= ${approvalDetail>/bulkVisible} ? 'Review every record before processing this bulk request' : ${approvalDetail>/changeTitle} }"
+                text="Review every record before processing this approval request"
                 class="approvalCardSubtitle"/>
             </VBox>
             <ToolbarSpacer/>
@@ -62,9 +62,6 @@
               state="Information"
               class="approvalItemsSummaryBadge"/>
           </Toolbar>
-          <core:Fragment
-            fragmentName="ztbl.approval.ui.ext.fragment.FormattedRequestDetail"
-            type="XML"/>
           <core:Fragment
             fragmentName="ztbl.approval.ui.ext.fragment.BulkApprovalItems"
             type="XML"/>
