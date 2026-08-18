@@ -436,6 +436,8 @@ sap.ui.define([
   function buildApprovalChangeTableHtml(changeRows, actionText, oldColumnHeader, newColumnHeader) {
     var showOldColumn = actionText === "Update" || actionText === "Delete";
     var showNewColumn = actionText === "Create" || actionText === "Update";
+    var normalizedAction = String(actionText || "").trim().toLowerCase();
+    var actionLabel = actionText === "Create" ? "Created" : actionText === "Delete" ? "Deleted" : actionText === "Update" ? "Updated" : actionText;
     var rows = [];
 
     if (!changeRows || !changeRows.length) {
@@ -468,6 +470,7 @@ sap.ui.define([
       "<div class=\"approvalExcelHtmlScroller\">",
       "<table class=\"approvalExcelHtmlTable\">",
       "<thead><tr>",
+      "<th>Action</th>",
       "<th>Value Type</th>",
       changeRows.map(function (row) {
         return "<th>" + escapeHtml(row && row.field || "—") + "</th>";
@@ -477,6 +480,7 @@ sap.ui.define([
       rows.map(function (row) {
         return [
           "<tr>",
+          "<td class=\"approvalChangeAction approvalChangeAction--" + escapeHtml(normalizedAction) + "\">", escapeHtml(actionLabel), "</td>",
           "<td class=\"approvalExcelValueType\">", escapeHtml(row.label), "</td>",
           row.values.map(function (value) {
             return "<td>" + escapeHtml(value) + "</td>";
@@ -742,11 +746,11 @@ sap.ui.define([
   }
 
   function isApprovalActionUrl(url) {
-    return /\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$)/.test(String(url || ""));
+    return /\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\(\.\.\.\)|\?|$)/.test(String(url || ""));
   }
 
   function getApprovalActionFromUrl(url) {
-    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\?|$|[\s"'])/);
+    var match = String(url || "").match(/\/com\.sap\.gateway\.srvd\.zsd_tbl_config\.v0001\.(approve|reject)(?:\(\.\.\.\)|\?|$|[\s"'])/);
 
     return match && match[1] || "";
   }
@@ -856,40 +860,89 @@ sap.ui.define([
   function patchApprovalActionPayloads() {
     var originalOpen;
     var originalSend;
+    var originalFetch;
 
-    if (typeof window === "undefined" || !window.XMLHttpRequest || window.__ztblApprovalActionPayloadPatch) {
+    if (typeof window === "undefined") {
       return;
     }
 
-    window.__ztblApprovalActionPayloadPatch = true;
-    originalOpen = window.XMLHttpRequest.prototype.open;
-    originalSend = window.XMLHttpRequest.prototype.send;
+    if (window.XMLHttpRequest && !window.__ztblApprovalActionPayloadPatch) {
+      window.__ztblApprovalActionPayloadPatch = true;
+      originalOpen = window.XMLHttpRequest.prototype.open;
+      originalSend = window.XMLHttpRequest.prototype.send;
 
-    window.XMLHttpRequest.prototype.open = function (method, url) {
-      this.__ztblApprovalActionUrl = String(url || "");
-      return originalOpen.apply(this, arguments);
-    };
+      window.XMLHttpRequest.prototype.open = function (method, url) {
+        this.__ztblApprovalActionUrl = String(url || "");
+        return originalOpen.apply(this, arguments);
+      };
 
-    window.XMLHttpRequest.prototype.send = function (body) {
-      var actionName = getApprovalActionFromRequest(this.__ztblApprovalActionUrl, body);
-      var remarks = getCapturedRemarksForAction(actionName);
+      window.XMLHttpRequest.prototype.send = function (body) {
+        var actionName = getApprovalActionFromRequest(this.__ztblApprovalActionUrl, body);
+        var remarks = getCapturedRemarksForAction(actionName);
 
-      if (actionName && this.addEventListener) {
-        this.addEventListener("loadend", function () {
-          var status = Number(this.status || 0);
+        if (actionName && this.addEventListener) {
+          this.addEventListener("loadend", function () {
+            var status = Number(this.status || 0);
 
-          if (status >= 200 && status < 300) {
-            notifyApprovalActionCompleted(actionName);
+            if (status >= 200 && status < 300) {
+              notifyApprovalActionCompleted(actionName);
+            } else if (status >= 400) {
+              ODataErrorHandler.showBackendError({
+                status: status,
+                statusText: this.statusText,
+                responseText: this.responseText
+              }, "The approval action could not be completed.");
+            }
+          });
+        }
+
+        if (!actionName || remarks === null) {
+          return originalSend.apply(this, arguments);
+        }
+
+        return originalSend.call(this, injectRemarksIntoRequestBody(body, actionName, remarks));
+      };
+    }
+
+    if (typeof window.fetch === "function" && !window.__ztblApprovalActionFetchPatch) {
+      window.__ztblApprovalActionFetchPatch = true;
+      originalFetch = window.fetch;
+
+      window.fetch = function (input, init) {
+        var url = typeof input === "string" ? input : input && input.url;
+        var requestInit = init ? Object.assign({}, init) : {};
+        var body = requestInit.body;
+        var actionName = getApprovalActionFromRequest(url, body);
+        var remarks = getCapturedRemarksForAction(actionName);
+
+        if (actionName && remarks !== null && typeof body === "string") {
+          requestInit.body = injectRemarksIntoRequestBody(body, actionName, remarks);
+        }
+
+        return originalFetch.call(this, input, requestInit).then(function (response) {
+          if (!actionName) {
+            return response;
           }
+
+          if (response.ok) {
+            notifyApprovalActionCompleted(actionName);
+            return response;
+          }
+
+          if (response.clone) {
+            response.clone().text().then(function (responseText) {
+              ODataErrorHandler.showBackendError({
+                status: response.status,
+                statusText: response.statusText,
+                responseText: responseText
+              }, "The approval action could not be completed.");
+            });
+          }
+
+          return response;
         });
-      }
-
-      if (!actionName || remarks === null) {
-        return originalSend.apply(this, arguments);
-      }
-
-      return originalSend.call(this, injectRemarksIntoRequestBody(body, actionName, remarks));
-    };
+      };
+    }
   }
 
   function refreshApprovalAfterAction(owner) {
@@ -2112,6 +2165,7 @@ sap.ui.define([
 
   function syncStatusCellClass(cell, status) {
     var statusText = ApprovalFormatter.formatStatusText(status);
+    var statusState = ApprovalFormatter.formatStatusState(status) || "None";
     var normalizedStatus = String(statusText || "").trim().toLowerCase();
     var statusClasses = [
       "approvalStatusText--approved",
@@ -2126,6 +2180,10 @@ sap.ui.define([
       activeClassName = "approvalStatusText--pending";
     } else if (normalizedStatus === "rejected") {
       activeClassName = "approvalStatusText--rejected";
+    }
+
+    if (cell && cell.setState) {
+      cell.setState(statusState);
     }
 
     updateCellClasses(cell, statusClasses, activeClassName);
@@ -2153,7 +2211,7 @@ sap.ui.define([
 
   function syncActionCellDisplay(cell, actionType, recordKey, recordKeyText, itemCount) {
     var actionText = getRequestActionText(actionType, recordKey, recordKeyText, itemCount);
-    var actionState = getRequestActionState(actionType, recordKey, recordKeyText, itemCount);
+    var actionState = getRequestActionState(actionType, recordKey, recordKeyText, itemCount) || "None";
 
     if (!cell) {
       return;
@@ -2336,6 +2394,41 @@ sap.ui.define([
     });
   }
 
+  function triggerInitialListLoad(extension, view) {
+    var filterBar = null;
+
+    if (!view || !view.findAggregatedObjects || extension._approvalInitialLoadTriggered) {
+      return;
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      if (control && control.isA &&
+          (control.isA("sap.ui.mdc.FilterBar") || control.isA("sap.ui.mdc.FilterBarBase"))) {
+        filterBar = control;
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!filterBar) {
+      return;
+    }
+
+    extension._approvalInitialLoadTriggered = true;
+
+    try {
+      if (filterBar.triggerSearch) {
+        filterBar.triggerSearch();
+      } else if (filterBar.search) {
+        filterBar.search();
+      }
+    } catch (error) {
+      extension._approvalInitialLoadTriggered = false;
+      // Let the standard Fiori elements initial-load handling continue.
+    }
+  }
+
   var ApprovalListReportExtension = ControllerExtension.extend("ztbl.approval.ui.ext.controller.ApprovalListReport", {
     override: {
       onInit: function () {
@@ -2380,6 +2473,7 @@ sap.ui.define([
         applyReadableListTables(view);
         syncApprovalItemsVisibility(view);
         registerApprovalActionPayloadFix(this);
+        triggerInitialListLoad(this, view);
       },
 
       onExit: function () {

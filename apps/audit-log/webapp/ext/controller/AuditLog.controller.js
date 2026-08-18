@@ -60,6 +60,9 @@ sap.ui.define([
         changedBy: "—",
         changedAt: "—",
         rollbackAuditId: "—",
+        sourceAuditId: "—",
+        linkedAuditId: "—",
+        linkedAuditLabel: "Rollback Audit ID:",
         actionText: "—",
         actionState: "None",
         statusText: "Completed",
@@ -309,6 +312,65 @@ sap.ui.define([
     });
   }
 
+  function requestRollbackSourceAuditId(context, rollbackAuditId) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+
+    if (!model || !model.bindList || !rollbackAuditId || !Filter || !FilterOperator) {
+      return Promise.resolve("");
+    }
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, [
+        new Filter("RollbackAuditId", FilterOperator.EQ, rollbackAuditId)
+      ], {
+        $orderby: "ChangedAt desc",
+        $top: 1
+      });
+    } catch (error) {
+      return Promise.resolve("");
+    }
+
+    return requestContextsFromListBinding(binding).then(function (rows) {
+      return rows && rows[0] && rows[0].AuditId || "";
+    }).catch(function () {
+      return "";
+    });
+  }
+
+  function extractRollbackSourceAuditId(value) {
+    var match = String(value || "").match(/rollback\s+of\s+audit\s+([A-Za-z0-9-]+)/i);
+
+    return match && match[1] || "";
+  }
+
+  function requestLatestRollbackAuditId(context, tableName) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+
+    if (!model || !model.bindList || !tableName || !Filter || !FilterOperator) {
+      return Promise.resolve("");
+    }
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, [
+        new Filter("TableName", FilterOperator.EQ, tableName),
+        new Filter("ActionType", FilterOperator.EQ, "R")
+      ], {
+        $orderby: "ChangedAt desc",
+        $top: 1
+      });
+    } catch (error) {
+      return Promise.resolve("");
+    }
+
+    return requestContextsFromListBinding(binding).then(function (rows) {
+      return rows && rows[0] && rows[0].AuditId || "";
+    }).catch(function () {
+      return "";
+    });
+  }
+
   function isAuditChildRow(object, parentValues) {
     var sameAuditPrefix;
     var sameTable;
@@ -457,12 +519,18 @@ sap.ui.define([
   }
 
   function requestBulkItems(context, source, parentValues) {
-    return requestNavigationItems(context).then(function (items) {
+    var auditItemsId = parentValues && (parentValues.RollbackAuditId || parentValues.AuditId);
+
+    return requestAuditItemEntity(context, auditItemsId).then(function (items) {
       if (items.length) {
         return items;
       }
 
-      return requestAuditItemEntity(context, parentValues.AuditId);
+      if (auditItemsId !== (parentValues && parentValues.AuditId)) {
+        return [];
+      }
+
+      return requestNavigationItems(context);
     }).then(function (items) {
       if (items.length) {
         return items;
@@ -480,7 +548,9 @@ sap.ui.define([
 
   function buildInfoRows(values) {
     var isBulk = AuditFormatter.isBulkRecord(values);
-    var actionText = isBulk ? AuditFormatter.formatOperationText(
+    var isRolledBack = !!String(values.RollbackAuditId || "").trim();
+    var isRollbackEntry = String(values.ActionType || "").trim().toUpperCase() === "R";
+    var actionText = isRolledBack ? "Rollback" : isBulk ? AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -494,17 +564,21 @@ sap.ui.define([
       {
         label: "Operation",
         value: actionText,
-        state: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
+        state: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(actionText),
         isStatus: true
       },
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
       { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" },
-      { label: "Rollback Audit ID", value: AuditFormatter.formatAuditValue(values.RollbackAuditId), state: "None" }
+      {
+        label: isRollbackEntry ? "Rollback ID" : "Rollback Audit ID",
+        value: AuditFormatter.formatAuditValue(isRollbackEntry ? values.AuditId : values.RollbackAuditId),
+        state: "None"
+      }
     ];
   }
 
   function buildOverviewRows(values) {
-    var operation = AuditFormatter.formatOperationText(
+    var operation = String(values.RollbackAuditId || "").trim() ? "Rollback" : AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -518,6 +592,22 @@ sap.ui.define([
       { label: "Changed By", value: AuditFormatter.formatAuditValue(values.ChangedBy), state: "None" },
       { label: "Changed At", value: AuditFormatter.formatTimestamp(values.ChangedAt), state: "None" }
     ];
+  }
+
+  function requestEntityContextsFromListBinding(binding) {
+    if (!binding || !binding.requestContexts) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve().then(function () {
+      return binding.requestContexts(0, 1);
+    }).then(function (contexts) {
+      return contexts || [];
+    }).finally(function () {
+      if (binding && binding.destroy) {
+        binding.destroy();
+      }
+    });
   }
 
   function buildHorizontalColumns(rows, labelPropertyName) {
@@ -589,7 +679,7 @@ sap.ui.define([
 
   function buildAuditDetail(values) {
     var baseActionText = AuditFormatter.formatActionText(values.ActionType);
-    var actionText = AuditFormatter.formatOperationText(
+    var actionText = String(values.RollbackAuditId || "").trim() ? "Rollback" : AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -605,13 +695,16 @@ sap.ui.define([
     var oldColumnHeader = baseActionText === "Delete" ? "Previous Value" : "Before";
     var newColumnHeader = baseActionText === "Create" ? "New Value" : "After";
     var rollbackAuditId = AuditFormatter.formatAuditValue(values.RollbackAuditId);
+    var isRollbackEntry = baseActionText === "Rollback";
+    var sourceAuditId = AuditFormatter.formatAuditValue(values.SourceAuditId);
+    var linkedAuditId = isRollbackEntry ? AuditFormatter.formatAuditValue(values.AuditId) : rollbackAuditId;
+    var linkedAuditLabel = isRollbackEntry ? "Rollback ID:" : "Rollback Audit ID:";
     var fieldName = AuditFormatter.formatAuditValue(values.FieldName);
     var rolledBack = baseActionText === "Rollback" || rollbackAuditId !== "—";
     var rollbackAvailable = !rolledBack && AuditFormatter.isRollbackAvailable(operationControl);
-    var rollbackMessage = baseActionText === "Rollback" ?
-      "This audit entry was created by a rollback operation." :
-      "This audit has already been rolled back" +
-        (rollbackAuditId === "—" ? "." : ". Rollback Audit ID: " + rollbackAuditId + ".");
+    var rollbackMessage = "This audit has already been rolled back" +
+      (baseActionText === "Rollback" ? "." :
+        (rollbackAuditId === "—" ? "." : ". Rollback Audit ID: " + rollbackAuditId + "."));
 
     return {
       title: AuditFormatter.formatAuditValue(values.AuditId),
@@ -624,10 +717,13 @@ sap.ui.define([
       changedBy: AuditFormatter.formatAuditValue(values.ChangedBy),
       changedAt: AuditFormatter.formatTimestamp(values.ChangedAt),
       rollbackAuditId: rollbackAuditId,
+      sourceAuditId: sourceAuditId,
+      linkedAuditId: linkedAuditId,
+      linkedAuditLabel: linkedAuditLabel,
       affectedRecordsText: "Loading…",
       changedFieldsText: "Loading…",
       actionText: actionText,
-      actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(values.ActionType),
+      actionState: actionText === "Bulk" ? "None" : AuditFormatter.formatActionState(actionText),
       rolledBack: rolledBack,
       statusText: rolledBack ? "Rolled back" : rollbackAvailable ? "Rollback available" : "Completed",
       statusState: rolledBack ? "Success" : rollbackAvailable ? "Information" : "None",
@@ -913,7 +1009,12 @@ sap.ui.define([
       return label === "RECORDKEY" ? "RECORD KEY" : label;
     }
 
-    if (!sourceItems.length && !AuditFormatter.isBulkRecord(parentValues)) {
+    function getRecordKeyColumnWidth(key) {
+      return /(?:^|_)ID$/.test(key) || key === "RECORD_KEY" ? "22rem" : "14rem";
+    }
+
+    if (!sourceItems.length && !AuditFormatter.isBulkRecord(parentValues) &&
+        !String(parentValues.RollbackAuditId || "").trim()) {
       sourceItems = [parentValues];
     }
 
@@ -931,7 +1032,7 @@ sap.ui.define([
           recordKeyColumns.push({
             key: key,
             label: formatRecordKeyColumnLabel(recordKeyRow.key || recordKeyRow.field),
-            width: key === "ENTITY_ID" ? "22rem" : "14rem"
+            width: getRecordKeyColumnWidth(key)
           });
         }
       });
@@ -1018,7 +1119,7 @@ sap.ui.define([
       tableRows: tableRows,
       tableWidth: recordKeyColumns.length + fieldColumns.length > 4 ?
         (9 + recordKeyColumns.reduce(function (total, column) {
-          return total + (column.key === "ENTITY_ID" ? 22 : 14);
+          return total + parseInt(column.width, 10);
         }, 0) + fieldColumns.length * 14) + "rem" : "100%",
       itemSummary: formatCount(itemRows.length, "record") + " · " + formatCount(fieldColumns.length, "field"),
       affectedRecordCount: itemRows.length,
@@ -1167,6 +1268,22 @@ sap.ui.define([
     view.__auditDetailLoadSequence = loadSequence;
 
     return requestAuditValues(context).then(function (values) {
+      if (String(values.ActionType || "").trim().toUpperCase() === "R" && values.AuditId) {
+        var sourceAuditIdFromMetadata = extractRollbackSourceAuditId(values.NewValue);
+
+        if (sourceAuditIdFromMetadata) {
+          values.SourceAuditId = sourceAuditIdFromMetadata;
+          return values;
+        }
+
+        return requestRollbackSourceAuditId(context, values.AuditId).then(function (sourceAuditId) {
+          values.SourceAuditId = sourceAuditId;
+          return values;
+        });
+      }
+
+      return values;
+    }).then(function (values) {
       var itemsPromise;
 
       values = mergeAuditValues(values, overrideValues);
@@ -1191,9 +1308,11 @@ sap.ui.define([
       if (AuditFormatter.isBulkRecord(values)) {
         itemsPromise = requestBulkItems(context, source || null, values);
       } else {
-        itemsPromise = requestNavigationItems(context).then(function (items) {
-          if ((!items || !items.length) && values.AuditId) {
-            return requestAuditItemEntity(context, values.AuditId);
+        var auditItemsId = values.RollbackAuditId || values.AuditId;
+
+        itemsPromise = requestAuditItemEntity(context, auditItemsId).then(function (items) {
+          if ((!items || !items.length) && values.AuditId && auditItemsId === values.AuditId) {
+            return requestNavigationItems(context);
           }
           return items || [];
         });
@@ -1358,13 +1477,191 @@ sap.ui.define([
 
       if (rollbackAuditId) {
         patchRollbackAuditId(view, rollbackAuditId);
-        return refreshAuditData(context);
+        return refreshAuditData(context).then(function () {
+          return rollbackAuditId;
+        });
       }
 
       return refreshAuditData(context).then(function () {
         rollbackAuditId = getContextValue(context, "RollbackAuditId");
-        patchRollbackAuditId(view, rollbackAuditId);
+        if (rollbackAuditId) {
+          patchRollbackAuditId(view, rollbackAuditId);
+          return rollbackAuditId;
+        }
+
+        return requestLatestRollbackAuditId(context, getContextValue(context, "TableName"))
+          .then(function (latestRollbackAuditId) {
+            patchRollbackAuditId(view, latestRollbackAuditId);
+            return latestRollbackAuditId;
+          });
       });
+    });
+  }
+
+  function findAuditContext(context, auditId) {
+    var model = context && context.getModel && context.getModel();
+    var binding;
+    var directBinding;
+
+    if (!model || !model.bindList || !auditId) {
+      return Promise.resolve(null);
+    }
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, [
+        new Filter("AuditId", FilterOperator.EQ, auditId)
+      ], {
+        $top: 1
+      });
+    } catch (error) {
+      return Promise.resolve(null);
+    }
+
+    return requestEntityContextsFromListBinding(binding).then(function (contexts) {
+      var foundContext = contexts && contexts[0];
+
+      if (foundContext) {
+        return foundContext;
+      }
+
+      try {
+        directBinding = model.bindContext("/AuditLog(AuditId='" + escapeODataString(auditId) + "')");
+      } catch (error) {
+        return null;
+      }
+
+      if (!directBinding || !directBinding.getBoundContext) {
+        return null;
+      }
+
+      return Promise.resolve(directBinding.getBoundContext().requestObject()).then(function () {
+        return directBinding.getBoundContext();
+      }).catch(function () {
+        return null;
+      });
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function findAuditContextWithRetry(context, auditId, attempt) {
+    var retryAttempt = attempt || 0;
+
+    return findAuditContext(context, auditId).then(function (rollbackContext) {
+      if (rollbackContext || retryAttempt >= 4) {
+        return rollbackContext;
+      }
+
+      return new Promise(function (resolve) {
+        setTimeout(resolve, 300);
+      }).then(function () {
+        return findAuditContextWithRetry(context, auditId, retryAttempt + 1);
+      });
+    });
+  }
+
+  function findLatestRollbackContext(context) {
+    var model = context && context.getModel && context.getModel();
+    var tableName = getContextValue(context, "TableName");
+    var recordKey = getContextValue(context, "RecordKey");
+    var binding;
+    var filters;
+
+    if (!model || !model.bindList || !tableName) {
+      return Promise.resolve(null);
+    }
+
+    filters = [
+      new Filter("TableName", FilterOperator.EQ, tableName),
+      new Filter("ActionType", FilterOperator.EQ, "R")
+    ];
+
+    if (recordKey) {
+      filters.push(new Filter("RecordKey", FilterOperator.EQ, recordKey));
+    }
+
+    try {
+      binding = model.bindList("/AuditLog", null, null, filters, {
+        $orderby: "ChangedAt desc",
+        $top: 1
+      });
+    } catch (error) {
+      return Promise.resolve(null);
+    }
+
+    return requestEntityContextsFromListBinding(binding).then(function (contexts) {
+      return contexts && contexts[0] || null;
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function navigateToAuditHash(auditId) {
+    var currentHash;
+    var nextHash;
+
+    if (typeof window === "undefined" || !window.location || !auditId) {
+      return false;
+    }
+
+    currentHash = window.location.hash || "";
+    if (!/AuditLog\('[^']*'\)/.test(currentHash)) {
+      return false;
+    }
+
+    nextHash = currentHash.replace(
+      /AuditLog\('[^']*'\)/,
+      "AuditLog('" + String(auditId).replace(/'/g, "''") + "')"
+    );
+
+    if (nextHash === currentHash) {
+      return false;
+    }
+
+    window.location.hash = nextHash;
+    return true;
+  }
+
+  function navigateToAuditId(context, auditId, routing) {
+    if (!auditId) {
+      return Promise.resolve(false);
+    }
+
+    if (navigateToAuditHash(auditId)) {
+      return Promise.resolve(true);
+    }
+
+    return findAuditContextWithRetry(context, auditId).then(function (targetContext) {
+      if (!targetContext || !routing || !routing.navigate) {
+        return false;
+      }
+
+      routing.navigate(targetContext);
+      return true;
+    });
+  }
+
+  function navigateToRollbackAudit(context, auditId, routing) {
+    if (!auditId) {
+      return Promise.resolve(false);
+    }
+
+    if (navigateToAuditHash(auditId)) {
+      return Promise.resolve(true);
+    }
+
+    return findAuditContextWithRetry(context, auditId).then(function (rollbackContext) {
+      if (!rollbackContext) {
+        return findLatestRollbackContext(context);
+      }
+      return rollbackContext;
+    }).then(function (rollbackContext) {
+      if (!rollbackContext) {
+        return false;
+      }
+
+      routing.navigate(rollbackContext);
+      return true;
     });
   }
 
@@ -1433,6 +1730,39 @@ sap.ui.define([
     }
 
     return Promise.reject(new Error("Clipboard API is not available."));
+  }
+
+  function triggerAuditFilterSearch(extension) {
+    var view = extension && extension.base && extension.base.getView && extension.base.getView();
+    var filterBar;
+
+    if (!view || !view.findAggregatedObjects) {
+      return;
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      var isFilterBar = control && control.isA && (
+        control.isA("sap.ui.mdc.FilterBar") ||
+        control.isA("sap.ui.comp.smartfilterbar.SmartFilterBar")
+      );
+
+      if (isFilterBar) {
+        filterBar = control;
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!filterBar) {
+      return;
+    }
+
+    if (filterBar.triggerSearch) {
+      filterBar.triggerSearch();
+    } else if (filterBar.search) {
+      filterBar.search();
+    }
   }
 
   var AuditLogExtension = ControllerExtension.extend("ztbl.audit.ui.ext.controller.AuditLog", {
@@ -1509,6 +1839,34 @@ sap.ui.define([
       }
     },
 
+    onAuditLinkedIdPress: function () {
+      var view = this.base && this.base.getView && this.base.getView();
+      var context = getObjectPageContext(view);
+      var model = view && view.getModel && view.getModel("auditDetail");
+      var linkedAuditId = model && model.getProperty && model.getProperty("/linkedAuditId");
+      var routing = this.base && this.base.routing;
+
+      if (!linkedAuditId || linkedAuditId === "—") {
+        return;
+      }
+
+      navigateToAuditId(context, linkedAuditId, routing).catch(function () {
+        MessageToast.show("The linked audit record could not be opened.");
+      });
+    },
+
+    onOperationFilterChange: function () {
+      var that = this;
+
+      if (typeof setTimeout === "function") {
+        setTimeout(function () {
+          triggerAuditFilterSearch(that);
+        }, 0);
+      } else {
+        triggerAuditFilterSearch(this);
+      }
+    },
+
     onCopyAuditIdPress: function () {
       var view = this.base && this.base.getView && this.base.getView();
       var model = view && view.getModel && view.getModel("auditDetail");
@@ -1537,6 +1895,7 @@ sap.ui.define([
       var rollbackAuditId = getContextValue(context, "RollbackAuditId");
       var actionType = getContextValue(context, "ActionType");
       var auditDetailModel = view && view.getModel && view.getModel("auditDetail");
+      var completedRollbackAuditId = "";
 
       if (!context) {
         MessageBox.error("No audit record is selected for rollback.");
@@ -1566,10 +1925,18 @@ sap.ui.define([
             auditDetailModel.setProperty("/rollbackBusy", true);
             auditDetailModel.setProperty("/rollbackAvailable", false);
           }
-          executeRollback(context, view).then(function () {
-            return loadAuditDetailModels(view, context, source);
+          executeRollback(context, view).then(function (rollbackAuditId) {
+            completedRollbackAuditId = rollbackAuditId || "";
+            return loadAuditDetailModels(view, context, source, rollbackAuditId ? {
+              __rollbackResultOnly: true,
+              RollbackAuditId: rollbackAuditId
+            } : null);
           }).then(function () {
-            MessageToast.show("Rollback completed.");
+            MessageToast.show(
+              completedRollbackAuditId ?
+                "Rollback completed. Rollback ID: " + completedRollbackAuditId :
+                "Rollback completed. Rollback ID is not available."
+            );
           }).catch(function (error) {
             ODataErrorHandler.showBackendError(error, "Rollback failed.");
           }).finally(function () {

@@ -15,7 +15,7 @@
         <ObjectStatus
           visible="{approvalDetail>isStatus}"
           text="{approvalDetail>value}"
-          state="{approvalDetail>state}"
+          state="{= ${approvalDetail>state} || 'None' }"
           class="approvalInfoValue"/>
         <Text
           visible="{= !${approvalDetail>isStatus} }"

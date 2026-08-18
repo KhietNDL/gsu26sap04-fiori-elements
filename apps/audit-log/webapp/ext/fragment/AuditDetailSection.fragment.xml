@@ -72,8 +72,12 @@
           <Text text="{auditDetail>/changedBy}" tooltip="{auditDetail>/changedBy}" wrapping="true" class="auditInfoValue"/>
         </HBox>
         <HBox alignItems="Start" renderType="Bare" class="auditInfoField auditInfoFieldWide">
-          <Label text="{i18n>auditInfoRollbackAuditId}" class="auditInfoLabel"/>
-          <Text text="{auditDetail>/rollbackAuditId}" tooltip="{auditDetail>/rollbackAuditId}" wrapping="true" class="auditInfoValue auditInfoCode"/>
+          <Label text="{auditDetail>/linkedAuditLabel}" class="auditInfoLabel"/>
+          <Text
+            text="{auditDetail>/linkedAuditId}"
+            tooltip="{auditDetail>/linkedAuditId}"
+            wrapping="true"
+            class="auditInfoValue auditInfoCode"/>
         </HBox>
       </VBox>
         </VBox>

@@ -63,7 +63,7 @@
               </customData>
               <ObjectStatus
                 text="{approvalDetail>text}"
-                state="{approvalDetail>state}"
+                state="{= ${approvalDetail>state} || 'None' }"
                 visible="{= ${approvalDetail>kind} === 'status' }"
                 class="approvalSpreadsheetAction"/>
               <Text

@@ -38,6 +38,8 @@ assert.ok(!approvalCss.includes(".sapUxAPObjectPageSection:has(.approvalDetailRo
 assert.ok(!approvalCss.includes(".approvalDetailSectionTitle.sapMTitle"), "approval relies on the native Audit-matching section title typography");
 assert.ok(approvalCss.includes(".approvalCardPanel.sapMPanel"), "approval cards share the Audit Log panel treatment");
 assert.ok(approvalCss.includes("border-radius: 0.75rem;"), "approval cards use the same rounded corners as Audit Log");
+assert.ok(approvalCss.includes("flex: 0 0 12rem;"), "approval metadata labels use the Audit Log width");
+assert.ok(approvalCss.includes(".approvalInfoLabel.sapMLabel .sapMLabelTextWrapper"), "approval metadata labels do not truncate like UI5 defaults");
 const formattedRequestDetailFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "FormattedRequestDetail.fragment.xml"), "utf8");
 const bulkApprovalItemsFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "BulkApprovalItems.fragment.xml"), "utf8");
 const operationColumnFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "OperationColumn.fragment.xml"), "utf8");
@@ -48,7 +50,11 @@ assert.ok(bulkApprovalItemsFragment.includes('columns="{path: \'approvalDetail>/
 assert.ok(bulkApprovalItemsFragment.includes('items="{path: \'approvalDetail>/bulkTableRows\''), "approval items render flattened table rows");
 assert.ok(!bulkApprovalItemsFragment.includes("View Changes"), "approval items do not require a View Changes action");
 assert.ok(operationColumnFragment.includes("approvalOperationBadge"), "approval list operations use the same semantic badge treatment as Audit Log");
-assert.ok(operationColumnFragment.includes("formatRequestActionKey"), "approval list exposes stable action keys for Audit-matching colors");
+assert.ok(operationColumnFragment.includes("key=\"action\""), "approval list exposes stable action keys for Audit-matching colors");
+assert.ok(operationColumnFragment.includes("'Success'"), "approval operation maps create to a valid success state");
+const statusColumnFragment = fs.readFileSync(path.join(__dirname, "..", "apps", "approval-request", "webapp", "ext", "fragment", "StatusColumn.fragment.xml"), "utf8");
+assert.ok(statusColumnFragment.includes("'Approved'"), "approval status normalizes approved text");
+assert.ok(statusColumnFragment.includes("'Error'"), "approval status maps rejected to a valid error state");
 assert.ok(approvalCss.includes('.approvalOperationBadge[data-action="B"]'), "approval Bulk operations use the same indication color as Audit Log");
 
 function loadController() {
@@ -275,6 +281,8 @@ assert.strictEqual(updateRows[0].oldValue, "Old", "update shows old value from O
 assert.strictEqual(updateRows[0].newValue, "New", "update shows new value from NewData JSON");
 const updateChangeHtml = api.buildApprovalChangeTableHtml(updateRows, "Update", "Old Value", "New Value");
 assert.ok(updateChangeHtml.includes("<th>Name</th>"), "approval change HTML uses changed fields as horizontal columns");
+assert.ok(updateChangeHtml.includes("<th>Action</th>"), "approval change HTML includes the semantic action column");
+assert.ok(updateChangeHtml.includes("approvalChangeAction--update"), "approval update action uses the semantic color class");
 assert.ok(updateChangeHtml.includes("<td>Old</td>"), "approval change HTML includes old values");
 assert.ok(updateChangeHtml.includes("<td>New</td>"), "approval change HTML includes new values");
 
@@ -357,6 +365,10 @@ assert.strictEqual(api.getApprovalActionFromRequest(
   "/sap/opu/odata4/$batch",
   "POST /com.sap.gateway.srvd.zsd_tbl_config.v0001.approve HTTP/1.1"
 ), "approve", "batch request action is detected from the embedded URL");
+assert.strictEqual(api.getApprovalActionFromRequest(
+  "/com.sap.gateway.srvd.zsd_tbl_config.v0001.approve(...)",
+  ""
+), "approve", "bound approval action with ellipsis parentheses is detected");
 assert.strictEqual(api.injectRemarksIntoRequestBody('{"remarks":"old"}', "approve", "new comment"),
   '{"remarks":"old"}', "existing direct remarks are preserved by design");
 const batchBody = [

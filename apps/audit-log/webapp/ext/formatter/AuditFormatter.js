@@ -500,14 +500,27 @@ sap.ui.define([], function () {
     return count !== null && count >= 2;
   }
 
-  function formatOperationText(actionType, recordKey, oldValue, newValue) {
+  function formatOperationText(actionType, recordKey, oldValue, newValue, rollbackAuditId) {
     var rawAction = String(actionType || "").trim().toUpperCase();
     var action = rawAction.split(/\s+/)[0];
+
+    // Match Custom Design: once the source audit has a RollbackAuditId,
+    // display the source operation as Rollback while keeping its original
+    // audit item changes intact.
+    if (rollbackAuditId && String(rollbackAuditId).trim()) {
+      return "Rollback";
+    }
 
     // Rollback is the parent operation even when its summary contains several
     // AuditItems. "Bulk" describes the item count, not the operation semantics.
     if (action === "R" || action === "ROLLBACK") {
       return "Rollback";
+    }
+
+    // A BULK parent remains Bulk even when it contains only one item. The
+    // operation filter and the visible row must use the same classification.
+    if (String(recordKey || "").trim().toUpperCase() === "BULK") {
+      return "Bulk";
     }
 
     var count = getBulkItemCount(oldValue, newValue);
@@ -533,13 +546,13 @@ sap.ui.define([], function () {
     return formatActionText(action);
   }
 
-  function formatOperationState(actionType, recordKey, oldValue, newValue) {
-    var text = formatOperationText(actionType, recordKey, oldValue, newValue);
+  function formatOperationState(actionType, recordKey, oldValue, newValue, rollbackAuditId) {
+    var text = formatOperationText(actionType, recordKey, oldValue, newValue, rollbackAuditId);
     return formatActionState(text);
   }
 
-  function formatOperationIcon(actionType, recordKey, oldValue, newValue) {
-    var text = formatOperationText(actionType, recordKey, oldValue, newValue);
+  function formatOperationIcon(actionType, recordKey, oldValue, newValue, rollbackAuditId) {
+    var text = formatOperationText(actionType, recordKey, oldValue, newValue, rollbackAuditId);
 
     if (text === "Bulk") {
       return "sap-icon://group-2";
@@ -759,8 +772,8 @@ sap.ui.define([], function () {
     return formatAuditListStatusText(actionType, rollbackAuditId) === "Rolled back" ? "Success" : "Information";
   }
 
-  function formatOperationKey(actionType, recordKey, oldValue, newValue) {
-    return formatActionKey(formatOperationText(actionType, recordKey, oldValue, newValue));
+  function formatOperationKey(actionType, recordKey, oldValue, newValue, rollbackAuditId) {
+    return formatActionKey(formatOperationText(actionType, recordKey, oldValue, newValue, rollbackAuditId));
   }
 
   function isRolledBack(actionType, rollbackAuditId) {
