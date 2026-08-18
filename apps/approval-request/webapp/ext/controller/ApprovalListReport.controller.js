@@ -2221,6 +2221,52 @@ sap.ui.define([
     updateCellClasses(cell, actionClasses, activeClassName);
   }
 
+  function ensureApprovalPersistentStyles() {
+    if (typeof document === "undefined" || document.getElementById("ztblApprovalPersistentStyles")) {
+      return;
+    }
+
+    var style = document.createElement("style");
+    style.id = "ztblApprovalPersistentStyles";
+    style.textContent = [
+      ".approvalOperationBadge.sapMObjStatus {",
+      "  display: inline-block !important;",
+      "  max-width: 100% !important;",
+      "  padding: 0 !important;",
+      "  border: 0 !important;",
+      "  background: transparent !important;",
+      "  box-shadow: none !important;",
+      "}",
+      ".approvalOperationBadge .sapMObjStatusText {",
+      "  font-weight: 400 !important;",
+      "}",
+      ".approvalOperationBadge.sapMObjStatusSuccess .sapMObjStatusText, .sapMListTblCell .approvalActionText--create .sapMObjStatusText, .sapMListTblCell .approvalActionText--create .sapMText {",
+      "  color: #107e3e !important;",
+      "}",
+      ".approvalOperationBadge.sapMObjStatusWarning .sapMObjStatusText, .sapMListTblCell .approvalActionText--update .sapMObjStatusText, .sapMListTblCell .approvalActionText--update .sapMText {",
+      "  color: #e9730c !important;",
+      "}",
+      ".approvalOperationBadge.sapMObjStatusError .sapMObjStatusText, .sapMListTblCell .approvalActionText--delete .sapMObjStatusText, .sapMListTblCell .approvalActionText--delete .sapMText {",
+      "  color: #bb0000 !important;",
+      "}",
+      ".approvalOperationBadge.sapMObjStatusInformation .sapMObjStatusText {",
+      "  color: #0a6ed1 !important;",
+      "}",
+      ".approvalOperationBadge[data-action='B'] {",
+      "  border: 0 !important;",
+      "  background: transparent !important;",
+      "}",
+      ".approvalOperationBadge[data-action='B'] .sapMObjStatusText, .approvalOperationBadge.approvalBadge--bulk .sapMObjStatusText {",
+      "  color: #007079 !important;",
+      "  font-weight: 600 !important;",
+      "}",
+      ".sapMListTblCell .approvalStatusText--approved, .sapMListTblCell .approvalStatusText--approved .sapMObjStatusText { color: #107e3e !important; }",
+      ".sapMListTblCell .approvalStatusText--pending, .sapMListTblCell .approvalStatusText--pending .sapMObjStatusText { color: #e9730c !important; }",
+      ".sapMListTblCell .approvalStatusText--rejected, .sapMListTblCell .approvalStatusText--rejected .sapMObjStatusText { color: #bb0000 !important; }"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
   function syncActionCellDisplay(cell, actionType, recordKey, recordKeyText, itemCount) {
     var actionText = getRequestActionText(actionType, recordKey, recordKeyText, itemCount);
     var actionState = getRequestActionState(actionType, recordKey, recordKeyText, itemCount) || "None";
@@ -2229,12 +2275,23 @@ sap.ui.define([
       return;
     }
 
+    ensureApprovalPersistentStyles();
+
     if (cell.setText) {
       cell.setText(actionText);
     }
 
     if (cell.setState) {
       cell.setState(actionState);
+    }
+
+    if (cell.addStyleClass) {
+      cell.addStyleClass("approvalOperationBadge");
+      if (actionText === "Bulk" || actionText === "BULK" || String(recordKey).toUpperCase() === "BULK") {
+        cell.addStyleClass("approvalBadge--bulk");
+      } else {
+        cell.removeStyleClass("approvalBadge--bulk");
+      }
     }
 
     syncActionCellClass(cell, actionText);
@@ -2386,6 +2443,8 @@ sap.ui.define([
   }
 
   function applyReadableListTables(view) {
+    ensureApprovalPersistentStyles();
+
     if (!view || !view.findAggregatedObjects) {
       return;
     }
@@ -2397,6 +2456,7 @@ sap.ui.define([
         if (control.attachUpdateFinished && !control.data("approvalReadableColumnsAttached")) {
           control.data("approvalReadableColumnsAttached", true);
           control.attachUpdateFinished(function () {
+            ensureApprovalPersistentStyles();
             applyReadableListTable(control);
           });
         }
@@ -2444,6 +2504,7 @@ sap.ui.define([
   var ApprovalListReportExtension = ControllerExtension.extend("ztbl.approval.ui.ext.controller.ApprovalListReport", {
     override: {
       onInit: function () {
+        ensureApprovalPersistentStyles();
         var view = this.base && this.base.getView && this.base.getView();
 
         if (view) {

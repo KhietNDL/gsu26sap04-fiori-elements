@@ -414,40 +414,41 @@
 
 .auditOperationBadge.sapMObjStatus {
   display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--sapList_BorderColor);
-  border-radius: var(--sapButton_BorderCornerRadius);
-  background: var(--sapList_HeaderBackground);
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-.auditOperationBadge.sapMObjStatusSuccess {
-  border-color: var(--sapPositiveColor);
-  background: var(--sapSuccessBackground);
+.auditOperationBadge .sapMObjStatusText {
+  font-weight: 400;
 }
 
-.auditOperationBadge.sapMObjStatusWarning {
-  border-color: var(--sapCriticalColor);
-  background: var(--sapWarningBackground);
+.auditOperationBadge.sapMObjStatusSuccess .sapMObjStatusText {
+  color: var(--sapPositiveTextColor);
 }
 
-.auditOperationBadge.sapMObjStatusError {
-  border-color: var(--sapNegativeColor);
-  background: var(--sapErrorBackground);
+.auditOperationBadge.sapMObjStatusWarning .sapMObjStatusText {
+  color: var(--sapCriticalTextColor);
 }
 
-.auditOperationBadge.sapMObjStatusInformation {
-  border-color: var(--sapInformativeColor);
-  background: var(--sapInformationBackground);
+.auditOperationBadge.sapMObjStatusError .sapMObjStatusText {
+  color: var(--sapNegativeTextColor);
+}
+
+.auditOperationBadge.sapMObjStatusInformation .sapMObjStatusText {
+  color: var(--sapInformativeTextColor);
 }
 
 .auditOperationBadge[data-action="B"] {
-  border-color: var(--sapIndicationColor_6);
-  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+  border: 0 !important;
+  background: transparent !important;
 }
 
 .auditOperationBadge[data-action="B"] .sapMObjStatusText,
 .auditOperationBadge[data-action="B"] .sapUiIcon {
   color: var(--sapIndicationColor_6);
+  font-weight: 400;
 }
 
 .auditIdMonospace {

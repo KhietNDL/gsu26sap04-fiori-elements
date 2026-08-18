@@ -1,6 +1,6 @@
 sap.ui.define(
-  ["sap/fe/core/AppComponent", "ztbl/approval/ui/model/formatter"],
-  function (AppComponent, formatter) {
+  ["sap/fe/core/AppComponent", "sap/ui/dom/includeStylesheet", "ztbl/approval/ui/model/formatter"],
+  function (AppComponent, includeStylesheet, formatter) {
     "use strict";
 
     function installApprovalDisplayCleanup() {
@@ -19,6 +19,21 @@ sap.ui.define(
         "}"
       ].join("\n");
       document.head.appendChild(style);
+    }
+
+    function ensureApprovalCss() {
+      if (typeof document === "undefined") {
+        return;
+      }
+      var cssId = "ztblApprovalCustomCss";
+      if (!document.getElementById(cssId)) {
+        var link = document.createElement("link");
+        link.id = cssId;
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.href = sap.ui.require.toUrl("ztbl/approval/ui/css/approval.css");
+        document.head.appendChild(link);
+      }
     }
 
     function hideRawJsonColumns() {
@@ -58,16 +73,27 @@ sap.ui.define(
       }
 
       apply();
-      setTimeout(apply, 500);
+      setTimeout(apply, 300);
+      setTimeout(apply, 800);
       setTimeout(apply, 1500);
     }
-
-    installApprovalDisplayCleanup();
-    hideRawJsonColumns();
 
     return AppComponent.extend("ztbl.approval.ui.Component", {
       metadata: {
         manifest: "json"
+      },
+
+      init: function () {
+        AppComponent.prototype.init.apply(this, arguments);
+
+        installApprovalDisplayCleanup();
+        ensureApprovalCss();
+        hideRawJsonColumns();
+
+        this.getRouter().attachRouteMatched(function () {
+          ensureApprovalCss();
+          hideRawJsonColumns();
+        });
       }
     });
   }

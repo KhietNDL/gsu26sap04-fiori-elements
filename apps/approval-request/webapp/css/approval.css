@@ -992,49 +992,46 @@
 .approvalOperationBadge.sapMObjStatus {
   display: inline-block;
   max-width: 100%;
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--sapList_BorderColor);
-  border-radius: var(--sapButton_BorderCornerRadius);
-  background: var(--sapList_HeaderBackground);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .approvalSpreadsheetAction .sapMObjStatusText,
 .approvalOperationBadge .sapMObjStatusText {
-  font-weight: 400;
+  font-weight: 600;
 }
 
-.approvalSpreadsheetAction.sapMObjStatusSuccess,
-.approvalOperationBadge.sapMObjStatusSuccess {
-  border-color: var(--sapPositiveColor);
-  background: var(--sapSuccessBackground);
+.approvalSpreadsheetAction.sapMObjStatusSuccess .sapMObjStatusText,
+.approvalOperationBadge.sapMObjStatusSuccess .sapMObjStatusText {
+  color: var(--sapPositiveTextColor, #107e3e);
 }
 
-.approvalSpreadsheetAction.sapMObjStatusWarning,
-.approvalOperationBadge.sapMObjStatusWarning {
-  border-color: var(--sapCriticalColor);
-  background: var(--sapWarningBackground);
+.approvalSpreadsheetAction.sapMObjStatusWarning .sapMObjStatusText,
+.approvalOperationBadge.sapMObjStatusWarning .sapMObjStatusText {
+  color: var(--sapCriticalTextColor, #e9730c);
 }
 
-.approvalSpreadsheetAction.sapMObjStatusError,
-.approvalOperationBadge.sapMObjStatusError {
-  border-color: var(--sapNegativeColor);
-  background: var(--sapErrorBackground);
+.approvalSpreadsheetAction.sapMObjStatusError .sapMObjStatusText,
+.approvalOperationBadge.sapMObjStatusError .sapMObjStatusText {
+  color: var(--sapNegativeTextColor, #bb0000);
 }
 
-.approvalSpreadsheetAction.sapMObjStatusInformation,
-.approvalOperationBadge.sapMObjStatusInformation {
-  border-color: var(--sapInformativeColor);
-  background: var(--sapInformationBackground);
+.approvalSpreadsheetAction.sapMObjStatusInformation .sapMObjStatusText,
+.approvalOperationBadge.sapMObjStatusInformation .sapMObjStatusText {
+  color: var(--sapInformativeTextColor, #0a6ed1);
 }
 
 .approvalOperationBadge[data-action="B"] {
-  border-color: var(--sapIndicationColor_6);
-  background: var(--sapIndicationColor_6_Background, var(--sapList_HeaderBackground));
+  border: 0;
+  background: transparent;
 }
 
 .approvalOperationBadge[data-action="B"] .sapMObjStatusText,
 .approvalOperationBadge[data-action="B"] .sapUiIcon {
-  color: var(--sapIndicationColor_6);
+  color: var(--sapIndicationColor_6, #007079);
+  font-weight: 600;
 }
 
 .approvalItemsSummaryBadge.sapMObjStatus {

@@ -1765,9 +1765,55 @@ sap.ui.define([
     }
   }
 
+  function ensureAuditPersistentStyles() {
+    if (typeof document === "undefined" || document.getElementById("ztblAuditPersistentStyles")) {
+      return;
+    }
+
+    var style = document.createElement("style");
+    style.id = "ztblAuditPersistentStyles";
+    style.textContent = [
+      ".auditOperationBadge.sapMObjStatus {",
+      "  display: inline-block !important;",
+      "  max-width: 100% !important;",
+      "  padding: 0 !important;",
+      "  border: 0 !important;",
+      "  background: transparent !important;",
+      "  box-shadow: none !important;",
+      "}",
+      ".auditOperationBadge .sapMObjStatusText {",
+      "  font-family: inherit !important;",
+      "  font-size: inherit !important;",
+      "  font-weight: 400 !important;",
+      "}",
+      ".auditOperationBadge.sapMObjStatusSuccess .sapMObjStatusText {",
+      "  color: #107e3e !important;",
+      "}",
+      ".auditOperationBadge.sapMObjStatusWarning .sapMObjStatusText {",
+      "  color: #e9730c !important;",
+      "}",
+      ".auditOperationBadge.sapMObjStatusError .sapMObjStatusText {",
+      "  color: #bb0000 !important;",
+      "}",
+      ".auditOperationBadge.sapMObjStatusInformation .sapMObjStatusText {",
+      "  color: #0a6ed1 !important;",
+      "}",
+      ".auditOperationBadge[data-action='B'] {",
+      "  border: 0 !important;",
+      "  background: transparent !important;",
+      "}",
+      ".auditOperationBadge[data-action='B'] .sapMObjStatusText {",
+      "  color: #007079 !important;",
+      "  font-weight: 400 !important;",
+      "}"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
   var AuditLogExtension = ControllerExtension.extend("ztbl.audit.ui.ext.controller.AuditLog", {
     override: {
       onInit: function () {
+        ensureAuditPersistentStyles();
         var view = this.base && this.base.getView && this.base.getView();
 
         if (view) {
@@ -1793,6 +1839,7 @@ sap.ui.define([
 
       routing: {
         onAfterBinding: function (context) {
+          ensureAuditPersistentStyles();
           var view = this.base && this.base.getView && this.base.getView();
 
           if (view) {
