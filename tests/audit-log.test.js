@@ -142,34 +142,29 @@ assert(api, "formatter exposes test helpers");
 assert(controllerApi, "controller exposes test helpers");
 assert(operationFilter && operationFilter._test, "operation filter exposes test helpers");
 
-assertJsonEqual(operationFilter._test.getFilter(""), {
-  path: "ActionType",
-  operator: "NE",
-  value1: "R"
-}, "All operations hides generated rollback audit records");
+assert.strictEqual(operationFilter._test.getFilter(""), null,
+  "All operations does not constrain the backend ActionType");
 assertJsonEqual(operationFilter._test.getFilter("BULK"), {
   filters: [
     { path: "RecordKey", operator: "EQ", value1: "BULK" },
     { path: "ActionType", operator: "NE", value1: "R" },
     { path: "ActionType", operator: "NE", value1: "ROLLBACK" },
-    { path: "ActionType", operator: "NE", value1: "R BULK" },
-    { path: "RollbackAuditId", operator: "EQ", value1: "" }
+    { path: "ActionType", operator: "NE", value1: "ROLLBACK" }
   ],
   and: true
-}, "Bulk filter targets the derived BULK record marker and excludes rollback summaries");
+}, "Bulk filter targets the BULK parent records");
 assertJsonEqual(operationFilter._test.getFilter("U"), {
   filters: [
     { path: "ActionType", operator: "EQ", value1: "U" },
-    { path: "RecordKey", operator: "NE", value1: "BULK" },
-    { path: "RollbackAuditId", operator: "EQ", value1: "" }
+    { path: "RecordKey", operator: "NE", value1: "BULK" }
   ],
   and: true
-}, "Update filter excludes records displayed as Bulk");
+}, "Update filter targets backend Update audits");
 assertJsonEqual(operationFilter._test.getFilter("R"), {
-  path: "RollbackAuditId",
-  operator: "NE",
-  value1: ""
-}, "Rollback filter shows the single rolled-back source audit");
+  path: "ActionType",
+  operator: "EQ",
+  value1: "R"
+}, "Rollback filter targets generated rollback audits");
 
 assert.strictEqual(api.formatActionText("C"), "Create", "C maps to Create");
 assert.strictEqual(api.formatActionText("U"), "Update", "U maps to Update");
@@ -199,8 +194,8 @@ assert.strictEqual(api.formatOperationKey("C", "BULK", "", "Bulk audit: 000001 i
 assert.strictEqual(api.formatOperationText("C", "BULK", "", "Bulk audit: 000005 item(s)"), "Bulk", "multi-record Create parent remains Bulk");
 assert.strictEqual(api.formatOperationText("R BULK", "BULK", "", "Bulk audit: 000001 item(s)"), "Rollback", "rollback parent keeps Rollback semantics");
 assert.strictEqual(api.formatOperationText("R", "ENTITY_ID=0001"), "Rollback", "R ActionType displays Rollback");
-assert.strictEqual(api.formatOperationText("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "Rollback", "rolled-back source displays Rollback operation");
-assert.strictEqual(api.formatOperationKey("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "R", "rolled-back source uses rollback semantic styling");
+assert.strictEqual(api.formatOperationText("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "Delete", "rolled-back source keeps its backend Delete operation");
+assert.strictEqual(api.formatOperationKey("D", "ENTITY_ID=0001", "old", "", "A-ROLLBACK"), "D", "rolled-back source keeps Delete semantic styling");
 assert.strictEqual(api.formatOperationKey("B", "BULK"), "B", "Bulk operation exposes its semantic styling key");
 assert.strictEqual(api.formatOperationText("R", "BULK", "", "Bulk audit: 000004 item(s)"), "Rollback", "multi-item rollback remains Rollback instead of Bulk");
 assert.strictEqual(api.formatOperationText("U BULK", "BULK"), "Bulk", "bulk marker remains a safe fallback when the item-count summary is unavailable");
@@ -380,8 +375,8 @@ assert.strictEqual(rolledBackSourceDetail.rollbackAvailable, false, "already rol
 assert.strictEqual(rolledBackSourceDetail.rollbackMessageVisible, true, "already rolled-back source audit shows a notice");
 assert(rolledBackSourceDetail.rollbackMessage.includes("A-ROLLBACK"), "rolled-back notice identifies the rollback audit");
 assert(rolledBackSourceDetail.rollbackMessage.includes("Rollback Audit ID"), "rolled-back notice uses the metadata label for the rollback ID");
-assert.strictEqual(rolledBackSourceDetail.actionText, "Rollback", "rolled-back source detail displays Rollback operation");
-assert.strictEqual(rolledBackSourceDetail.infoRows.find((row) => row.label === "Operation").value, "Rollback", "rolled-back source metadata displays Rollback operation");
+assert.strictEqual(rolledBackSourceDetail.actionText, "Update", "rolled-back source detail keeps its backend Update operation");
+assert.strictEqual(rolledBackSourceDetail.infoRows.find((row) => row.label === "Operation").value, "Update", "rolled-back source metadata keeps Update operation");
 assert.strictEqual(rolledBackSourceDetail.infoRows.find((row) => row.label === "Rollback Audit ID").value, "A-ROLLBACK", "source audit keeps its rollback audit ID");
 
 const plainStringDetail = controllerApi.buildAuditDetail({
@@ -412,7 +407,7 @@ const rollbackDeleteResult = controllerApi.buildAuditItemsData({
   NewValue: '{"NAME":"restored"}',
   ActionType: "C"
 }]);
-assert.strictEqual(rollbackDeleteResult.tableRows[0].cells[0].value, "Created", "rollback of Delete displays the executed Create item action");
+assert.strictEqual(rollbackDeleteResult.tableRows[0].cells[0].value, "Create", "rollback item table keeps the backend Create action");
 
 const normalAuditItems = controllerApi.buildAuditItemsData({
   AuditId: "A-NORMAL",
@@ -442,7 +437,7 @@ assert.strictEqual(normalAuditItems.itemRows[0].sourceItem.AuditId, "A-NORMAL", 
 assertJsonEqual(normalAuditItems.columns.slice(0, 2).map((column) => column.label), ["Action", "ENTITY_ID"], "audit item table promotes the actual entity key beside Action");
 assert(normalAuditItems.columns.some((column) => column.label === "PRODUCT_CATEGORY"), "audit item table exposes snapshot fields as dynamic columns");
 assert.strictEqual(normalAuditItems.tableRows.length, 1, "normal audit table renders one physical row per record");
-assert.strictEqual(normalAuditItems.tableRows[0].cells[0].value, "Created", "audit item table shows the semantic item action");
+assert.strictEqual(normalAuditItems.tableRows[0].cells[0].value, "Create", "audit item table shows the backend item action");
 assert.strictEqual(normalAuditItems.tableRows[0].cells[0].kind, "status", "action cell is rendered as an ObjectStatus");
 assert.strictEqual(normalAuditItems.tableRows[0].cells[0].state, "Success", "action cell uses semantic state from UI5");
 assert.strictEqual(normalAuditItems.tableRows[0].cells[1].value, "00000000000000000000000000000000", "audit item table keeps the full entity key value");
@@ -451,9 +446,9 @@ assert.strictEqual(normalAuditItems.columns[1].width, "22rem", "ENTITY_ID receiv
 assert.strictEqual(Object.prototype.hasOwnProperty.call(normalAuditItems, "bulkItemsHtml"), false, "audit items model does not expose generated HTML");
 
 [
-  { actionType: "C", oldValue: "", newValue: '{"NAME":"Created"}', actionText: "Created" },
-  { actionType: "U", oldValue: '{"NAME":"Before"}', newValue: '{"NAME":"After"}', actionText: "Updated" },
-  { actionType: "D", oldValue: '{"NAME":"Deleted"}', newValue: "", actionText: "Deleted" }
+  { actionType: "C", oldValue: "", newValue: '{"NAME":"Created"}', actionText: "Create" },
+  { actionType: "U", oldValue: '{"NAME":"Before"}', newValue: '{"NAME":"After"}', actionText: "Update" },
+  { actionType: "D", oldValue: '{"NAME":"Deleted"}', newValue: "", actionText: "Delete" }
 ].forEach((testCase) => {
   const data = controllerApi.buildAuditItemsData({
     AuditId: "A-" + testCase.actionType,
@@ -721,7 +716,7 @@ assert.strictEqual(bulkDialogData.items[0].recordKeyText, "1", "bulk dialog hide
 assert.strictEqual(bulkDialogData.items[1].recordKeyText, "2", "bulk dialog parses legacy single-field RecordKey as value only");
 assertJsonEqual(bulkDialogData.columns.map((column) => column.label), ["Action", "ID", "ROOM"], "bulk dialog renders entity key columns before dynamic changed fields");
 assert.strictEqual(bulkDialogData.tableRows.length, 2, "bulk dialog renders one physical row per affected record");
-assert.strictEqual(bulkDialogData.tableRows[0].cells[0].value, "Updated", "bulk dialog shows semantic action text");
+assert.strictEqual(bulkDialogData.tableRows[0].cells[0].value, "Update", "bulk dialog shows backend action text");
 assert.strictEqual(bulkDialogData.tableRows[0].cells[0].kind, "status", "bulk dialog renders action via ObjectStatus");
 assert.strictEqual(bulkDialogData.tableRows[0].cells[2].value, "A → B", "bulk dialog compares old and new values in the field cell");
 assert.strictEqual(bulkDialogData.tableRows[1].cells[1].value, "2", "bulk dialog renders the entity ID in its own column");
@@ -741,7 +736,7 @@ const homogeneousCreateDialog = controllerApi.buildBulkDialogData({
   NewValue: "",
   ActionType: "C"
 }]);
-assert.strictEqual(homogeneousCreateDialog.operationText, "Created", "single Create summary does not display Bulk Operation");
+assert.strictEqual(homogeneousCreateDialog.operationText, "Create", "single Create summary does not display Bulk Operation");
 assert.strictEqual(homogeneousCreateDialog.operationState, "Success", "Create summary uses the green semantic state");
 assert.strictEqual(homogeneousCreateDialog.operationKey, "C", "Create summary exposes its action key");
 assertJsonEqual(homogeneousCreateDialog.columns.map((column) => column.label), ["Action", "ENTITY_ID"], "empty FieldName does not create a placeholder column");
@@ -783,7 +778,7 @@ const rollbackAuditIdFixture = controllerApi.buildAuditItemsData({
   ActionType: "U"
 }]);
 assertJsonEqual(rollbackAuditIdFixture.tableRows.map((row) => row.cells[0].value), [
-  "Deleted", "Deleted", "Created", "Updated"
+  "Delete", "Delete", "Create", "Update"
 ], "rollback detail keeps the actions actually executed by the backend");
 assertJsonEqual(rollbackAuditIdFixture.columns.map((column) => column.label), [
   "Action", "ENTITY_ID", "NAME", "STATUS"

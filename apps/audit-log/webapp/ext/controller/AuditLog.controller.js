@@ -519,7 +519,10 @@ sap.ui.define([
   }
 
   function requestBulkItems(context, source, parentValues) {
-    var auditItemsId = parentValues && (parentValues.RollbackAuditId || parentValues.AuditId);
+    // Each audit record owns its own item actions. A rolled-back source must
+    // still show its original Create/Delete/Update items; the generated
+    // rollback audit is loaded separately by its own AuditId.
+    var auditItemsId = parentValues && parentValues.AuditId;
 
     return requestAuditItemEntity(context, auditItemsId).then(function (items) {
       if (items.length) {
@@ -548,9 +551,8 @@ sap.ui.define([
 
   function buildInfoRows(values) {
     var isBulk = AuditFormatter.isBulkRecord(values);
-    var isRolledBack = !!String(values.RollbackAuditId || "").trim();
     var isRollbackEntry = String(values.ActionType || "").trim().toUpperCase() === "R";
-    var actionText = isRolledBack ? "Rollback" : isBulk ? AuditFormatter.formatOperationText(
+    var actionText = isBulk ? AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -578,7 +580,7 @@ sap.ui.define([
   }
 
   function buildOverviewRows(values) {
-    var operation = String(values.RollbackAuditId || "").trim() ? "Rollback" : AuditFormatter.formatOperationText(
+    var operation = AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -679,7 +681,7 @@ sap.ui.define([
 
   function buildAuditDetail(values) {
     var baseActionText = AuditFormatter.formatActionText(values.ActionType);
-    var actionText = String(values.RollbackAuditId || "").trim() ? "Rollback" : AuditFormatter.formatOperationText(
+    var actionText = AuditFormatter.formatOperationText(
       values.ActionType,
       values.RecordKey,
       values.OldValue,
@@ -779,7 +781,9 @@ sap.ui.define([
   }
 
   function getBulkDialogActionLabel(actionText) {
-    return AuditFormatter.formatExecutedActionText(actionText);
+    // Keep the semantic action from the backend. Do not rewrite Delete to
+    // Deleted (or Create/Update to past-tense labels) in the item table.
+    return actionText;
   }
 
   function getAuditActionKey(actionText) {
@@ -1308,7 +1312,10 @@ sap.ui.define([
       if (AuditFormatter.isBulkRecord(values)) {
         itemsPromise = requestBulkItems(context, source || null, values);
       } else {
-        var auditItemsId = values.RollbackAuditId || values.AuditId;
+        // Load the items belonging to the displayed audit record itself.
+        // RollbackAuditId is only a link to another audit, not the source for
+        // this record's detail values.
+        var auditItemsId = values.AuditId;
 
         itemsPromise = requestAuditItemEntity(context, auditItemsId).then(function (items) {
           if ((!items || !items.length) && values.AuditId && auditItemsId === values.AuditId) {
@@ -1382,6 +1389,80 @@ sap.ui.define([
     });
   }
 
+  function getSelectedAuditContext(view) {
+    var selectedContexts = [];
+
+    if (!view || !view.findAggregatedObjects) {
+      return null;
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      var contexts;
+      var selectedItems;
+
+      if (!control || !control.isA ||
+          !(control.isA("sap.m.Table") || control.isA("sap.ui.table.Table") || control.isA("sap.ui.mdc.Table"))) {
+        return false;
+      }
+
+      if (control.getSelectedContexts) {
+        contexts = control.getSelectedContexts();
+        if (contexts && contexts.length) {
+          selectedContexts = contexts;
+          return true;
+        }
+      }
+
+      if (control.getSelectedItems) {
+        selectedItems = control.getSelectedItems() || [];
+        selectedContexts = selectedItems.map(function (item) {
+          return item && item.getBindingContext && item.getBindingContext();
+        }).filter(Boolean);
+        if (selectedContexts.length) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    if (selectedContexts.length !== 1) {
+      return null;
+    }
+
+    return selectedContexts[0];
+  }
+
+  function refreshAuditList(view) {
+    var refreshPromises = [];
+
+    if (!view || !view.findAggregatedObjects) {
+      return Promise.resolve();
+    }
+
+    view.findAggregatedObjects(true, function (control) {
+      var binding;
+
+      if (!control || !control.isA ||
+          !(control.isA("sap.m.Table") || control.isA("sap.ui.table.Table") || control.isA("sap.ui.mdc.Table"))) {
+        return false;
+      }
+
+      binding = control.getBinding && (control.getBinding("items") || control.getBinding("rows"));
+      if (binding && binding.refresh) {
+        refreshPromises.push(Promise.resolve(binding.refresh()).catch(function () {
+          return null;
+        }));
+      }
+
+      return false;
+    });
+
+    return Promise.all(refreshPromises).then(function () {
+      return undefined;
+    });
+  }
+
   function refreshAuditData(context) {
     var model = context && context.getModel && context.getModel();
     var binding = context && context.getBinding && context.getBinding();
@@ -1423,8 +1504,11 @@ sap.ui.define([
       var domRef;
 
       if (!control || !control.isA || !control.isA("sap.m.Button") ||
-          String(control.getText && control.getText() || "").trim() !== "Rollback" ||
-          control.data("auditRollbackConfirmAttached")) {
+          String(control.getText && control.getText() || "").trim() !== "Rollback") {
+        return false;
+      }
+
+      if (control.data("auditRollbackConfirmAttached")) {
         return false;
       }
 
@@ -1467,7 +1551,6 @@ sap.ui.define([
   }
 
   function updateDetailAfterRollback(view, context, actionBinding) {
-    var originalAuditId = getContextValue(context, "AuditId");
 
     return getRollbackResultObject(actionBinding).then(function (result) {
       var rollbackAuditId;
@@ -1676,7 +1759,9 @@ sap.ui.define([
 
     actionBinding = model.bindContext(actionPath + "/com.sap.gateway.srvd.zsd_tbl_config.v0001.rollback(...)");
     return actionBinding.execute().then(function () {
-      return updateDetailAfterRollback(view, context, actionBinding);
+      // The page is reloaded immediately by the caller. Do not wait for
+      // extra context, model, or item-detail requests after the action.
+      return "";
     });
   }
 
@@ -1888,17 +1973,16 @@ sap.ui.define([
       var source = event && event.getSource && event.getSource();
       var view = this.base && this.base.getView && this.base.getView();
       var context = source && source.getBindingContext && source.getBindingContext() ||
-        getObjectPageContext(view);
+        getObjectPageContext(view) || getSelectedAuditContext(view);
       var auditId = getContextValue(context, "AuditId");
       var tableName = getContextValue(context, "TableName");
       var operationControl = getContextValue(context, "__OperationControl");
       var rollbackAuditId = getContextValue(context, "RollbackAuditId");
       var actionType = getContextValue(context, "ActionType");
       var auditDetailModel = view && view.getModel && view.getModel("auditDetail");
-      var completedRollbackAuditId = "";
 
       if (!context) {
-        MessageBox.error("No audit record is selected for rollback.");
+        MessageBox.error("Select exactly one audit record before starting rollback.");
         return;
       }
 
@@ -1925,18 +2009,17 @@ sap.ui.define([
             auditDetailModel.setProperty("/rollbackBusy", true);
             auditDetailModel.setProperty("/rollbackAvailable", false);
           }
-          executeRollback(context, view).then(function (rollbackAuditId) {
-            completedRollbackAuditId = rollbackAuditId || "";
-            return loadAuditDetailModels(view, context, source, rollbackAuditId ? {
-              __rollbackResultOnly: true,
-              RollbackAuditId: rollbackAuditId
-            } : null);
-          }).then(function () {
-            MessageToast.show(
-              completedRollbackAuditId ?
-                "Rollback completed. Rollback ID: " + completedRollbackAuditId :
-                "Rollback completed. Rollback ID is not available."
-            );
+          executeRollback(context, view).then(function () {
+            MessageToast.show("Rollback completed.");
+
+            // Reload the complete Fiori Elements page so the List Report
+            // receives the newly created rollback audit and fresh backend
+            // state, including the original record's RollbackAuditId.
+            if (typeof window !== "undefined" && window.location && window.location.reload) {
+              setTimeout(function () {
+                window.location.reload();
+              }, 50);
+            }
           }).catch(function (error) {
             ODataErrorHandler.showBackendError(error, "Rollback failed.");
           }).finally(function () {
