@@ -500,16 +500,9 @@ sap.ui.define([], function () {
     return count !== null && count >= 2;
   }
 
-  function formatOperationText(actionType, recordKey, oldValue, newValue, rollbackAuditId) {
+  function formatOperationText(actionType, recordKey, oldValue, newValue) {
     var rawAction = String(actionType || "").trim().toUpperCase();
     var action = rawAction.split(/\s+/)[0];
-
-    // Match Custom Design: once the source audit has a RollbackAuditId,
-    // display the source operation as Rollback while keeping its original
-    // audit item changes intact.
-    if (rollbackAuditId && String(rollbackAuditId).trim()) {
-      return "Rollback";
-    }
 
     // Rollback is the parent operation even when its summary contains several
     // AuditItems. "Bulk" describes the item count, not the operation semantics.
