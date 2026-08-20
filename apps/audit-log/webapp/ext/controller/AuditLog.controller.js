@@ -1900,14 +1900,18 @@ sap.ui.define([
       onInit: function () {
         ensureAuditPersistentStyles();
         var view = this.base && this.base.getView && this.base.getView();
+        var model;
 
         if (view) {
           ensureAuditModel(view);
           ODataErrorHandler.attachGlobalHandlers("audit");
+          model = view.getModel && view.getModel();
+          ODataErrorHandler.attachModelHandlers(model, "audit");
 
           if (view.attachModelContextChange && !this._auditContextHandlerAttached) {
             this._auditContextHandlerAttached = true;
             view.attachModelContextChange(function () {
+              ODataErrorHandler.attachModelHandlers(view.getModel && view.getModel(), "audit");
               updateAuditModel(view, getObjectPageContext(view));
             });
           }

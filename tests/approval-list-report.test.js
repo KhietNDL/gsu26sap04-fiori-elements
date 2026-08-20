@@ -48,6 +48,10 @@ assert.ok(!formattedRequestDetailFragment.includes('headerText="Record Key"'), "
 assert.ok(!formattedRequestDetailFragment.includes('items="{approvalDetail>/changeRows}"'), "approval detail does not render the old row-based change table");
 assert.ok(bulkApprovalItemsFragment.includes('columns="{path: \'approvalDetail>/bulkColumns\''), "approval items use dynamic columns for changed fields");
 assert.ok(bulkApprovalItemsFragment.includes('items="{path: \'approvalDetail>/bulkTableRows\''), "approval items render flattened table rows");
+assert.ok(bulkApprovalItemsFragment.includes('growing="false"'), "approval items render every loaded row without a 20-row More pager");
+assert.ok(!bulkApprovalItemsFragment.includes('growingScrollToLoad="true"'), "approval items do not hide loaded rows behind incremental scrolling");
+assert.ok(bulkApprovalItemsFragment.includes('press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsPreviousPage"'), "approval previous-page button resolves the Fiori Elements controller extension");
+assert.ok(bulkApprovalItemsFragment.includes('press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsNextPage"'), "approval next-page button resolves the Fiori Elements controller extension");
 assert.ok(!bulkApprovalItemsFragment.includes("View Changes"), "approval items do not require a View Changes action");
 assert.ok(operationColumnFragment.includes("approvalOperationBadge"), "approval list operations use the same semantic badge treatment as Audit Log");
 assert.ok(operationColumnFragment.includes("key=\"action\""), "approval list exposes stable action keys for Audit-matching colors");
@@ -447,6 +451,36 @@ const approvalCreateTable = api.buildApprovalItemsTableData([{
 }]);
 assertJsonEqual(approvalCreateTable.columns.map((column) => column.label), ["Item", "Action", "Id", "Name"], "approval items do not duplicate entity key columns for create requests");
 
+const pagedRows = Array.from({ length: 45 }, function (_value, index) {
+  return { row: index + 1 };
+});
+const pagingModel = createModel({
+  bulkAllTableRows: pagedRows,
+  bulkPageSize: 20
+});
+api.setApprovalItemsPage(pagingModel, 0);
+assert.strictEqual(pagingModel.getProperty("/bulkTableRows").length, 20, "first approval page renders only 20 rows");
+assert.strictEqual(pagingModel.getProperty("/bulkPageText"), "Page 1 of 3 • 1–20 of 45", "first approval page reports its range");
+assert.strictEqual(pagingModel.getProperty("/bulkPreviousEnabled"), false, "previous page is disabled on the first page");
+assert.strictEqual(pagingModel.getProperty("/bulkNextEnabled"), true, "next page is enabled on the first page");
+api.setApprovalItemsPage(pagingModel, 2);
+assert.strictEqual(pagingModel.getProperty("/bulkTableRows").length, 5, "last approval page renders the remaining rows");
+assert.strictEqual(pagingModel.getProperty("/bulkTableRows")[0].row, 41, "last approval page starts at the correct row");
+assert.strictEqual(pagingModel.getProperty("/bulkNextEnabled"), false, "next page is disabled on the final page");
+
+const pagingView = createView({}, []);
+pagingView.setModel(pagingModel, "approvalDetail");
+api.setApprovalItemsPage(pagingModel, 0);
+controller.onBulkItemsNextPage.call({
+  base: { getView: function () { return pagingView; } }
+});
+assert.strictEqual(pagingModel.getProperty("/bulkPageIndex"), 1, "Next handler advances to the second approval page");
+assert.strictEqual(pagingModel.getProperty("/bulkTableRows")[0].row, 21, "Next handler renders rows 21 through 40");
+controller.onBulkItemsPreviousPage.call({
+  base: { getView: function () { return pagingView; } }
+});
+assert.strictEqual(pagingModel.getProperty("/bulkPageIndex"), 0, "Previous handler returns to the first approval page");
+
 const loadingModel = createModel({
   bulkItemSelected: true,
   bulkItemRecordKeyJson: "{\"STALE\":\"1\"}",
@@ -648,6 +682,70 @@ const lifecycleView = createView({
 }, []);
 
 Promise.resolve()
+  .then(function () {
+    const allItems = Array.from({ length: 100 }, function (_value, index) {
+      return {
+        getObject: function () {
+          return { ItemNo: index + 1 };
+        }
+      };
+    });
+    const requestedStarts = [];
+    let destroyed = false;
+    let finalLengthKnown = false;
+    const serverPagedBinding = {
+      requestContexts: function (start, length) {
+        const page = allItems.slice(start, start + Math.min(length, 40));
+        requestedStarts.push(start);
+        finalLengthKnown = start + page.length >= allItems.length;
+        return Promise.resolve(page);
+      },
+      isLengthFinal: function () {
+        return finalLengthKnown;
+      },
+      getLength: function () {
+        return allItems.length;
+      },
+      destroy: function () {
+        destroyed = true;
+      }
+    };
+
+    return api.requestApprovalItemsFromBinding(serverPagedBinding).then(function (items) {
+      assert.strictEqual(items.length, 100, "all approval items are loaded across backend pages");
+      assert.deepStrictEqual(requestedStarts, [0, 40, 80], "paging advances by the number of rows actually returned");
+      assert.strictEqual(items[99].ItemNo, 100, "the final approval item is retained");
+      assert.strictEqual(destroyed, true, "temporary approval item binding is destroyed after paging");
+    });
+  })
+  .then(function () {
+    let requestCount = 0;
+    let destroyed = false;
+    const repeatedPage = Array.from({ length: 40 }, function (_value, index) {
+      return {
+        getObject: function () {
+          return { AprvlId: "REQ-LOOP", ItemNo: index + 1 };
+        }
+      };
+    });
+    const stuckBinding = {
+      requestContexts: function () {
+        requestCount += 1;
+        return Promise.resolve(repeatedPage);
+      },
+      destroy: function () {
+        destroyed = true;
+      }
+    };
+
+    return api.requestApprovalItemsFromBinding(stuckBinding).then(function () {
+      assert.fail("repeated backend pages must not be accepted");
+    }).catch(function (error) {
+      assert.match(error.message, /did not advance/, "repeated backend pages stop immediately");
+      assert.strictEqual(requestCount, 2, "paging loop is stopped after the first repeated page");
+      assert.strictEqual(destroyed, true, "stuck approval item binding is still destroyed");
+    });
+  })
   .then(function () {
     return api.requestContextValues(responseContext);
   })

@@ -3,6 +3,9 @@ sap.ui.define([
 ], function (MessageBox) {
   "use strict";
 
+  var lastShownMessage = "";
+  var lastShownAt = 0;
+
   function parseJson(value) {
     var text;
 
@@ -74,14 +77,76 @@ sap.ui.define([
     return "";
   }
 
-  function showBackendError(error, fallbackMessage) {
-    var message = extractBackendMessage(error) || fallbackMessage || "";
+  function getRequestError(event) {
+    var parameters;
 
-    if (message) {
+    if (!event || !event.getParameters) {
+      return event;
+    }
+
+    parameters = event.getParameters() || {};
+    return {
+      response: parameters.response || parameters.error && parameters.error.response,
+      responseText: parameters.responseText,
+      error: parameters.error,
+      message: parameters.message,
+      status: parameters.status,
+      statusCode: parameters.statusCode
+    };
+  }
+
+  function getStatus(error) {
+    var requestError = getRequestError(error);
+    var response = requestError && requestError.response;
+
+    return Number(requestError && (requestError.status || requestError.statusCode) ||
+      response && (response.status || response.statusCode));
+  }
+
+  function isAuthorizationError(error) {
+    var status = getStatus(error);
+
+    return status === 401 || status === 403;
+  }
+
+  function showBackendError(error, fallbackMessage) {
+    var message = extractBackendMessage(error) ||
+      (isAuthorizationError(error) ? "You are not authorized to access this application." : "") ||
+      fallbackMessage || "";
+    var now = Date.now();
+
+    if (message && (message !== lastShownMessage || now - lastShownAt > 1000)) {
       MessageBox.error(message);
+      lastShownMessage = message;
+      lastShownAt = now;
     }
 
     return message;
+  }
+
+  function attachModelHandlers(model, key) {
+    var flag = "__ztblODataModelErrorHandler_" + key;
+
+    if (!model || !model.attachRequestFailed || model[flag]) {
+      return;
+    }
+
+    // OData V4 inherits attachRequestFailed from Model, but explicitly rejects
+    // the requestFailed event at runtime. V4 errors are handled by rejected
+    // promises/message handling instead.
+    if (model.isA && model.isA("sap.ui.model.odata.v4.ODataModel")) {
+      return;
+    }
+
+    try {
+      model.attachRequestFailed(function (event) {
+        showBackendError(getRequestError(event), "Data could not be loaded.");
+      });
+      model[flag] = true;
+    } catch (error) {
+      // Attaching an optional error listener must never block application init.
+      return;
+    }
   }
 
   function attachGlobalHandlers(key) {
@@ -93,17 +158,15 @@ sap.ui.define([
 
     window[flag] = true;
     window.addEventListener("unhandledrejection", function (event) {
-      var message = extractBackendMessage(event && event.reason);
-
-      if (message) {
-        MessageBox.error(message);
-      }
+      showBackendError(event && event.reason, "Request failed.");
     });
   }
 
   return {
     attachGlobalHandlers: attachGlobalHandlers,
+    attachModelHandlers: attachModelHandlers,
     extractBackendMessage: extractBackendMessage,
+    isAuthorizationError: isAuthorizationError,
     showBackendError: showBackendError
   };
 });

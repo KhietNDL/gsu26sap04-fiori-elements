@@ -37,6 +37,8 @@ sap.ui.define([
   };
 
   var APPROVAL_ITEMS_DEBUG = false;
+  var APPROVAL_ITEMS_PAGE_SIZE = 100;
+  var APPROVAL_ITEMS_MAX_PAGES = 100;
 
   function logApprovalItemsLifecycle(model, eventName, details) {
     var payload;
@@ -133,8 +135,15 @@ sap.ui.define([
         approvalItemsVisible: false,
         bulkItems: [],
         bulkColumns: [],
+        bulkAllTableRows: [],
         bulkTableRows: [],
         bulkTableWidth: "100%",
+        bulkPageSize: 20,
+        bulkPageIndex: 0,
+        bulkPageText: "",
+        bulkPaginationVisible: false,
+        bulkPreviousEnabled: false,
+        bulkNextEnabled: false,
         bulkSummaryText: "",
         bulkSummaryVisible: false,
         currentApprovalId: "",
@@ -1249,8 +1258,15 @@ sap.ui.define([
         bulkSummaryText: bulkVisible ? (keepItemsState ? model.getProperty("/bulkSummaryText") : "") : buildBulkSummary([singleApprovalItem]),
         bulkSummaryVisible: bulkVisible ? (keepItemsState ? model.getProperty("/bulkSummaryVisible") : false) : true,
         bulkColumns: bulkVisible ? (keepItemsState ? model.getProperty("/bulkColumns") || [] : []) : singleTableData.columns,
+        bulkAllTableRows: bulkVisible ? (keepItemsState ? model.getProperty("/bulkAllTableRows") || [] : []) : singleTableData.tableRows,
         bulkTableRows: bulkVisible ? (keepItemsState ? model.getProperty("/bulkTableRows") || [] : []) : singleTableData.tableRows,
         bulkTableWidth: bulkVisible ? (keepItemsState ? model.getProperty("/bulkTableWidth") || "100%" : "100%") : singleTableData.tableWidth,
+        bulkPageSize: keepItemsState ? model.getProperty("/bulkPageSize") || 20 : 20,
+        bulkPageIndex: keepItemsState ? model.getProperty("/bulkPageIndex") || 0 : 0,
+        bulkPageText: keepItemsState ? model.getProperty("/bulkPageText") || "" : "",
+        bulkPaginationVisible: keepItemsState ? !!model.getProperty("/bulkPaginationVisible") : false,
+        bulkPreviousEnabled: keepItemsState ? !!model.getProperty("/bulkPreviousEnabled") : false,
+        bulkNextEnabled: keepItemsState ? !!model.getProperty("/bulkNextEnabled") : false,
         itemsLoading: keepItemsState ? model.getProperty("/itemsLoading") : false,
         itemsLoaded: keepItemsState ? model.getProperty("/itemsLoaded") : false,
         itemCount: keepItemsState ? model.getProperty("/itemCount") : 0,
@@ -1560,8 +1576,15 @@ sap.ui.define([
     model.setProperty("/itemsErrorVisible", false);
     model.setProperty("/bulkItems", []);
     model.setProperty("/bulkColumns", []);
+    model.setProperty("/bulkAllTableRows", []);
     model.setProperty("/bulkTableRows", []);
     model.setProperty("/bulkTableWidth", "100%");
+    model.setProperty("/bulkPageSize", 20);
+    model.setProperty("/bulkPageIndex", 0);
+    model.setProperty("/bulkPageText", "");
+    model.setProperty("/bulkPaginationVisible", false);
+    model.setProperty("/bulkPreviousEnabled", false);
+    model.setProperty("/bulkNextEnabled", false);
     clearBulkItemSelection(model);
     logApprovalItemsLifecycle(model, "LOAD_START", {
       aprvlId: approvalId,
@@ -1588,15 +1611,88 @@ sap.ui.define([
     return message ? String(message) : "Approval items could not be loaded.";
   }
 
+  function setApprovalItemsPage(model, requestedPageIndex) {
+    var allRows;
+    var pageSize;
+    var pageCount;
+    var pageIndex;
+    var start;
+    var end;
+
+    if (!model) {
+      return;
+    }
+
+    allRows = model.getProperty("/bulkAllTableRows") || [];
+    pageSize = Math.max(1, Number(model.getProperty("/bulkPageSize")) || 20);
+    pageCount = Math.ceil(allRows.length / pageSize);
+    pageIndex = pageCount ? Math.max(0, Math.min(Number(requestedPageIndex) || 0, pageCount - 1)) : 0;
+    start = pageIndex * pageSize;
+    end = Math.min(start + pageSize, allRows.length);
+
+    model.setProperty("/bulkPageIndex", pageIndex);
+    model.setProperty("/bulkTableRows", allRows.slice(start, end));
+    model.setProperty("/bulkPaginationVisible", pageCount > 1);
+    model.setProperty("/bulkPreviousEnabled", pageIndex > 0);
+    model.setProperty("/bulkNextEnabled", pageIndex + 1 < pageCount);
+    model.setProperty("/bulkPageText", pageCount ?
+      "Page " + (pageIndex + 1) + " of " + pageCount + " • " + (start + 1) + "–" + end + " of " + allRows.length : "");
+  }
+
   function requestApprovalItemsFromBinding(binding) {
+    var allContexts = [];
+    var previousPageSignature = "";
+    var pageCount = 0;
+
     if (!binding || !binding.requestContexts) {
       return Promise.reject(new Error("Approval item binding is unavailable."));
     }
 
-    return Promise.resolve().then(function () {
-      return binding.requestContexts(0, 1000);
-    }).then(function (contexts) {
-      return (contexts || []).map(function (itemContext) {
+    function requestNextPage() {
+      var pageStart = allContexts.length;
+
+      if (pageCount >= APPROVAL_ITEMS_MAX_PAGES) {
+        return Promise.reject(new Error("Approval item paging exceeded the safety limit."));
+      }
+
+      pageCount += 1;
+      return binding.requestContexts(pageStart, APPROVAL_ITEMS_PAGE_SIZE).then(function (contexts) {
+        var pageContexts = contexts || [];
+        var pageSignature;
+
+        if (!pageContexts.length) {
+          return allContexts;
+        }
+
+        pageSignature = pageContexts.map(function (itemContext, index) {
+          var item = itemContext && itemContext.getObject ? itemContext.getObject() : {};
+          var path = itemContext && itemContext.getPath ? itemContext.getPath() : "";
+
+          return path || [item.AprvlId || "", item.ItemNo || "", item.RecordKey || "", index].join("|");
+        }).join("\u001f");
+
+        if (pageStart > 0 && pageSignature === previousPageSignature) {
+          throw new Error("Approval item paging did not advance.");
+        }
+
+        previousPageSignature = pageSignature;
+
+        allContexts = allContexts.concat(pageContexts);
+
+        if (binding.isLengthFinal && binding.getLength &&
+            binding.isLengthFinal() && allContexts.length >= binding.getLength()) {
+          return allContexts;
+        }
+
+        return requestNextPage();
+      });
+    }
+
+    // The ABAP service may enforce server-driven paging (currently 40 rows),
+    // even when the client asks for a larger range. Keep advancing by the
+    // number of contexts actually received until the binding returns no rows.
+    return Promise.resolve().then(requestNextPage).then(function (contexts) {
+      return contexts.map(function (itemContext) {
         return itemContext && itemContext.getObject ? itemContext.getObject() : {};
       });
     }).finally(function () {
@@ -1748,7 +1844,8 @@ sap.ui.define([
     model.setProperty("/bulkSummaryText", errorText ? "" : buildBulkSummary(items || []));
     model.setProperty("/bulkSummaryVisible", !errorText && count > 0);
     model.setProperty("/bulkColumns", errorText ? [] : tableData.columns);
-    model.setProperty("/bulkTableRows", errorText ? [] : tableData.tableRows);
+    model.setProperty("/bulkAllTableRows", errorText ? [] : tableData.tableRows);
+    setApprovalItemsPage(model, 0);
     model.setProperty("/bulkTableWidth", errorText ? "100%" : tableData.tableWidth);
 
     actionType = count === 1 && items[0] ?
@@ -2506,15 +2603,19 @@ sap.ui.define([
       onInit: function () {
         ensureApprovalPersistentStyles();
         var view = this.base && this.base.getView && this.base.getView();
+        var model;
 
         if (view) {
           ensureDetailModel(view);
           ODataErrorHandler.attachGlobalHandlers("approval");
+          model = view.getModel && view.getModel();
+          ODataErrorHandler.attachModelHandlers(model, "approval");
           registerApprovalActionPayloadFix(this);
 
           if (view.attachModelContextChange && !this._approvalContextHandlerAttached) {
             this._approvalContextHandlerAttached = true;
             view.attachModelContextChange(function () {
+              ODataErrorHandler.attachModelHandlers(view.getModel && view.getModel(), "approval");
               handleApprovalContextChanged(this, view, getObjectPageContext(view));
             }.bind(this));
           }
@@ -2617,6 +2718,20 @@ sap.ui.define([
       if (errorText) {
         finishItemsLoading(model, [], errorText, getCurrentItemsSequence(this, model), "DATA_RECEIVED");
       }
+    },
+
+    onBulkItemsPreviousPage: function () {
+      var view = this.base && this.base.getView && this.base.getView();
+      var model = ensureDetailModel(view);
+
+      setApprovalItemsPage(model, (model && model.getProperty("/bulkPageIndex") || 0) - 1);
+    },
+
+    onBulkItemsNextPage: function () {
+      var view = this.base && this.base.getView && this.base.getView();
+      var model = ensureDetailModel(view);
+
+      setApprovalItemsPage(model, (model && model.getProperty("/bulkPageIndex") || 0) + 1);
     },
 
     formatBulkRecordKeyText: function (recordKey) {
@@ -2744,6 +2859,8 @@ sap.ui.define([
     buildBulkSummary: buildBulkSummary,
     buildApprovalItemsTableData: buildApprovalItemsTableData,
     buildBulkItemDetail: buildBulkItemDetail,
+    setApprovalItemsPage: setApprovalItemsPage,
+    requestApprovalItemsFromBinding: requestApprovalItemsFromBinding,
     beginItemsLoading: beginItemsLoading,
     finishItemsLoading: finishItemsLoading,
     clearBulkItemSelection: clearBulkItemSelection,

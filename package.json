@@ -9,6 +9,7 @@
     "start:local": "npm run start:table",
     "start:table": "fiori run --config ui5.yaml --open \"test/flpSandbox.html?sap-client=324&fiori-tools-iapp-state=true#ZTableConfig-manage\"",
     "start:approval": "fiori run --config ui5-approval.yaml --open \"test/flpSandbox.html?sap-client=324&fiori-tools-iapp-state=true#ZApprovalRequest-manage\"",
+    "start:approval:auth": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-approval-auth.ps1",
     "start:audit": "fiori run --config ui5-audit.yaml --open \"test/flpSandbox.html?sap-client=324&fiori-tools-iapp-state=true#ZAuditLog-display\"",
     "start:authorization": "fiori run --config ui5-authorization.yaml --open \"test/flpSandbox.html?sap-client=324&fiori-tools-iapp-state=true#ZAuthorizationManagement-manage\"",
     "clean:dist": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",

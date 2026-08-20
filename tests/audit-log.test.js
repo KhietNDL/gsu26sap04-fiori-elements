@@ -563,6 +563,8 @@ assert(operationColumnFragment.includes('writeToDom="true"'), "Operation semanti
 assert.strictEqual(auditListSettings.controlConfiguration["@com.sap.vocabularies.UI.v1.LineItem"].tableSettings.type, "ResponsiveTable", "audit list keeps the standard responsive table configuration");
 assert.strictEqual((annotationXml.match(/DataFieldForAction/g) || []).length, 0, "local annotation does not create duplicate Rollback action");
 assert(!annotationXml.includes("<PropertyValue Property=\"Action\" String=\"com.sap.gateway.srvd.zsd_tbl_config.v0001.rollback\""), "local annotation does not duplicate rollback button");
+assert(annotationXml.includes('Term="Core.OperationAvailable" Path="__OperationControl/rollback"'),
+  "rollback action is disabled by backend operation-control permission");
 assert(columns.OperationColumn.properties.includes("ActionType"), "Operation column uses ActionType");
 assert(columns.OperationColumn.properties.includes("RecordKey"), "Operation column uses RecordKey to identify bulk rows");
 assert(columns.OperationColumn.properties.includes("OldValue"), "Operation column receives the parent summary fallback from OldValue");
