@@ -34,6 +34,11 @@
               <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
             </Record>
             <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="FieldType"/>
+              <PropertyValue Property="Label" String="Field Type"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
               <PropertyValue Property="Value" Path="LabelText"/>
               <PropertyValue Property="Label" String="Label Text"/>
               <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
