@@ -34,8 +34,7 @@
         width="{approvalDetail>/bulkTableWidth}"
         fixedLayout="true"
         sticky="ColumnHeaders"
-        growing="true"
-        growingScrollToLoad="true"
+        growing="false"
         busy="{approvalDetail>/itemsLoading}"
         busyIndicatorDelay="0"
         noDataText="No approval items found."
@@ -84,5 +83,26 @@
       </items>
       </Table>
     </ScrollContainer>
+    <Toolbar
+      visible="{approvalDetail>/bulkPaginationVisible}"
+      design="Transparent"
+      class="approvalItemsPagination">
+      <ToolbarSpacer/>
+      <Button
+        text="Previous"
+        icon="sap-icon://navigation-left-arrow"
+        enabled="{approvalDetail>/bulkPreviousEnabled}"
+        press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsPreviousPage"
+        type="Transparent"/>
+      <Text text="{approvalDetail>/bulkPageText}" class="sapUiTinyMarginBegin sapUiTinyMarginEnd"/>
+      <Button
+        text="Next"
+        icon="sap-icon://navigation-right-arrow"
+        iconFirst="false"
+        enabled="{approvalDetail>/bulkNextEnabled}"
+        press=".extension.ztbl.approval.ui.ext.controller.ApprovalListReport.onBulkItemsNextPage"
+        type="Transparent"/>
+      <ToolbarSpacer/>
+    </Toolbar>
   </VBox>
 </core:FragmentDefinition>
