@@ -62,6 +62,13 @@
               "fragmentName": "ztbl.authorization.ui.ext.fragment.ActiveStatusCell",
               "type": "XML"
             }
+          },
+          "sap.suite.ui.generic.template.ObjectPage.view.Details": {
+            "AfterFacet|AuthUsers|GeneralInfo": {
+              "className": "sap.ui.core.Fragment",
+              "fragmentName": "ztbl.authorization.ui.ext.fragment.UserPermissionsSection",
+              "type": "XML"
+            }
           }
         }
       }

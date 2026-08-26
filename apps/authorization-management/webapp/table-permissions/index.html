@@ -58,20 +58,12 @@
                         if (key === "users") {
                             window.location.href = withQuery("../users/index.html");
                         }
-                        if (key === "user-permissions") {
-                            window.location.href = withQuery("../user-permissions/index.html");
-                        }
                     },
                     items: [
                         new SegmentedButtonItem({
                             key: "users",
                             text: "Users",
                             icon: "sap-icon://employee"
-                        }),
-                        new SegmentedButtonItem({
-                            key: "user-permissions",
-                            text: "User Permissions",
-                            icon: "sap-icon://key-user-settings"
                         }),
                         new SegmentedButtonItem({
                             key: "table-permissions",

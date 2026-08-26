@@ -1,0 +1,50 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  xmlns:uxap="sap.uxap"
+  core:require="{formatter: 'ztbl/authorization/ui/ext/formatter/AuthorizationFormatter'}">
+  <uxap:ObjectPageSection title="Permissions">
+    <uxap:subSections>
+      <uxap:ObjectPageSubSection>
+        <uxap:blocks>
+          <Table
+            items="{path: 'to_Permissions'}"
+            growing="true"
+            growingScrollToLoad="true"
+            noDataText="No permissions assigned to this user.">
+            <columns>
+              <Column><Text text="Table"/></Column>
+              <Column hAlign="Center"><Text text="View"/></Column>
+              <Column hAlign="Center"><Text text="Create"/></Column>
+              <Column hAlign="Center"><Text text="Update"/></Column>
+              <Column hAlign="Center"><Text text="Delete"/></Column>
+            </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <ObjectIdentifier title="{TableName}"/>
+                  <CheckBox
+                    selected="{CanView}"
+                    enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+                    tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+                  <CheckBox
+                    selected="{CanCreate}"
+                    enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+                    tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+                  <CheckBox
+                    selected="{CanUpdate}"
+                    enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+                    tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+                  <CheckBox
+                    selected="{CanDelete}"
+                    enabled="{= ${Update_mc} &amp;&amp; ${ui>/editable} }"
+                    tooltip="{path: 'Update_mc', formatter: 'formatter.updateTooltip'}"/>
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </uxap:blocks>
+      </uxap:ObjectPageSubSection>
+    </uxap:subSections>
+  </uxap:ObjectPageSection>
+</core:FragmentDefinition>
