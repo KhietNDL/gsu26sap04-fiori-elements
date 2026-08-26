@@ -33,13 +33,6 @@ sap.ui.define(
         component: "ztbl.authorization.users.ui",
         description: "Manage system users, roles, and active status"
       },
-      "user-permissions": {
-        key: "user-permissions",
-        label: "User Permissions",
-        icon: "sap-icon://key-user-settings",
-        component: "ztbl.authorization.userpermissions.ui",
-        description: "Manage permissions assigned to users by table"
-      },
       "table-permissions": {
         key: "table-permissions",
         label: "Table Permissions",
@@ -50,12 +43,11 @@ sap.ui.define(
     };
 
     var DEFAULT_AREA = "users";
-    var AREA_ORDER = ["users", "user-permissions", "table-permissions"];
+    var AREA_ORDER = ["users", "table-permissions"];
 
     sap.ui.loader.config({
       paths: {
         "ztbl/authorization/users/ui": sap.ui.require.toUrl("ztbl/authorization/ui/users"),
-        "ztbl/authorization/userpermissions/ui": sap.ui.require.toUrl("ztbl/authorization/ui/user-permissions"),
         "ztbl/authorization/tablepermissions/ui": sap.ui.require.toUrl("ztbl/authorization/ui/table-permissions")
       }
     });
@@ -65,9 +57,6 @@ sap.ui.define(
 
       if (hash.indexOf("#/users") === 0) {
         return "users";
-      }
-      if (hash.indexOf("#/user-permissions") === 0) {
-        return "user-permissions";
       }
       if (hash.indexOf("#/table-permissions") === 0) {
         return "table-permissions";
@@ -116,7 +105,7 @@ sap.ui.define(
     }
 
     function isObjectPageRoute() {
-      return /(?:AuthUsers|UserPermissions|TablePermissions)\(/.test(getInnerRouteFromHash());
+      return /(?:AuthUsers|TablePermissions)\(/.test(getInnerRouteFromHash());
     }
 
     function areaUrl(area) {
@@ -167,11 +156,6 @@ sap.ui.define(
             text: AREAS.users.label,
             icon: AREAS.users.icon
           }),
-          "user-permissions": new SegmentedButtonItem({
-            key: "user-permissions",
-            text: AREAS["user-permissions"].label,
-            icon: AREAS["user-permissions"].icon
-          }),
           "table-permissions": new SegmentedButtonItem({
             key: "table-permissions",
             text: AREAS["table-permissions"].label,
@@ -185,7 +169,6 @@ sap.ui.define(
           }.bind(this),
           items: [
             navItems.users,
-            navItems["user-permissions"],
             navItems["table-permissions"]
           ]
         });

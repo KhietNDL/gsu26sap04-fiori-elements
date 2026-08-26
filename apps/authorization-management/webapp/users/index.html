@@ -55,9 +55,6 @@
                     selectionChange: function (event) {
                         var key = event.getParameter("item").getKey();
 
-                        if (key === "user-permissions") {
-                            window.location.href = withQuery("../user-permissions/index.html");
-                        }
                         if (key === "table-permissions") {
                             window.location.href = withQuery("../table-permissions/index.html");
                         }
@@ -67,11 +64,6 @@
                             key: "users",
                             text: "Users",
                             icon: "sap-icon://employee"
-                        }),
-                        new SegmentedButtonItem({
-                            key: "user-permissions",
-                            text: "User Permissions",
-                            icon: "sap-icon://key-user-settings"
                         }),
                         new SegmentedButtonItem({
                             key: "table-permissions",
